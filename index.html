@@ -5194,9 +5194,9 @@ async function doAuthLogin(){
   const btn = document.getElementById('loginBtn');
   btn.disabled = true; btn.textContent = '...';
   const sb = getSB();
-  if(!sb){ btn.disabled=false; btn.textContent=t('btn_login_do')||'Kirish'; return; }
+  if(!sb){ btn.disabled=false; btn.textContent='Kirish'; return; }
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-  btn.disabled = false; btn.textContent = t('btn_login_do')||'Kirish';
+  btn.disabled = false; btn.textContent = 'Kirish';
   if(error){ showAuthErr(getAuthError(error.message)); return; }
   await onUserLogin(data.user);
 }
@@ -5217,7 +5217,7 @@ async function doAuthRegister(){
     email, password: pass,
     options: { data: { full_name: name, company_name: company } }
   });
-  btn.disabled = false; btn.textContent = t('btn_register')||"Ro'yxatdan o'tish";
+  btn.disabled = false; btn.textContent = "Ro'yxatdan o'tish";
   if(error){ showAuthErr(getAuthError(error.message)); return; }
   if(data.user && !data.user.confirmed_at){
     showAuthOk(t('confirm_email')||`✅ ${email} manziliga tasdiqlash xati yuborildi. Pochtangizni tekshiring.`);
@@ -5435,7 +5435,7 @@ function applyAuthI18n(){
   const loginBtn   = document.getElementById('loginBtn');
   if(loginTitle) loginTitle.textContent = tx('login_title');
   if(loginSub)   loginSub.textContent   = tx('login_sub');
-  if(loginBtn && !loginBtn.disabled) loginBtn.textContent = tx('btn_login_do');
+  if(loginBtn && !loginBtn.disabled) loginBtn.textContent = 'Kirish';
 
   // Register form
   const regTitle = document.querySelector('#authRegister .auth-title');
@@ -5443,7 +5443,7 @@ function applyAuthI18n(){
   const regBtn   = document.getElementById('registerBtn');
   if(regTitle) regTitle.textContent = tx('reg_title');
   if(regSub)   regSub.textContent   = tx('reg_sub');
-  if(regBtn && !regBtn.disabled) regBtn.textContent = tx('btn_register');
+  if(regBtn && !regBtn.disabled) regBtn.textContent = "Ro'yxatdan o'tish";
 
   // Placeholders
   const ph = {
