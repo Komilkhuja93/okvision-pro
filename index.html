@@ -1373,7 +1373,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <span id="dataStatSups" style="font-size:11px;color:var(--text2)">🏢 0 ta supplier</span>
         <span style="color:var(--border2)">·</span>
         <span id="dataStatPrices" style="font-size:11px;color:var(--text2)">💰 0 ta narx</span>
-        <span style="margin-left:auto;font-size:10px;color:var(--text3)" id="dataStatNote">Sahifa yangilanganda ma'lumotlar saqlanadi</span>
+        <span style="margin-left:auto;font-size:10px;color:var(--text3)" id="dataStatNote"><span data-i18n="data_saved_note">Sahifa yangilanganda ma'lumotlar saqlanadi</span></span>
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:18px"><span data-i18n="h_import_sub">Excel yoki PDF prays-listni yuklang — platforma avtomatik o'qiydi va kategoriyalaydi</span></div>
 
@@ -4133,6 +4133,8 @@ const I18N = {
     // Tablar
     terms_link: 'Foydalanish shartlari',
     terms_suffix: 'ga rozilik bildirasiz.',
+    data_saved_note: "Sahifa yangilanganda ma'lumotlar saqlanadi",
+    import_cat_hint: "Agar mahsulot kategoriyaga tushmasa — import paytida preview ko'rsatiladi va siz qo'lda tanlaysiz",
     err_fill_fields: "Barcha maydonlarni to'ldiring",
     err_pass_short: "Parol kamida 8 ta belgi bo'lishi kerak",
     err_enter_email: 'Email kiriting',
@@ -4256,6 +4258,8 @@ const I18N = {
   ru: {
     terms_link: 'Условиям использования',
     terms_suffix: ' я соглашаюсь.',
+    data_saved_note: 'Данные сохраняются при обновлении страницы',
+    import_cat_hint: 'Если товар не определяется в категорию — при импорте будет показан предпросмотр для ручного выбора',
     err_fill_fields: 'Заполните все поля',
     err_pass_short: 'Пароль минимум 8 символов',
     err_enter_email: 'Введите email',
@@ -4350,6 +4354,8 @@ const I18N = {
   en: {
     terms_link: 'Terms of Service',
     terms_suffix: ', I agree.',
+    data_saved_note: 'Data is saved when page refreshes',
+    import_cat_hint: 'If a product has no category — a preview will be shown during import for manual selection',
     err_fill_fields: 'Please fill all fields',
     err_pass_short: 'Password must be at least 8 characters',
     err_enter_email: 'Enter your email',
@@ -4541,7 +4547,15 @@ function setLang(lang) {
     el.innerHTML='➕ '+t('btn_addprod');
   });
 
-  // 9. Dinamik UI qayta render
+  // 9. Qo'shimcha statik matnlar
+  document.querySelectorAll('[data-i18n="data_saved_note"]').forEach(el=>el.textContent=t('data_saved_note'));
+  document.querySelectorAll('[data-i18n="import_cat_hint"]').forEach(el=>el.textContent=t('import_cat_hint'));
+  document.querySelectorAll('[data-i18n="sidebar_prices"]').forEach(el=>el.textContent=t('sidebar_prices'));
+  document.querySelectorAll('[data-i18n="sidebar_ai"]').forEach(el=>el.textContent=t('sidebar_ai'));
+  document.querySelectorAll('[data-i18n="sidebar_upload"]').forEach(el=>el.textContent=t('sidebar_upload'));
+  document.querySelectorAll('[data-i18n="sidebar_format"]').forEach(el=>el.textContent=t('sidebar_format'));
+
+  // 10. Dinamik UI qayta render
   if(typeof renderCats==='function') renderCats();
   if(typeof renderList==='function') renderList();
   if(typeof renderQ==='function') renderQ();
