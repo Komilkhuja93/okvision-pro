@@ -4337,6 +4337,12 @@ const I18N = {
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
     q_empty:"Taklif bo'sh", q_empty_hint:"Katalogdan mahsulot qo'shing",
     q_total_label:'Jami summa',
+    cm_cats_title:'Kategoriyalar', cm_add_cat:'Yangi kategoriya yaratish',
+    cm_new_cat_label:'Yangi kategoriya', cm_select_hint:'Mahsulotlarni tanlang',
+    btn_select_all:'Hammasini', cm_move_btn:"O'tkazish",
+    cm_select_target:"Chap tarafdan maqsad kategoriyani tanlang",
+    cm_select_target_hint:"Avval chap tarafdan maqsad kategoriyani tanlang",
+    ph_cat_name:"Kategoriya nomi...",
     cat_ip:'IP Kamera', cat_analog:'Analog Kamera', cat_nvr:'NVR / DVR',
     cat_access:'Kirish nazorati', cat_net:'Tarmoq qurilmasi', cat_fire:"Yong'in xavfsizligi",
     import_tip:"Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.",
@@ -4499,6 +4505,12 @@ const I18N = {
     btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
     q_empty:'Предложение пусто', q_empty_hint:'Добавьте товары из каталога',
     q_total_label:'Итого',
+    cm_cats_title:'Категории', cm_add_cat:'Создать категорию',
+    cm_new_cat_label:'Новая категория', cm_select_hint:'Выберите товары',
+    btn_select_all:'Все', cm_move_btn:'Переместить',
+    cm_select_target:'Выберите целевую категорию слева',
+    cm_select_target_hint:'Сначала выберите целевую категорию слева',
+    ph_cat_name:'Название категории...',
     cat_ip:'IP-камера', cat_analog:'Аналоговая камера', cat_nvr:'NVR / DVR',
     cat_access:'Контроль доступа', cat_net:'Сетевое оборудование', cat_fire:'Пожарная безопасность',
     import_tip:'При первом импорте укажите название поставщика (например: HIKVISION). При следующих импортах имя файла автоматически определяет поставщика.',
@@ -4632,6 +4644,12 @@ const I18N = {
     btn_view_print:'Preview & Print', btn_order:'Send order',
     q_empty:'Proposal is empty', q_empty_hint:'Add products from catalog',
     q_total_label:'Total',
+    cm_cats_title:'Categories', cm_add_cat:'Create category',
+    cm_new_cat_label:'New category', cm_select_hint:'Select products',
+    btn_select_all:'All', cm_move_btn:'Move',
+    cm_select_target:'Select target category on the left',
+    cm_select_target_hint:'First select a target category on the left',
+    ph_cat_name:'Category name...',
     cat_ip:'IP Camera', cat_analog:'Analog Camera', cat_nvr:'NVR / DVR',
     cat_access:'Access Control', cat_net:'Network Equipment', cat_fire:'Fire Safety',
     import_tip:'On first import, enter the supplier name (e.g. HIKVISION). On subsequent imports, the filename automatically identifies the supplier.',
@@ -4924,6 +4942,22 @@ function setLang(lang) {
     });
   }
 
+  // Kategoriya modal
+  ['cm_cats_title','cm_add_cat','cm_new_cat_label',
+   'cm_select_hint','btn_select_all','cm_move_btn'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  const cmNewCatInput = document.getElementById('cmNewCatInput');
+  if(cmNewCatInput) cmNewCatInput.placeholder = t('ph_cat_name');
+  const cmSearchInp = document.getElementById('cmSearchInp');
+  if(cmSearchInp) cmSearchInp.placeholder = '🔍 '+(lang==='ru'?'Поиск...':lang==='en'?'Search...':'Qidirish...');
+  const cmRhTitleEl = document.getElementById('cmRhTitle');
+  if(cmRhTitleEl && cmRhTitleEl.textContent.includes('←')){
+    cmRhTitleEl.textContent = '← '+t('cm_select_target');
+  }
+
   // HDD dropdown optionlarni yangilash
   document.querySelectorAll('[data-i18n-opt]').forEach(el => {
     const key = el.getAttribute('data-i18n-opt');
@@ -5134,16 +5168,16 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
       <!-- LEFT: kategoriyalar -->
       <div class="cm-left">
         <div class="cm-lh">
-          <span class="cm-lh-title">📂 Kategoriyalar</span>
+          <span class="cm-lh-title">📂 <span data-i18n="cm_cats_title">Kategoriyalar</span></span>
           <span id="cmCatCount" style="font-size:10px;color:var(--text3)"></span>
         </div>
         <div class="cm-cats" id="cmCatList"></div>
-        <button class="cm-add-cat" onclick="openNewCatForm()">＋ Yangi kategoriya yaratish</button>
+        <button class="cm-add-cat" onclick="openNewCatForm()">＋ <span data-i18n="cm_add_cat">Yangi kategoriya yaratish</span></button>
         <!-- New cat form -->
         <div id="cmNewCatForm" style="display:none;padding:8px;border-top:1px solid var(--border);background:var(--surface2)">
-          <div style="font-size:11px;color:var(--text3);margin-bottom:6px">Yangi kategoriya</div>
+          <div style="font-size:11px;color:var(--text3);margin-bottom:6px" data-i18n="cm_new_cat_label">Yangi kategoriya</div>
           <div style="display:flex;gap:5px;margin-bottom:6px">
-            <input class="cm-new-inp" id="cmNewCatName" placeholder="Kategoriya nomi..." maxlength="40"
+            <input class="cm-new-inp" id="cmNewCatName" id="cmNewCatInput" placeholder="Kategoriya nomi..." maxlength="40"
               onkeydown="if(event.key==='Enter')addNewCat()">
             <button onclick="addNewCat()" style="padding:6px 12px;border-radius:8px;background:var(--accent);color:#0a0c10;border:none;cursor:pointer;font-size:12px;font-weight:700">✓</button>
             <button onclick="document.getElementById('cmNewCatForm').style.display='none'" style="padding:6px 10px;border-radius:8px;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);cursor:pointer;font-size:12px">✕</button>
@@ -5156,7 +5190,7 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
       <div class="cm-right">
         <div class="cm-rh">
           <div class="cm-rh-title" id="cmRhTitle">Barcha mahsulotlar</div>
-          <input class="cm-srch" id="cmSearch" placeholder="🔍 Qidirish..." oninput="renderCmProds()">
+          <input class="cm-srch" id="cmSearch" id="cmSearchInp" placeholder="🔍 Qidirish..." oninput="renderCmProds()">
         </div>
         <!-- Supplier filter -->
         <div style="padding:6px 10px;border-bottom:1px solid var(--border);flex-shrink:0">
@@ -5164,9 +5198,9 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
         </div>
         <div class="cm-prods" id="cmProdList"></div>
         <div class="cm-ft">
-          <div class="cm-sel-info" id="cmSelInfo">Mahsulotlarni tanlang</div>
-          <button id="cmSelectAll" onclick="cmToggleAll()" style="padding:6px 12px;border-radius:8px;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);font-size:11px;cursor:pointer">Hammasini</button>
-          <button class="cm-move-btn" id="cmMoveBtn" onclick="cmMoveSelected()" disabled>→ O'tkazish</button>
+          <div class="cm-sel-info" id="cmSelInfo" data-i18n="cm_select_hint">Mahsulotlarni tanlang</div>
+          <button id="cmSelectAll" onclick="cmToggleAll()" style="padding:6px 12px;border-radius:8px;background:var(--surface3);color:var(--text2);border:1px solid var(--border2);font-size:11px;cursor:pointer"><span data-i18n="btn_select_all">Hammasini</span></button>
+          <button class="cm-move-btn" id="cmMoveBtn" onclick="cmMoveSelected()" disabled>→ <span data-i18n="cm_move_btn">O'tkazish</span></button>
         </div>
       </div>
     </div>
@@ -5238,7 +5272,7 @@ function selectCmCat(cat){
   cmActiveCat=cat;
   cmSelected.clear();
   document.getElementById('cmMoveBtn').disabled=true;
-  document.getElementById('cmSelInfo').textContent='Mahsulotlarni tanlang';
+  document.getElementById('cmSelInfo').textContent=typeof t==='function'?t('cm_select_hint'):'Mahsulotlarni tanlang';
   renderCmCats();
   renderCmProds();
 }
@@ -5254,9 +5288,9 @@ function setCmSup(s){cmSupFilter=s;cmSelected.clear();renderCmProds();}
 
 function renderCmProds(){
   if(!cmActiveCat){
-    document.getElementById('cmRhTitle').textContent='← Chap tarafdan maqsad kategoriyani tanlang';
+    document.getElementById('cmRhTitle').textContent=typeof t==='function'?('← '+t('cm_select_target')):'← Chap tarafdan maqsad kategoriyani tanlang';
     document.getElementById('cmProdList').innerHTML=
-      '<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">Avval chap tarafdan maqsad kategoriyani tanlang</div>';
+      '<div style="padding:24px;text-align:center;color:var(--text3);font-size:12px">'+(typeof t==='function'?t('cm_select_target_hint'):'Avval chap tarafdan maqsad kategoriyani tanlang')+'</div>';
     return;
   }
   const q=(document.getElementById('cmSearch').value||'').toLowerCase();
@@ -5314,8 +5348,8 @@ function updateCmFooter(){
     info.textContent=n+' ta tanlandi';
   } else {
     btn.disabled=true;
-    btn.textContent="→ O'tkazish";
-    info.textContent='Mahsulotlarni tanlang';
+    btn.innerHTML='→ <span data-i18n="cm_move_btn">'+(typeof t==='function'?t('cm_move_btn'):"O'tkazish")+'</span>';
+    info.textContent=typeof t==='function'?t('cm_select_hint'):'Mahsulotlarni tanlang';
   }
 }
 
