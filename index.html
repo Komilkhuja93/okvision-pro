@@ -1365,18 +1365,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           <div>
             <div class="hll">🎥 <span data-i18n="hdd_quality_label">Yozuv sifati</span></div>
             <select class="hsel" id="hRes" onchange="calcHDD()">
-              <option value="0.5">720p (1MP) — 0.5 GB/soat/kam.</option>
-              <option value="1" selected>1080p (2MP) — 1 GB/soat/kam.</option>
-              <option value="2">4MP — 2 GB/soat/kam.</option>
-              <option value="3">4K (8MP) — 3 GB/soat/kam.</option>
+              <option value="0.5" data-i18n-opt="hdd_opt_720p">720p (1MP) — 0.5 GB/soat/kam.</option>
+              <option value="1" selected data-i18n-opt="hdd_opt_1080p">1080p (2MP) — 1 GB/soat/kam.</option>
+              <option value="2" data-i18n-opt="hdd_opt_4mp">4MP — 2 GB/soat/kam.</option>
+              <option value="3" data-i18n-opt="hdd_opt_4k">4K (8MP) — 3 GB/soat/kam.</option>
             </select>
           </div>
           <div>
             <div class="hll">🔄 <span data-i18n="hdd_mode_label">Yozuv rejimi</span></div>
             <select class="hsel" id="hMode" onchange="calcHDD()">
-              <option value="1">24/7 — Doim yozuv</option>
-              <option value="0.3">Harakat (Motion) ~30%</option>
-              <option value="0.5">Aralash ~50%</option>
+              <option value="1" data-i18n-opt="hdd_opt_247">24/7 — Doim yozuv</option>
+              <option value="0.3" data-i18n-opt="hdd_opt_motion">Harakat (Motion) ~30%</option>
+              <option value="0.5" data-i18n-opt="hdd_opt_mixed">Aralash ~50%</option>
             </select>
           </div>
           <div>
@@ -1386,9 +1386,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           <div>
             <div class="hll">🗜 <span data-i18n="hdd_codec_label">Siqish algoritmi</span></div>
             <select class="hsel" id="hCodec" onchange="calcHDD()">
-              <option value="1">H.264 — standart</option>
-              <option value="0.5" selected>H.265 / H.265+ — 50% tejash</option>
-              <option value="0.4">H.265+ Smart — 60% tejash</option>
+              <option value="1" data-i18n-opt="hdd_opt_h264">H.264 — standart</option>
+              <option value="0.5" selected data-i18n-opt="hdd_opt_h265">H.265 / H.265+ — 50% tejash</option>
+              <option value="0.4" data-i18n-opt="hdd_opt_h265s">H.265+ Smart — 60% tejash</option>
             </select>
           </div>
         </div>
@@ -3191,8 +3191,12 @@ function updBdg(){const el=document.getElementById('qbdg');quote.length?(el.styl
 function camCount(){return quote.filter(i=>i.product.cat==='IP Kamera'||i.product.cat==='PTZ Kamera').reduce((s,i)=>s+i.qty,0)}
 function updHDDCams(){
   const n=camCount();
-  if(n>0){document.getElementById('hCams').value=n;document.getElementById('hCamInfo').textContent='Taklifdagi IP/PTZ kameralar: '+n+' ta';document.getElementById('hAutoN').textContent='(avtomatik)'}
-  else{document.getElementById('hCamInfo').textContent='Taklifdagi kameralar avtomatik hisoblanadi';document.getElementById('hAutoN').textContent=''}
+  const camTxt = LANG==='ru'?'IP/PTZ камеры из КП: ':LANG==='en'?'IP/PTZ cameras from proposal: ':'Taklifdagi IP/PTZ kameralar: ';
+  const camUnit2 = LANG==='ru'?' шт':LANG==='en'?' pcs':' ta';
+  const autoTxt = LANG==='ru'?'(автоматически)':LANG==='en'?'(automatic)':'(avtomatik)';
+  const emptyTxt = LANG==='ru'?'Камеры определяются автоматически из КП':LANG==='en'?'Cameras auto-detected from proposal':'Taklifdagi kameralar avtomatik hisoblanadi';
+  if(n>0){document.getElementById('hCams').value=n;document.getElementById('hCamInfo').textContent=camTxt+n+camUnit2;document.getElementById('hAutoN').textContent=autoTxt}
+  else{document.getElementById('hCamInfo').textContent=emptyTxt;document.getElementById('hAutoN').textContent=''}
   calcHDD();
 }
 function calcHDD(){
@@ -3224,7 +3228,9 @@ function calcHDD(){
   else if(needed<=16)rec='⚡ 2×8 TB yoki 16 TB HDD';
   else if(needed<=32)rec='⚡ 4×8 TB RAID tizimi';
   else rec='⚡ NAS/RAID — '+Math.ceil(needed/8)+'×8 TB disk';
-  document.getElementById('hRec').innerHTML='<strong>Tavsiya:</strong> '+rec+' (10-15% zapas qo\'shing)';
+  const tavsiyaWord = LANG==='ru'?'Рекомендация:':LANG==='en'?'Recommendation:':'Tavsiya:';
+  const zapasWord = LANG==='ru'?'(добавьте 10-15% запас)':LANG==='en'?'(add 10-15% margin)':'(10-15% zapas qo\'shing)';
+  document.getElementById('hRec').innerHTML='<strong>'+tavsiyaWord+'</strong> '+rec+' '+zapasWord;
 }
 
 // PREVIEW
@@ -4285,6 +4291,13 @@ const I18N = {
     // Tablar
     terms_link: 'Foydalanish shartlari',
     terms_suffix: 'ga rozilik bildirasiz.',
+    hdd_opt_720p:'720p (1MP) — 0.5 GB/soat/kam.',
+    hdd_opt_1080p:'1080p (2MP) — 1 GB/soat/kam.',
+    hdd_opt_4mp:'4MP — 2 GB/soat/kam.', hdd_opt_4k:'4K (8MP) — 3 GB/soat/kam.',
+    hdd_opt_247:'24/7 — Doim yozuv', hdd_opt_motion:"Harakat (Motion) ~30%",
+    hdd_opt_mixed:"Aralash ~50%",
+    hdd_opt_h264:'H.264 — standart',
+    hdd_opt_h265:'H.265 / H.265+ — 50% tejash', hdd_opt_h265s:"H.265+ Smart — 60% tejash",
     hdd_title:'HDD Kalkulyator', hdd_subtitle:'Kuzatuv tizimingiz uchun zarur disk hajmini hisoblang',
     hdd_card_title:'Disk Hajmi Hisoblash',
     hdd_cams_label:'Kameralar soni', hdd_quality_label:'Yozuv sifati',
@@ -4429,6 +4442,13 @@ const I18N = {
   ru: {
     terms_link: 'Условиям использования',
     terms_suffix: ' я соглашаюсь.',
+    hdd_opt_720p:'720p (1МП) — 0.5 ГБ/час/кам.',
+    hdd_opt_1080p:'1080p (2МП) — 1 ГБ/час/кам.',
+    hdd_opt_4mp:'4МП — 2 ГБ/час/кам.', hdd_opt_4k:'4K (8МП) — 3 ГБ/час/кам.',
+    hdd_opt_247:'24/7 — Постоянная запись', hdd_opt_motion:'Движение (Motion) ~30%',
+    hdd_opt_mixed:'Смешанный ~50%',
+    hdd_opt_h264:'H.264 — стандарт',
+    hdd_opt_h265:'H.265 / H.265+ — экономия 50%', hdd_opt_h265s:'H.265+ Smart — экономия 60%',
     hdd_title:'Расчёт HDD', hdd_subtitle:'Рассчитайте необходимый объём диска для системы видеонаблюдения',
     hdd_card_title:'Расчёт объёма диска',
     hdd_cams_label:'Количество камер', hdd_quality_label:'Качество записи',
@@ -4544,6 +4564,13 @@ const I18N = {
   en: {
     terms_link: 'Terms of Service',
     terms_suffix: ', I agree.',
+    hdd_opt_720p:'720p (1MP) — 0.5 GB/hr/cam.',
+    hdd_opt_1080p:'1080p (2MP) — 1 GB/hr/cam.',
+    hdd_opt_4mp:'4MP — 2 GB/hr/cam.', hdd_opt_4k:'4K (8MP) — 3 GB/hr/cam.',
+    hdd_opt_247:'24/7 — Continuous recording', hdd_opt_motion:'Motion detection ~30%',
+    hdd_opt_mixed:'Mixed ~50%',
+    hdd_opt_h264:'H.264 — standard',
+    hdd_opt_h265:'H.265 / H.265+ — 50% savings', hdd_opt_h265s:'H.265+ Smart — 60% savings',
     hdd_title:'HDD Calculator', hdd_subtitle:'Calculate the required disk space for your surveillance system',
     hdd_card_title:'Disk Space Calculator',
     hdd_cams_label:'Number of cameras', hdd_quality_label:'Recording quality',
@@ -4811,6 +4838,21 @@ function setLang(lang) {
   Object.entries(quotePH).forEach(([id,ph])=>{
     const el=document.getElementById(id); if(el) el.placeholder=ph;
   });
+
+  // HDD dropdown optionlarni yangilash
+  document.querySelectorAll('[data-i18n-opt]').forEach(el => {
+    const key = el.getAttribute('data-i18n-opt');
+    const val = t(key);
+    if(val) el.textContent = val;
+  });
+  // HDD kamera info
+  const hCamInfo = document.getElementById('hCamInfo');
+  if(hCamInfo){
+    const emptyTxt2 = lang==='ru'?'Камеры определяются автоматически из КП':lang==='en'?'Cameras auto-detected from proposal':'Taklifdagi kameralar avtomatik hisoblanadi';
+    if(hCamInfo.textContent.includes('avtomatik')||hCamInfo.textContent.includes('auto')||hCamInfo.textContent.includes('автоматич')){
+      hCamInfo.textContent = emptyTxt2;
+    }
+  }
 
   // Share to label
   const shareToLbl = document.getElementById('shareToLabel');
