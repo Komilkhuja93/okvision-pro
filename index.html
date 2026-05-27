@@ -1113,7 +1113,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   <!-- AI Search — always visible -->
   <div>
     <div class="sl" style="display:flex;align-items:center;gap:5px">
-      <span>🤖</span> AI Qidiruv
+      <span>🤖</span> <span data-i18n="sidebar_ai">AI Qidiruv</span>
       <span style="background:linear-gradient(135deg,#00d4ff,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:9px;font-weight:700;background-clip:text">BETA</span>
     </div>
     <div class="ai-search-wrap">
@@ -1419,7 +1419,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <button onclick="clearAllData()" id="clearDataBtn"
           style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(255,71,87,.1);color:var(--red);border:1px solid rgba(255,71,87,.28);font-size:12px;cursor:pointer;transition:.15s"
           onmouseover="this.style.background='rgba(255,71,87,.2)'" onmouseout="this.style.background='rgba(255,71,87,.1)'">
-          🗑 Barcha ma'lumotlarni tozalash
+          🗑 <span data-i18n="btn_clear_all">Barcha ma'lumotlarni tozalash</span>
         </button>
       </div>
       <!-- Ma'lumotlar holati -->
@@ -1437,7 +1437,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div id="importGuide" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:16px;overflow:hidden">
         <div onclick="this.parentElement.querySelector('.guide-body').style.display=this.parentElement.querySelector('.guide-body').style.display==='none'?'block':'none';this.querySelector('span').textContent=this.parentElement.querySelector('.guide-body').style.display==='none'?'▼':'▲'"
           style="padding:10px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:rgba(0,212,255,.05)">
-          <div style="font-size:13px;font-weight:700;color:var(--accent)">📖 Import qilish yo'riqnomasi</div>
+          <div style="font-size:13px;font-weight:700;color:var(--accent)">📖 <span data-i18n="import_guide_title">Import qilish yo'riqnomasi</span></div>
           <span style="font-size:11px;color:var(--text3)">▼</span>
         </div>
         <div class="guide-body" style="display:none;padding:14px 16px">
@@ -1573,27 +1573,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent)">
             <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">📷 IP Kamera</div>
-            <div style="font-size:11px;color:var(--text3)">DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_ip">DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #f59e0b">
             <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:4px">📹 Analog Kamera</div>
-            <div style="font-size:11px;color:var(--text3)">2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_analog">2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--green)">
             <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">💾 NVR / DVR</div>
-            <div style="font-size:11px;color:var(--text3)">NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx seriyalari, registratorlar</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_nvr">NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx seriyalari, registratorlar</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #a78bfa">
             <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">🔐 Kirish nazorati</div>
-            <div style="font-size:11px;color:var(--text3)">DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_access">DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent)">
             <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">🌐 Tarmoq qurilmasi</div>
-            <div style="font-size:11px;color:var(--text3)">DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_net">DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #ef4444">
             <div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:4px">🔥 Yong'in xavfsizligi</div>
-            <div style="font-size:11px;color:var(--text3)">RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari</div>
+            <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_fire">RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari</span></div>
           </div>
         </div>
         <div style="padding:10px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">
@@ -4338,6 +4338,14 @@ const I18N = {
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
     q_empty:"Taklif bo'sh", q_empty_hint:"Katalogdan mahsulot qo'shing",
     q_total_label:'Jami summa',
+    btn_clear_all: "Barcha ma'lumotlarni tozalash",
+    import_guide_title: "Import qilish yo'riqnomasi",
+    cat_desc_ip: "DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar",
+    cat_desc_analog: "2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari",
+    cat_desc_nvr: "NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx seriyalari, registratorlar",
+    cat_desc_access: "DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD",
+    cat_desc_net: "DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek",
+    cat_desc_fire: "RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari",
     mq_save_hint:'Bazaga saqlamoqchimisiz?', mq_empty_hint:"Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing",
     svc_quick:'Tez tanlash:', svc_empty_hint:"Xizmat qo'shing yoki yuqoridan tanlang",
     label_our_company:'Kompaniyangiz', label_client:'MIJOZ',
@@ -4489,6 +4497,14 @@ const I18N = {
     btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
     q_empty:'Предложение пусто', q_empty_hint:'Добавьте товары из каталога',
     q_total_label:'Итого',
+    btn_clear_all: 'Очистить все данные',
+    import_guide_title: 'Инструкция по импорту',
+    cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn и похожие серии',
+    cat_desc_analog: '2CE, 2CS, HDTVI, AHD, CVI, CVBS, серии Turbo HD',
+    cat_desc_nvr: 'NVR, DVR, XVR, HGHI, HQHI, HUHI, серии DS-7xxx, регистраторы',
+    cat_desc_access: 'Серия DS-K, турникеты, шлагбаумы, DS-TMG, ридеры, терминалы, ZKTeco, KANIHAD',
+    cat_desc_net: 'DS-3E/3T/3W коммутаторы/роутеры/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
+    cat_desc_fire: 'RUBEZH, Bolid, пожарная сигнализация, smoke detector, fire alarm',
     mq_save_hint:'Сохранить в базу?', mq_empty_hint:'Добавьте товары, которых нет в каталоге',
     svc_quick:'Быстрый выбор:', svc_empty_hint:'Добавьте услугу или выберите выше',
     label_our_company:'Наша компания', label_client:'КЛИЕНТ',
@@ -4611,6 +4627,14 @@ const I18N = {
     btn_view_print:'Preview & Print', btn_order:'Send order',
     q_empty:'Proposal is empty', q_empty_hint:'Add products from catalog',
     q_total_label:'Total',
+    btn_clear_all: 'Clear all data',
+    import_guide_title: 'Import guide',
+    cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn and similar series',
+    cat_desc_analog: '2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD series',
+    cat_desc_nvr: 'NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx series, recorders',
+    cat_desc_access: 'DS-K series, turnstiles, barriers, DS-TMG, readers, terminals, ZKTeco, KANIHAD',
+    cat_desc_net: 'DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
+    cat_desc_fire: 'RUBEZH, Bolid, fire alarm, smoke detector, fire alarm systems',
     mq_save_hint:'Save to catalog?', mq_empty_hint:'Add products not in the catalog here',
     svc_quick:'Quick select:', svc_empty_hint:'Add a service or select above',
     label_our_company:'Our company', label_client:'CLIENT',
@@ -4834,6 +4858,20 @@ function setLang(lang) {
     });
   });
   // Qo'lda va xizmatlar section
+  // Import sahifasi
+  ['btn_clear_all','import_guide_title',
+   'cat_desc_ip','cat_desc_analog','cat_desc_nvr',
+   'cat_desc_access','cat_desc_net','cat_desc_fire'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  // Prays-list Import sarlavhasi
+  const importPageTitle = document.querySelector('#pg-guide [style*="font-size:22px"]');
+  if(importPageTitle){
+    importPageTitle.innerHTML = '📥 '+(lang==='ru'?'Импорт прайс-листа':lang==='en'?'Price List Import':'Prays-list Import');
+  }
+
   ['mq_save_hint','mq_empty_hint','svc_quick','svc_empty_hint',
    'btn_add_manual','btn_add_svc','btn_go_catalog',
    'ph_prod_name','ph_qty','label_our_company','label_client'].forEach(key=>{
