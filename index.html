@@ -1571,7 +1571,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <div style="padding:12px 18px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700">🧠 <span data-i18n="import_auto_cats">Avtomatik kategoriya aniqlash qoidalari</span></div>
         <div style="padding:14px 18px;display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent)">
-            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">📷 IP Kamera</div>
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">📷 <span data-i18n="cat_ip">IP Kamera</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_ip">DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #f59e0b">
@@ -1579,19 +1579,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_analog">2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--green)">
-            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">💾 NVR / DVR</div>
+            <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">💾 <span data-i18n="cat_nvr">NVR / DVR</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_nvr">NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx seriyalari, registratorlar</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #a78bfa">
-            <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">🔐 Kirish nazorati</div>
+            <div style="font-size:11px;font-weight:700;color:#a78bfa;margin-bottom:4px">🔐 <span data-i18n="cat_access">Kirish nazorati</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_access">DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--accent)">
-            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">🌐 Tarmoq qurilmasi</div>
+            <div style="font-size:11px;font-weight:700;color:var(--accent);margin-bottom:4px">🌐 <span data-i18n="cat_net">Tarmoq qurilmasi</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_net">DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #ef4444">
-            <div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:4px">🔥 Yong'in xavfsizligi</div>
+            <div style="font-size:11px;font-weight:700;color:#ef4444;margin-bottom:4px">🔥 <span data-i18n="cat_fire">Yong'in xavfsizligi</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_fire">RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari</span></div>
           </div>
         </div>
@@ -4914,6 +4914,15 @@ function setLang(lang) {
   Object.entries(quotePH).forEach(([id,ph])=>{
     const el=document.getElementById(id); if(el) el.placeholder=ph;
   });
+
+  // Kategoriya option larini yangilash (yangi mahsulot modalida)
+  const catSelect = document.getElementById('newProdCat');
+  if(catSelect){
+    catSelect.querySelectorAll('option').forEach(opt => {
+      const key = opt.getAttribute('data-i18n-opt') || opt.getAttribute('data-i18n');
+      if(key){ const val=t(key); if(val) opt.textContent=opt.textContent.replace(/[^\s🔷📷📹💾🔐🌐🔥🔔🔌🔗🖴]/g,'').trim()+' '+val; }
+    });
+  }
 
   // HDD dropdown optionlarni yangilash
   document.querySelectorAll('[data-i18n-opt]').forEach(el => {
