@@ -1250,7 +1250,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px">
       <div class="cc">
-        <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">🏢 Kompaniyangiz</div>
+        <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">🏢 <span data-i18n="label_our_company">Kompaniyangiz</span></div>
         <div class="fg">
           <div class="ff"><div class="fl"><span data-i18n="lbl_company_name">Kompaniya nomi</span></div><input class="fi" id="oCo" placeholder="MChJ «TechVision UZ»" oninput="sF()"></div>
           <div class="ff"><div class="fl"><span data-i18n="lbl_address">Manzil</span></div><input class="fi" id="oAd" placeholder="Toshkent, Yunusobod tumani" oninput="sF()"></div>
@@ -1259,7 +1259,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         </div>
       </div>
       <div class="cc">
-        <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">👤 Mijoz</div>
+        <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">👤 <span data-i18n="label_client">Mijoz</span></div>
         <div class="fg">
           <div class="ff"><div class="fl"><span data-i18n="lbl_client">Mijoz / Tashkilot</span></div><input class="fi" id="clN" placeholder="Abdullayev Jasur" oninput="sF()"></div>
           <div class="ff"><div class="fl"><span data-i18n="lbl_obj">Manzil / Ob'ekt</span></div><input class="fi" id="clA" placeholder="Samarqand, Bozor ko'chasi 14" oninput="sF()"></div>
@@ -1284,20 +1284,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <div class="mq-wrap">
       <div class="mq-hd">
         <div class="mq-ht">📦 <span data-i18n="h_manual">Qo'lda mahsulot qo'shish</span> <span style="font-size:11px;font-weight:400;color:var(--text3)" data-i18n="h_manual_sub">(katalogda yo'q mahsulotlar uchun)</span></div>
-        <button class="mq-add" onclick="addMqRow()">+ Qo'shish</button>
+        <button class="mq-add" onclick="addMqRow()">+ <span data-i18n="btn_add_manual">Qo'shish</span></button>
       </div>
       <div class="mq-body">
         <div style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
-          <span>💡</span> Bazaga saqlamoqchimisiz? — <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="openAddProdModal()">Katalogga qo'shish</span>
+          <span>💡</span> <span data-i18n="mq_save_hint">Bazaga saqlamoqchimisiz?</span> — <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="openAddProdModal()" data-i18n="btn_go_catalog">Katalogga qo'shish</span>
         </div>
         <div style="display:grid;grid-template-columns:1fr 100px 80px 34px;gap:6px;margin-top:2px">
-          <div style="font-size:10px;color:var(--text3);padding:0 4px">Mahsulot nomi</div>
+          <div style="font-size:10px;color:var(--text3);padding:0 4px" data-i18n="ph_prod_name">Mahsulot nomi</div>
           <div style="font-size:10px;color:var(--text3);text-align:right;padding:0 4px">Narx ($)</div>
-          <div style="font-size:10px;color:var(--text3);text-align:center;padding:0 4px">Soni</div>
+          <div style="font-size:10px;color:var(--text3);text-align:center;padding:0 4px" data-i18n="ph_qty">Soni</div>
           <div></div>
         </div>
         <div id="mqRows" style="display:flex;flex-direction:column;gap:6px"></div>
-        <div id="mqEmpty" style="text-align:center;padding:10px;color:var(--text3);font-size:12px">Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing</div>
+        <div id="mqEmpty" style="text-align:center;padding:10px;color:var(--text3);font-size:12px" data-i18n="mq_empty_hint">Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing</div>
       </div>
       <div class="mq-total" id="mqTotalBar" style="display:none">
         Qo'lda qo'shilgan jami: <span class="mq-tot-v" id="mqTotalVal">$0</span>
@@ -1309,10 +1309,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <div class="svc-wrap">
       <div class="svc-hd">
         <div class="svc-ht">🔧 <span data-i18n="h_svc">O'rnatish va Xizmatlar</span></div>
-        <button class="svc-add" onclick="addSvcRow()">+ Xizmat qo'shish</button>
+        <button class="svc-add" onclick="addSvcRow()">+ <span data-i18n="btn_add_svc">Xizmat qo'shish</span></button>
       </div>
       <div class="svc-body">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:2px">Tez tanlash:</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:2px" data-i18n="svc_quick">Tez tanlash:</div>
         <div class="svc-presets">
           <span class="svc-preset" onclick="addSvcPreset('Videokamera o\'rnatish xizmati')">📷 Kamera o'rnatish</span>
           <span class="svc-preset" onclick="addSvcPreset('Domofon o\'rnatish xizmati')">🔔 Domofon o'rnatish</span>
@@ -1324,7 +1324,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           <span class="svc-preset" onclick="addSvcPreset('Pullik avtoturargoh xizmati')">🅿️ Avtoturargoh</span>
         </div>
         <div id="svcRows" style="display:flex;flex-direction:column;gap:6px"></div>
-        <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px">Xizmat qo'shing yoki yuqoridan tanlang</div>
+        <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px" data-i18n="svc_empty_hint">Xizmat qo'shing yoki yuqoridan tanlang</div>
       </div>
       <div class="svc-total" id="svcTotalBar" style="display:none">
         Xizmatlar jami: <span class="svc-tot-v" id="svcTotalVal">$0</span>
@@ -3139,7 +3139,7 @@ function renderSvcRows(){
     <div class="svc-row" id="svcRow_${i}">
       <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
       <input class="svc-inp" type="number" min="0" placeholder="Narx ($)" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
-      <input class="svc-inp" type="number" min="1" placeholder="Soni" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
+      <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
       <button class="svc-del" onclick="delSvc(${i})">✕</button>
     </div>`).join('');
   updSvcTotal();
@@ -3269,7 +3269,7 @@ function buildPreview(){
       <span style="background:#f0f9f4;border-radius:5px;padding:2px 8px;color:#15803d;border:1px solid #bbf7d0">🔧 O'rnatish va Xizmatlar</span>
     </div>
     <table class="ptbl">
-      <thead><tr><th>#</th><th colspan="2">Xizmat nomi</th><th>Soni</th><th class="nr">Narx</th><th class="nr">Jami</th></tr></thead>
+      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
       <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;return`<tr><td>${i+1}</td><td colspan="2"><strong>${s.name}</strong></td><td>${q} ta</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#f0f9f4"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#15803d">XIZMATLAR JAMI</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
     </table>
@@ -3284,7 +3284,7 @@ function buildPreview(){
       <span style="background:#fff8e1;border-radius:5px;padding:2px 8px;color:#b45309;border:1px solid #fde68a">📦 Qo'shimcha Mahsulotlar</span>
     </div>
     <table class="ptbl">
-      <thead><tr><th>#</th><th colspan="2">Mahsulot nomi</th><th>Miqdor</th><th class="nr">Narx</th><th class="nr">Jami</th></tr></thead>
+      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
       <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('uz')+' so\'m'):fmtP(p);return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong></td><td>${q} ${m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">QO'SHIMCHA JAMI</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
@@ -3516,13 +3516,13 @@ function renderMqRows(){
     const cur2=m.cur||'uzs';
     const pHolder=cur2==="usd"?"Narx $":"Narx so'm";
     return`<div class="mq-row" id="mqRow_${i}">
-      <input class="mq-inp" placeholder="Mahsulot nomi..." value="${(m.name||'').replace(/"/g,'&quot;')}" oninput="updMqField(${i},'name',this.value)">
+      <input class="mq-inp" placeholder="${typeof t==='function'?t('ph_prod_name'):'Mahsulot nomi...'}" value="${(m.name||'').replace(/"/g,'&quot;')}" oninput="updMqField(${i},'name',this.value)">
       <input class="mq-inp" type="number" min="0" step="any" placeholder="${pHolder}" value="${m.price||''}" oninput="updMqField(${i},'price',this.value)" style="text-align:right">
       <select class="mq-inp" onchange="updMqField(${i},'cur',this.value)" style="padding:5px 4px;cursor:pointer;font-size:11px;font-weight:600;color:${cur2==='usd'?'var(--accent)':'var(--amber)'}">
         <option value="uzs"${cur2==='uzs'?' selected':''}>so'm</option>
         <option value="usd"${cur2==='usd'?' selected':''}>$</option>
       </select>
-      <input class="mq-inp" type="number" min="0" step="any" placeholder="Miqdor" value="${m.qty===undefined?1:m.qty}" oninput="updMqField(${i},'qty',this.value)" style="text-align:center">
+      <input class="mq-inp" type="number" min="0" step="any" placeholder="${typeof t==='function'?t('ph_qty'):'Miqdor'}" value="${m.qty===undefined?1:m.qty}" oninput="updMqField(${i},'qty',this.value)" style="text-align:center">
       <select class="mq-inp" onchange="updMqField(${i},'unit',this.value)" style="padding:5px 4px;text-align:center;cursor:pointer">
         ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${u}</option>`).join('')}
       </select>
@@ -4301,7 +4301,9 @@ const I18N = {
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
     q_empty:"Taklif bo'sh", q_empty_hint:"Katalogdan mahsulot qo'shing",
     q_total_label:'Jami summa',
-    label_our_company:'KOMPANIYANGIZ', label_client:'MIJOZ',
+    mq_save_hint:'Bazaga saqlamoqchimisiz?', mq_empty_hint:"Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing",
+    svc_quick:'Tez tanlash:', svc_empty_hint:"Xizmat qo'shing yoki yuqoridan tanlang",
+    label_our_company:'Kompaniyangiz', label_client:'MIJOZ',
     data_saved_note: "Sahifa yangilanganda ma'lumotlar saqlanadi",
     import_cat_hint: "Agar mahsulot kategoriyaga tushmasa — import paytida preview ko'rsatiladi va siz qo'lda tanlaysiz",
     err_fill_fields: "Barcha maydonlarni to'ldiring",
@@ -4443,7 +4445,9 @@ const I18N = {
     btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
     q_empty:'Предложение пусто', q_empty_hint:'Добавьте товары из каталога',
     q_total_label:'Итого',
-    label_our_company:'НАША КОМПАНИЯ', label_client:'КЛИЕНТ',
+    mq_save_hint:'Сохранить в базу?', mq_empty_hint:'Добавьте товары, которых нет в каталоге',
+    svc_quick:'Быстрый выбор:', svc_empty_hint:'Добавьте услугу или выберите выше',
+    label_our_company:'Наша компания', label_client:'КЛИЕНТ',
     data_saved_note: 'Данные сохраняются при обновлении страницы',
     import_cat_hint: 'Если товар не определяется в категорию — при импорте будет показан предпросмотр для ручного выбора',
     err_fill_fields: 'Заполните все поля',
@@ -4556,7 +4560,9 @@ const I18N = {
     btn_view_print:'Preview & Print', btn_order:'Send order',
     q_empty:'Proposal is empty', q_empty_hint:'Add products from catalog',
     q_total_label:'Total',
-    label_our_company:'OUR COMPANY', label_client:'CLIENT',
+    mq_save_hint:'Save to catalog?', mq_empty_hint:'Add products not in the catalog here',
+    svc_quick:'Quick select:', svc_empty_hint:'Add a service or select above',
+    label_our_company:'Our company', label_client:'CLIENT',
     data_saved_note: 'Data is saved when page refreshes',
     import_cat_hint: 'If a product has no category — a preview will be shown during import for manual selection',
     err_fill_fields: 'Please fill all fields',
@@ -4772,6 +4778,14 @@ function setLang(lang) {
   ['hdd_title','hdd_subtitle','hdd_card_title','hdd_cams_label','hdd_quality_label',
    'hdd_mode_label','hdd_days_label','hdd_codec_label','hdd_result',
    'hdd_daily','hdd_weekly','hdd_monthly','hdd_cams_result','hdd_archive_result'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  // Qo'lda va xizmatlar section
+  ['mq_save_hint','mq_empty_hint','svc_quick','svc_empty_hint',
+   'btn_add_manual','btn_add_svc','btn_go_catalog',
+   'ph_prod_name','ph_qty','label_our_company','label_client'].forEach(key=>{
     document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
       const val=t(key); if(val) el.textContent=val;
     });
