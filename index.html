@@ -1072,7 +1072,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div style="font-size:11px;color:var(--text3)" id="menuUserEmail">—</div>
       <div style="margin-top:6px;display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;background:rgba(0,212,255,.1);color:var(--accent);border-radius:5px;padding:2px 8px;font-weight:700" id="menuUserPlan">FREE</span>
-        <span class="sync-indicator" id="syncIndicator">● Ulangan</span>
+        <span class="sync-indicator" id="syncIndicator" data-i18n="sync_connected">● Ulangan</span>
       </div>
     </div>
     <div class="user-menu-item" onclick="openProfileModal()">👤 <span data-i18n="menu_profile">Profil</span></div>
@@ -1240,12 +1240,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 
   <div class="page" id="pg-quote">
     <div class="qh">
-      <div class="qt2">📋 Tijorat Taklifi</div>
+      <div class="qt2">📋 <span data-i18n="q_title">Tijorat Taklifi</span></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
-        <button class="btn bd" onclick="clearQ()">🗑 Tozalash</button>
+        <button class="btn bd" onclick="clearQ()">🗑 <span data-i18n="btn_clear_q">Tozalash</span></button>
         <button class="btn bv" onclick="switchTab('hdd')">💾 HDD</button>
-        <button class="btn bp" onclick="switchTab('preview')">👁 Ko'rish & Chop</button>
-        <button class="btn" onclick="sendTelegramOrder()" style="background:rgba(0,136,204,.15);color:#29b6f6;border:1px solid rgba(0,136,204,.3)">✈️ Buyurtma berish</button>
+        <button class="btn bp" onclick="switchTab('preview')">👁 <span data-i18n='btn_view_print'>Ko'rish & Chop</span></button>
+        <button class="btn" onclick="sendTelegramOrder()" style="background:rgba(0,136,204,.15);color:#29b6f6;border:1px solid rgba(0,136,204,.3)">✈️ <span data-i18n="btn_order">Buyurtma berish</span></button>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:16px">
@@ -1268,13 +1268,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         </div>
       </div>
     </div>
-    <div id="emQ" class="eq"><div style="font-size:38px;margin-bottom:9px;opacity:.25">🛒</div><div style="font-weight:500">Taklif bo'sh</div><div style="font-size:12px;color:var(--text3);margin-top:2px">Katalogdan mahsulot qo'shing</div></div>
+    <div id="emQ" class="eq"><div style="font-size:38px;margin-bottom:9px;opacity:.25">🛒</div><div style="font-weight:500" data-i18n="q_empty">Taklif bo'sh</div><div style="font-size:12px;color:var(--text3);margin-top:2px" data-i18n="q_empty_hint">Katalogdan mahsulot qo'shing</div></div>
     <div id="qtW" style="display:none">
       <div class="qtw"><table class="qt"><thead><tr>
         <th>#</th><th></th><th>Model</th><th>Kat.</th><th>Miqdor</th><th style="text-align:right">Narx</th><th style="text-align:right">Jami</th><th></th>
       </tr></thead><tbody id="qBody"></tbody></table></div>
       <div class="tb"><div style="text-align:right">
-        <div style="font-size:12px;color:var(--text2)">Jami summa</div>
+        <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label">Jami summa</div>
         <div class="ta" id="tAmt">$0</div>
         <div class="talt" id="tAlt"></div>
       </div></div>
@@ -1283,7 +1283,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <!-- QO'LDA MAHSULOT (KATALOGDA YO'Q) -->
     <div class="mq-wrap">
       <div class="mq-hd">
-        <div class="mq-ht">📦 Qo'lda mahsulot qo'shish <span style="font-size:11px;font-weight:400;color:var(--text3)">(katalogda yo'q mahsulotlar uchun)</span></div>
+        <div class="mq-ht">📦 <span data-i18n="h_manual">Qo'lda mahsulot qo'shish</span> <span style="font-size:11px;font-weight:400;color:var(--text3)" data-i18n="h_manual_sub">(katalogda yo'q mahsulotlar uchun)</span></div>
         <button class="mq-add" onclick="addMqRow()">+ Qo'shish</button>
       </div>
       <div class="mq-body">
@@ -1308,7 +1308,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <!-- XIZMATLAR BO'LIMI -->
     <div class="svc-wrap">
       <div class="svc-hd">
-        <div class="svc-ht">🔧 O'rnatish va Xizmatlar</div>
+        <div class="svc-ht">🔧 <span data-i18n="h_svc">O'rnatish va Xizmatlar</span></div>
         <button class="svc-add" onclick="addSvcRow()">+ Xizmat qo'shish</button>
       </div>
       <div class="svc-body">
@@ -1625,8 +1625,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     </div>
     <!-- Mijoz aloqa ma'lumotlari (agar kiritilmagan bo'lsa) -->
     <div id="shareContactBar" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-      <span style="font-size:12px;color:var(--text2)" data-i18n="share_to">Kimga yuborish:</span>
-      <input id="shareEmail" type="email" placeholder="email@example.com" data-i18n-ph="ph_email"
+      <span style="font-size:12px;color:var(--text2)" id="shareToLabel">Kimga yuborish:</span>
+      <input id="shareEmail" type="email" placeholder="email@example.com"
         style="flex:1;min-width:160px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none"
         onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
       <input id="sharePhone" type="tel" placeholder="+998 90 000 00 00"
@@ -3310,27 +3310,27 @@ function buildPreview(){
       </div>
     </div>
     <div style="text-align:right">
-      <div class="pbdg">Tijorat Taklifi</div>
+      <div class="pbdg">${LANG==='ru'?'Коммерческое предложение':LANG==='en'?'Commercial Proposal':'Tijorat Taklifi'}</div>
       <div style="font-size:12px;color:#8892a4;margin-top:6px">№ ${qNo}</div>
       <div style="font-size:12px;color:#8892a4">Sana: ${dt}</div>
     </div>
   </div>
   <div class="pmt">
-    <div><div class="pml">Kimga</div><div class="pmv"><strong>${clN}</strong>${clA?'<br>'+clA:''}${clP?'<br>'+clP:''}</div></div>
-    <div><div class="pml">Valyuta</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+' so\'m':'O\'zbek so\'mi (UZS)'}</div></div>
+    <div><div class="pml">${LANG==='ru'?'Кому':LANG==='en'?'To':'Kimga'}</div><div class="pmv"><strong>${clN}</strong>${clA?'<br>'+clA:''}${clP?'<br>'+clP:''}</div></div>
+    <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+' so\'m':'O\'zbek so\'mi (UZS)'}</div></div>
   </div>
-  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>Mahsulot</th><th>Miqdor</th><th class="nr">Narx</th><th class="nr">Jami</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">MAHSULOTLAR JAMI</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">So'mga ekvivalent</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">Mahsulot qo\'shilmagan</div>'}
+  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">So'mga ekvivalent</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">Mahsulot qo\'shilmagan</div>'}
   ${mqHtml}
   ${svcHtml}
   ${grandPreview>total&&(svcTotal2>0||mqTotal2>0)?`<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:13px;font-weight:600">UMUMIY JAMI</div>
+    <div style="font-size:13px;font-weight:600" id="grandTotalLabel">UMUMIY JAMI</div>
     <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
   </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)}</div>`:''}`:''}
   ${hddSec}
   ${warranty||quoteValidity||terms?`
   <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf4;font-size:12px;color:#555">
-    ${warranty?`<div style="margin-bottom:4px">🛡 <strong>Kafolat muddati:</strong> ${warranty}</div>`:''}
-    ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>Taklif amal qilish muddati:</strong> ${quoteValidity}</div>`:''}
+    ${warranty?`<div style="margin-bottom:4px">🛡 <strong>${LANG==='ru'?'Гарантийный срок:':LANG==='en'?'Warranty:':'Kafolat muddati:'}</strong> ${warranty}</div>`:''}
+    ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>${LANG==='ru'?'Срок действия предложения:':LANG==='en'?'Validity period:':'Taklif amal qilish muddati:'}</strong> ${quoteValidity}</div>`:''}
     ${terms?`<div style="margin-top:6px;color:#777;line-height:1.5">${terms}</div>`:''}
   </div>`:''}
   ${seal && sealOnPdf ? `
@@ -3338,7 +3338,7 @@ function buildPreview(){
     <img src="${seal}" style="max-width:140px;max-height:120px;object-fit:contain;opacity:0.92" alt="muhur">
     ${oCo?`<div style="font-size:10px;color:#8892a4;margin-top:6px">${oCo}</div>`:''}
   </div>` : ''}
-  <div class="pft"><div>Taklif ${dt} sanasida tayyorlangan</div><div>${oCo}${oPh?' · '+oPh:oEm?' · '+oEm:''}</div></div>`;
+  <div class="pft"><div>${LANG==='ru'?'Предложение подготовлено '+dt:LANG==='en'?'Proposal prepared '+dt:'Taklif '+dt+' sanasida tayyorlangan'}</div><div>${oCo}${oPh?' · '+oPh:oEm?' · '+oEm:''}</div></div>`;
   }catch(e){
     console.error('buildPreview xato:',e);
     const pvC=document.getElementById('pvC');
@@ -4280,6 +4280,12 @@ const I18N = {
     // Tablar
     terms_link: 'Foydalanish shartlari',
     terms_suffix: 'ga rozilik bildirasiz.',
+    sync_connected:'● Ulangan', sync_saving:'● Saqlanmoqda...', sync_error:'● Xato',
+    q_title:'Tijorat Taklifi', btn_clear_q:'Tozalash',
+    btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
+    q_empty:"Taklif bo'sh", q_empty_hint:"Katalogdan mahsulot qo'shing",
+    q_total_label:'Jami summa',
+    label_our_company:'KOMPANIYANGIZ', label_client:'MIJOZ',
     data_saved_note: "Sahifa yangilanganda ma'lumotlar saqlanadi",
     import_cat_hint: "Agar mahsulot kategoriyaga tushmasa — import paytida preview ko'rsatiladi va siz qo'lda tanlaysiz",
     err_fill_fields: "Barcha maydonlarni to'ldiring",
@@ -4405,6 +4411,12 @@ const I18N = {
   ru: {
     terms_link: 'Условиям использования',
     terms_suffix: ' я соглашаюсь.',
+    sync_connected:'● Подключено', sync_saving:'● Сохраняется...', sync_error:'● Ошибка',
+    q_title:'Коммерческое предложение', btn_clear_q:'Очистить',
+    btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
+    q_empty:'Предложение пусто', q_empty_hint:'Добавьте товары из каталога',
+    q_total_label:'Итого',
+    label_our_company:'НАША КОМПАНИЯ', label_client:'КЛИЕНТ',
     data_saved_note: 'Данные сохраняются при обновлении страницы',
     import_cat_hint: 'Если товар не определяется в категорию — при импорте будет показан предпросмотр для ручного выбора',
     err_fill_fields: 'Заполните все поля',
@@ -4501,6 +4513,12 @@ const I18N = {
   en: {
     terms_link: 'Terms of Service',
     terms_suffix: ', I agree.',
+    sync_connected:'● Connected', sync_saving:'● Saving...', sync_error:'● Error',
+    q_title:'Commercial Proposal', btn_clear_q:'Clear',
+    btn_view_print:'Preview & Print', btn_order:'Send order',
+    q_empty:'Proposal is empty', q_empty_hint:'Add products from catalog',
+    q_total_label:'Total',
+    label_our_company:'OUR COMPANY', label_client:'CLIENT',
     data_saved_note: 'Data is saved when page refreshes',
     import_cat_hint: 'If a product has no category — a preview will be shown during import for manual selection',
     err_fill_fields: 'Please fill all fields',
@@ -4695,12 +4713,35 @@ function setLang(lang) {
   });
 
   // 9. Qo'shimcha statik matnlar
+  // Taklif sahifasi
+  ['q_title','btn_clear_q','btn_view_print','btn_order',
+   'q_empty','q_empty_hint','q_total_label',
+   'label_our_company','label_client',
+   'h_manual','h_manual_sub','h_svc'].forEach(key => {
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el => {
+      const val = t(key); if(val) el.textContent = val;
+    });
+  });
+  //
   document.querySelectorAll('[data-i18n="data_saved_note"]').forEach(el=>el.textContent=t('data_saved_note'));
   document.querySelectorAll('[data-i18n="import_cat_hint"]').forEach(el=>el.textContent=t('import_cat_hint'));
   document.querySelectorAll('[data-i18n="sidebar_prices"]').forEach(el=>el.textContent=t('sidebar_prices'));
   document.querySelectorAll('[data-i18n="sidebar_ai"]').forEach(el=>el.textContent=t('sidebar_ai'));
   document.querySelectorAll('[data-i18n="sidebar_upload"]').forEach(el=>el.textContent=t('sidebar_upload'));
   document.querySelectorAll('[data-i18n="sidebar_format"]').forEach(el=>el.textContent=t('sidebar_format'));
+
+  // Share to label
+  const shareToLbl = document.getElementById('shareToLabel');
+  if(shareToLbl) shareToLbl.textContent = t('share_to');
+  // Email placeholder
+  const shareEmailInp = document.getElementById('shareEmail');
+  if(shareEmailInp) shareEmailInp.placeholder = lang==='uz'?'email@example.com':lang==='ru'?'email@example.com':'email@example.com';
+  // Grand total label
+  const grandLbl = document.getElementById('grandTotalLabel');
+  if(grandLbl) grandLbl.textContent = lang==='ru'?'ИТОГО':lang==='en'?'GRAND TOTAL':'UMUMIY JAMI';
+  // Sync indicator
+  const syncEl = document.getElementById('syncIndicator');
+  if(syncEl && syncEl.textContent.includes('Ulangan')) syncEl.textContent = t('sync_connected');
 
   // 10. Dinamik UI qayta render
   if(typeof renderCats==='function') renderCats();
