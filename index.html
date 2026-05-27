@@ -1393,16 +1393,16 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           </div>
         </div>
         <div class="hr2">
-          <div class="hrt">Natija</div>
+          <div class="hrt" id="hResultLabel" data-i18n="hdd_result">NATIJA</div>
           <div style="display:flex;align-items:baseline;gap:3px">
             <div class="hbig" id="hddTB">0.00</div>
             <div class="hbig-u">TB</div>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:-4px" id="hddGB"></div>
           <div class="hrws">
-            <div class="hrw"><span class="hrl">Kunlik</span><span class="hrv" id="hDay">—</span></div>
-            <div class="hrw"><span class="hrl">Haftalik</span><span class="hrv" id="hWeek">—</span></div>
-            <div class="hrw"><span class="hrl">Oylik (30 kun)</span><span class="hrv hi2" id="hMonth">—</span></div>
+            <div class="hrw"><span class="hrl" id="hLDay" data-i18n="hdd_daily">Kunlik</span><span class="hrv" id="hDay">—</span></div>
+            <div class="hrw"><span class="hrl" id="hLWeek" data-i18n="hdd_weekly">Haftalik</span><span class="hrv" id="hWeek">—</span></div>
+            <div class="hrw"><span class="hrl" id="hLMonth" data-i18n="hdd_monthly">Oylik (30 kun)</span><span class="hrv hi2" id="hMonth">—</span></div>
             <div class="hrw"><span class="hrl" data-i18n="hdd_cams_result">Kameralar</span><span class="hrv" id="hCC">—</span></div>
             <div class="hrw"><span class="hrl" data-i18n="hdd_archive_result">Arxiv muddati</span><span class="hrv" id="hDD">—</span></div>
           </div>
@@ -3221,16 +3221,40 @@ function calcHDD(){
   document.querySelectorAll('[data-i18n="hdd_cams_result"]').forEach(el=>el.textContent=t('hdd_cams_result'));
   document.querySelectorAll('[data-i18n="hdd_archive_result"]').forEach(el=>el.textContent=t('hdd_archive_result'));
   const needed=tbTotal;
+  const _ok=LANG==='ru'?'достаточно':LANG==='en'?'sufficient':'yetarli';
+  const _rec=LANG==='ru'?'рекомендуется':LANG==='en'?'recommended':'tavsiya';
+  const _or=LANG==='ru'?' или ':LANG==='en'?' or ':' yoki ';
+  const _raid=LANG==='ru'?'RAID система':LANG==='en'?'RAID system':'RAID tizimi';
   let rec='';
-  if(needed<=2)rec='✅ 2 TB HDD yetarli';
-  else if(needed<=4)rec='✅ 4 TB HDD yetarli';
-  else if(needed<=8)rec='✅ 8 TB HDD tavsiya';
-  else if(needed<=16)rec='⚡ 2×8 TB yoki 16 TB HDD';
-  else if(needed<=32)rec='⚡ 4×8 TB RAID tizimi';
+  if(needed<=2)rec='✅ 2 TB HDD '+_ok;
+  else if(needed<=4)rec='✅ 4 TB HDD '+_ok;
+  else if(needed<=8)rec='✅ 8 TB HDD '+_rec;
+  else if(needed<=16)rec='⚡ 2×8 TB'+_or+'16 TB HDD';
+  else if(needed<=32)rec='⚡ 4×8 TB '+_raid;
   else rec='⚡ NAS/RAID — '+Math.ceil(needed/8)+'×8 TB disk';
   const tavsiyaWord = LANG==='ru'?'Рекомендация:':LANG==='en'?'Recommendation:':'Tavsiya:';
   const zapasWord = LANG==='ru'?'(добавьте 10-15% запас)':LANG==='en'?'(add 10-15% margin)':'(10-15% zapas qo\'shing)';
   document.getElementById('hRec').innerHTML='<strong>'+tavsiyaWord+'</strong> '+rec+' '+zapasWord;
+  // Natija labellarni tilga moslashtirish
+  const _rl = document.getElementById('hResultLabel');
+  if(_rl) _rl.textContent = LANG==='ru'?'РЕЗУЛЬТАТ':LANG==='en'?'RESULT':'NATIJA';
+  const _ld = document.getElementById('hLDay');
+  if(_ld) _ld.textContent = LANG==='ru'?'Суточно':LANG==='en'?'Daily':'Kunlik';
+  const _lw = document.getElementById('hLWeek');
+  if(_lw) _lw.textContent = LANG==='ru'?'Еженедельно':LANG==='en'?'Weekly':'Haftalik';
+  const _lm = document.getElementById('hLMonth');
+  if(_lm) _lm.textContent = LANG==='ru'?'Ежемесячно (30 дн)':LANG==='en'?'Monthly (30 days)':'Oylik (30 kun)';
+  const _lc = document.getElementById('hCC');
+  const _la = document.getElementById('hDD');
+  // Kamera va arxiv unit
+  const _cu = LANG==='ru'?' шт':LANG==='en'?' pcs':' ta';
+  const _du = LANG==='ru'?' дн':LANG==='en'?' days':' kun';
+  if(_lc && _lc.textContent && /\d/.test(_lc.textContent)){
+    _lc.textContent = _lc.textContent.replace(/\s*(ta|шт|pcs)$/,'') + _cu;
+  }
+  if(_la && _la.textContent && /\d/.test(_la.textContent)){
+    _la.textContent = _la.textContent.replace(/\s*(kun|дн|days)$/,'') + _du;
+  }
 }
 
 // PREVIEW
@@ -4872,6 +4896,8 @@ function setLang(lang) {
   if(typeof renderList==='function') renderList();
   if(typeof renderQ==='function') renderQ();
   if(typeof updateDataStatus==='function') updateDataStatus();
+  // HDD kalkulyator labellarni qayta render
+  if(typeof calcHDD==='function') calcHDD();
 
   const toast = lang==='uz' ? "🇺🇿 O'zbek tili" : lang==='ru' ? '🇷🇺 Русский язык' : '🇬🇧 English';
   if(typeof showToast==='function') showToast(toast);
