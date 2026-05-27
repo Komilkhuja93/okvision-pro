@@ -785,6 +785,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 
 
 /* ═══ AUTH SAHIFASI ════════════════════════════════════════════════════ */
+.auth-lang-btn-active{
+  background:var(--accent)!important;
+  color:#0a0c10!important;
+  border-color:var(--accent)!important;
+}
 .auth-overlay{position:fixed;inset:0;z-index:9000;background:var(--bg);
   display:flex;align-items:center;justify-content:center;padding:20px}
 .auth-box{width:100%;max-width:420px;background:var(--surface);
@@ -855,6 +860,57 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .user-menu-item.danger:hover{background:rgba(255,71,87,.1)}
 .sync-indicator{font-size:10px;color:var(--green);display:flex;align-items:center;gap:4px}
 .sync-indicator.syncing{color:var(--amber)}
+
+
+/* ═══ PROFIL MODALI ════════════════════════════════════════════════════════ */
+.prof-overlay{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px}
+.prof-overlay.show{display:flex}
+.prof-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;
+  width:100%;max-width:560px;max-height:90vh;overflow-y:auto;
+  box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.prof-hd{padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;
+  background:var(--surface);z-index:1}
+.prof-title{font-family:var(--fh);font-size:17px;font-weight:700}
+.prof-body{padding:24px}
+.prof-avatar-wrap{display:flex;align-items:center;gap:16px;margin-bottom:24px;
+  padding-bottom:20px;border-bottom:1px solid var(--border)}
+.prof-avatar-big{width:72px;height:72px;border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;
+  color:#0a0c10;flex-shrink:0;position:relative;cursor:pointer;overflow:hidden}
+.prof-avatar-big img{width:100%;height:100%;object-fit:cover}
+.prof-avatar-big:hover::after{content:'📷';position:absolute;inset:0;background:rgba(0,0,0,.5);
+  display:flex;align-items:center;justify-content:center;font-size:24px}
+.prof-avatar-info{flex:1}
+.prof-avatar-name{font-size:16px;font-weight:700;color:var(--text)}
+.prof-avatar-email{font-size:12px;color:var(--text3);margin-top:2px}
+.prof-avatar-plan{display:inline-block;font-size:11px;background:rgba(0,212,255,.1);
+  color:var(--accent);border-radius:5px;padding:2px 8px;font-weight:700;margin-top:5px}
+.prof-section{margin-bottom:20px}
+.prof-section-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--text3);margin-bottom:12px;display:flex;align-items:center;gap:6px}
+.prof-field{margin-bottom:12px}
+.prof-label{font-size:11px;font-weight:600;color:var(--text3);margin-bottom:5px;
+  text-transform:uppercase;letter-spacing:.04em}
+.prof-input{width:100%;padding:10px 13px;border-radius:9px;
+  background:var(--bg);border:1.5px solid var(--border);
+  color:var(--text);font-size:14px;font-family:var(--fb);outline:none;transition:.15s}
+.prof-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,212,255,.1)}
+.prof-seal-wrap{border:2px dashed var(--border2);border-radius:12px;
+  padding:16px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.prof-seal-wrap:hover{border-color:var(--accent);background:rgba(0,212,255,.04)}
+.prof-seal-img{max-width:160px;max-height:80px;object-fit:contain;margin:0 auto;display:block}
+.prof-seal-hint{font-size:12px;color:var(--text3);margin-top:4px}
+.prof-save-btn{width:100%;padding:13px;border-radius:10px;border:none;
+  background:linear-gradient(135deg,var(--accent),#0080ff);
+  color:#0a0c10;font-size:15px;font-weight:800;cursor:pointer;
+  font-family:var(--fb);transition:.2s;margin-top:8px;
+  box-shadow:0 4px 20px rgba(0,212,255,.25)}
+.prof-save-btn:hover{transform:translateY(-1px)}
+.prof-close-btn{width:30px;height:30px;border-radius:8px;background:var(--surface2);
+  border:1px solid var(--border2);color:var(--text2);cursor:pointer;
+  font-size:17px;display:flex;align-items:center;justify-content:center}
 
 </style>
 </head>
@@ -3178,14 +3234,26 @@ function buildPreview(){
   const grandPreview=total+svcTotal2+mqTotal2;
   const qNo='TT-'+Date.now().toString().slice(-6);
 
+  // Profil ma'lumotlarini olish
+  const prof = currentProfile || JSON.parse(localStorage.getItem('okvProfile')||'{}');
+  const warranty = prof.warranty || '12 oy (1 yil)';
+  const quoteValidity = prof.quote_validity || '30 kun';
+  const terms = prof.terms || '';
+  const website = prof.website || '';
+  const sealOnPdf = document.getElementById('profSealOnPdf')?.checked !== false;
+  const seal = sealDataUrl || localStorage.getItem('okvSeal');
+
   pvC.innerHTML=`
   <div class="pt2">
-    <div>
-      <div style="font-size:20px;font-weight:800;color:#0a0c10;font-family:'Inter',sans-serif">${oCo}</div>
-      <div style="font-size:11px;color:#8892a4;margin-top:1px">Kamera va kuzatuv tizimlari · O'zbekiston</div>
-      ${oAd?`<div style="font-size:12px;color:#8892a4;margin-top:3px">${oAd}</div>`:''}
-      ${oPh?`<div style="font-size:12px;color:#8892a4">${oPh}</div>`:''}
-      ${oEm?`<div style="font-size:12px;color:#8892a4">${oEm}</div>`:''}
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      ${seal && sealOnPdf ? `<img src="${seal}" style="width:70px;height:70px;object-fit:contain;flex-shrink:0" alt="muhur">` : ''}
+      <div>
+        <div style="font-size:20px;font-weight:800;color:#0a0c10;font-family:'Inter',sans-serif">${oCo}</div>
+        ${oAd?`<div style="font-size:12px;color:#8892a4;margin-top:3px">${oAd}</div>`:''}
+        ${oPh?`<div style="font-size:12px;color:#8892a4">${oPh}</div>`:''}
+        ${oEm?`<div style="font-size:12px;color:#8892a4">${oEm}</div>`:''}
+        ${website?`<div style="font-size:12px;color:#8892a4">${website}</div>`:''}
+      </div>
     </div>
     <div style="text-align:right">
       <div class="pbdg">Tijorat Taklifi</div>
@@ -3205,6 +3273,12 @@ function buildPreview(){
     <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
   </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)}</div>`:''}`:''}
   ${hddSec}
+  ${warranty||quoteValidity||terms?`
+  <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf4;font-size:12px;color:#555">
+    ${warranty?`<div style="margin-bottom:4px">🛡 <strong>Kafolat muddati:</strong> ${warranty}</div>`:''}
+    ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>Taklif amal qilish muddati:</strong> ${quoteValidity}</div>`:''}
+    ${terms?`<div style="margin-top:6px;color:#777;line-height:1.5">${terms}</div>`:''}
+  </div>`:''}
   <div class="pft"><div>Taklif ${dt} sanasida tayyorlangan</div><div>${oCo}${oPh?' · '+oPh:oEm?' · '+oEm:''}</div></div>`;
   }catch(e){
     console.error('buildPreview xato:',e);
@@ -5101,6 +5175,41 @@ function deleteCmCat(cat){
       <div class="auth-logo-ic">📹</div>
       <div class="auth-logo-text">OKVISION <span>Pro</span></div>
     </div>
+    <!-- Til tanlash auth da — dropdown -->
+    <div style="display:flex;justify-content:flex-end;margin-bottom:16px;position:relative" id="authLangWrap">
+      <button onclick="toggleAuthLangDrop()" id="authLangBtn"
+        style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:8px;
+               border:1px solid var(--border2);background:var(--surface2);color:var(--text);
+               font-size:13px;font-weight:600;cursor:pointer;transition:.15s">
+        <span id="authLangFlag">🇺🇿</span>
+        <span id="authLangName">O'zbek</span>
+        <span style="font-size:10px;color:var(--text3)">▾</span>
+      </button>
+      <div id="authLangDrop"
+        style="display:none;position:absolute;top:calc(100% + 6px);right:0;
+               background:var(--surface);border:1px solid var(--border2);
+               border-radius:10px;overflow:hidden;min-width:150px;
+               box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:10">
+        <button onclick="setAuthLang('uz')" id="alb-uz"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;
+                 border:none;background:none;color:var(--text);font-size:13px;cursor:pointer;
+                 text-align:left;transition:.12s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+          🇺🇿 <span>O'zbek tili</span>
+        </button>
+        <button onclick="setAuthLang('ru')" id="alb-ru"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;
+                 border:none;background:none;color:var(--text);font-size:13px;cursor:pointer;
+                 text-align:left;transition:.12s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+          🇷🇺 <span>Русский язык</span>
+        </button>
+        <button onclick="setAuthLang('en')" id="alb-en"
+          style="width:100%;display:flex;align-items:center;gap:10px;padding:10px 14px;
+                 border:none;background:none;color:var(--text);font-size:13px;cursor:pointer;
+                 text-align:left;transition:.12s" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+          🇬🇧 <span>English</span>
+        </button>
+      </div>
+    </div>
     <div class="auth-tabs">
       <button class="auth-tab active" id="atLogin" onclick="switchAuthTab('login')">Kirish</button>
       <button class="auth-tab" id="atReg" onclick="switchAuthTab('register')">Ro'yxatdan o'tish</button>
@@ -5164,6 +5273,126 @@ function deleteCmCat(cat){
 </div>
 
 <script>
+
+// ══ PROFIL TIZIMI ══════════════════════════════════════════════════════════
+let sealDataUrl = localStorage.getItem('okvSeal') || null;
+let avatarDataUrl = localStorage.getItem('okvAvatar') || null;
+
+function openProfileModal(){
+  document.getElementById('userMenu')?.classList.remove('show');
+  const modal = document.getElementById('profileModal');
+  if(!modal) return;
+
+  // Ma'lumotlarni to'ldirish
+  const p = currentProfile || {};
+  document.getElementById('profName').value      = p.full_name || '';
+  document.getElementById('profPhone').value     = p.phone || '';
+  document.getElementById('profCompany').value   = p.company_name || '';
+  document.getElementById('profAddress').value   = p.company_address || '';
+  document.getElementById('profEmail').value     = p.company_email || '';
+  document.getElementById('profWebsite').value   = p.website || '';
+  document.getElementById('profWarranty').value  = p.warranty || '12 oy (1 yil)';
+  document.getElementById('profQuoteValidity').value = p.quote_validity || '30 kun';
+  document.getElementById('profTerms').value     = p.terms || '';
+  document.getElementById('profAvatarName').textContent  = p.full_name || currentUser?.email?.split('@')[0] || '—';
+  document.getElementById('profAvatarEmail').textContent = currentUser?.email || '—';
+  document.getElementById('profAvatarPlan').textContent  = (p.plan||'FREE').toUpperCase();
+  const initials = (p.full_name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('profAvatarInitials').textContent = initials;
+
+  // Avatar
+  if(avatarDataUrl){
+    document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
+  }
+  // Seal
+  updateSealPreview();
+
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProfileModal(){
+  document.getElementById('profileModal')?.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function handleAvatarUpload(inp){
+  const file = inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    avatarDataUrl = e.target.result;
+    localStorage.setItem('okvAvatar', avatarDataUrl);
+    document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
+    // Topbardagi avatar ham yangilash
+    updateUserUI();
+    showToast('🖼 Avatar saqlandi');
+  };
+  reader.readAsDataURL(file);
+}
+
+function handleSealUpload(inp){
+  const file = inp.files[0]; if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    sealDataUrl = e.target.result;
+    localStorage.setItem('okvSeal', sealDataUrl);
+    updateSealPreview();
+    showToast('🔏 Muhur saqlandi');
+  };
+  reader.readAsDataURL(file);
+}
+
+function updateSealPreview(){
+  const wrap = document.getElementById('profSealPreview');
+  if(!wrap) return;
+  if(sealDataUrl){
+    wrap.innerHTML = `<img src="${sealDataUrl}" class="prof-seal-img" alt="seal"><div class="prof-seal-hint" style="margin-top:6px">✅ Muhur yuklangan · bosib o'zgartiring</div>`;
+  }
+}
+
+function removeSeal(){
+  sealDataUrl = null;
+  localStorage.removeItem('okvSeal');
+  document.getElementById('profSealPreview').innerHTML = `<div style="font-size:32px;margin-bottom:6px">🔏</div><div class="prof-seal-hint">Muhur yoki logotip rasmini yuklang</div>`;
+  showToast("🗑 Muhur o'chirildi");
+}
+
+async function saveProfile(){
+  const profile = {
+    full_name:       document.getElementById('profName').value.trim(),
+    phone:           document.getElementById('profPhone').value.trim(),
+    company_name:    document.getElementById('profCompany').value.trim(),
+    company_address: document.getElementById('profAddress').value.trim(),
+    company_email:   document.getElementById('profEmail').value.trim(),
+    website:         document.getElementById('profWebsite').value.trim(),
+    warranty:        document.getElementById('profWarranty').value.trim(),
+    quote_validity:  document.getElementById('profQuoteValidity').value.trim(),
+    terms:           document.getElementById('profTerms').value.trim(),
+    updated_at:      new Date().toISOString(),
+  };
+
+  // Supabase ga saqlash
+  const sb = getSB();
+  if(sb && currentUser){
+    const { error } = await sb.from('profiles').update(profile).eq('id', currentUser.id);
+    if(error){ showToast('❌ Xato: ' + error.message); return; }
+    currentProfile = { ...currentProfile, ...profile };
+  }
+
+  // localStorage ga ham saqlash (offline uchun)
+  localStorage.setItem('okvProfile', JSON.stringify(profile));
+
+  // Taklif sahifasidagi maydonlarni avtomatik to'ldirish
+  if(profile.company_name){ const el=document.getElementById('oCo'); if(el) el.value=profile.company_name; }
+  if(profile.company_address){ const el=document.getElementById('oAd'); if(el) el.value=profile.company_address; }
+  if(profile.phone){ const el=document.getElementById('oPh'); if(el) el.value=profile.phone; }
+  if(profile.company_email){ const el=document.getElementById('oEm'); if(el) el.value=profile.company_email; }
+
+  updateUserUI();
+  closeProfileModal();
+  showToast('✅ Profil saqlandi');
+}
+
 // ══ SUPABASE AUTH TIZIMI ══════════════════════════════════════════════════
 const SUPABASE_URL = 'https://eieygoljglkgnxcdhjea.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_P6mPl9e6dgbgDwCAC49GXQ_3lzGM94H';
@@ -5185,7 +5414,16 @@ function getSB(){
 }
 
 // ── Auth sahifasini boshqarish ────────────────────────────────────────────
-function showAuthOverlay(){ document.getElementById('authOverlay').style.display='flex'; }
+function showAuthOverlay(){
+  document.getElementById('authOverlay').style.display='flex';
+  // Hozirgi tilni faollashtirish
+  const curLang = localStorage.getItem('okvLang')||'uz';
+  ['uz','ru','en'].forEach(l=>{
+    const btn=document.getElementById('alb-'+l);
+    if(btn) btn.classList.toggle('auth-lang-btn-active', l===curLang);
+  });
+  setAuthLang(curLang);
+}
 function hideAuthOverlay(){ document.getElementById('authOverlay').style.display='none'; }
 
 function switchAuthTab(tab){
@@ -5311,6 +5549,30 @@ async function onUserLogin(user){
 
   const name = currentProfile?.full_name || user.email?.split('@')[0] || '';
   showToast(`👋 Xush kelibsiz${name ? ', ' + name : ''}!`);
+
+  // Profildan kompaniya ma'lumotlarini taklif sahifasiga yuklash
+  if(currentProfile){
+    if(currentProfile.company_name){
+      const oCo = document.getElementById('oCo');
+      if(oCo && !oCo.value) oCo.value = currentProfile.company_name;
+    }
+    if(currentProfile.company_address){
+      const oAd = document.getElementById('oAd');
+      if(oAd && !oAd.value) oAd.value = currentProfile.company_address;
+    }
+    if(currentProfile.phone){
+      const oPh = document.getElementById('oPh');
+      if(oPh && !oPh.value) oPh.value = currentProfile.phone;
+    }
+    if(currentProfile.email || currentProfile.email_addr){
+      const oEm = document.getElementById('oEm');
+      if(oEm && !oEm.value) oEm.value = currentProfile.email || currentProfile.email_addr || '';
+    }
+  }
+
+  // Tilni qayta qo'llash (login keyin elementlar tayyor)
+  const savedLang = localStorage.getItem('okvLang') || 'uz';
+  if(savedLang !== 'uz' && typeof setLang === 'function') setLang(savedLang);
 }
 
 // ── Profil yuklash ────────────────────────────────────────────────────────
@@ -5325,7 +5587,13 @@ function updateUserUI(){
   if(!currentUser){ document.getElementById('userPill').style.display='none'; return; }
   const name = currentProfile?.full_name || currentUser.email?.split('@')[0] || 'User';
   const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('userAvatar').textContent = initials;
+  const av = avatarDataUrl || localStorage.getItem('okvAvatar');
+  const avatarEl = document.getElementById('userAvatar');
+  if(av && avatarEl){
+    avatarEl.innerHTML = `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" alt="avatar">`;
+  } else if(avatarEl){
+    avatarEl.textContent = initials;
+  }
   document.getElementById('userName').textContent = name.split(' ')[0];
   document.getElementById('menuUserName').textContent = name;
   document.getElementById('menuUserEmail').textContent = currentUser.email;
@@ -5498,6 +5766,110 @@ function applyAuthI18n(){
   if(div) div.textContent = tx('or');
 }
 
+
+// ══ AUTH TILINI O'ZGARTIRISH
+function toggleAuthLangDrop(){
+  const drop = document.getElementById('authLangDrop');
+  if(drop) drop.style.display = drop.style.display==='none' ? 'block' : 'none';
+}
+document.addEventListener('click', e=>{
+  if(!e.target.closest('#authLangWrap')){
+    const drop = document.getElementById('authLangDrop');
+    if(drop) drop.style.display='none';
+  }
+});
+function setAuthLang(lang){
+  LANG = lang;
+  localStorage.setItem('okvLang', lang);
+
+  const TEXTS = {
+    uz: {
+      btn_login:"Kirish", tab_register:"Ro'yxatdan o'tish",
+      login_title:"Xush kelibsiz!", login_sub:"Hisobingizga kiring",
+      btn_login_do:"Kirish", label_email:"EMAIL", label_password:"PAROL",
+      ph_email:"siz@example.com", ph_password:"••••••••",
+      btn_google:"Google bilan kirish", or:"yoki",
+      no_account:"Hisobingiz yo'qmi? Ro'yxatdan o'ting \u2192",
+      forgot_pass:"Parolni unutdim",
+      reg_title:"Hisob yarating", reg_sub:"Bepul boshlang \u2014 kredit karta shart emas",
+      btn_register:"Ro'yxatdan o'tish",
+      label_name:"ISM FAMILIYA", label_company:"KOMPANIYA",
+      ph_fullname:"To'liq ismingiz", ph_company:"Kompaniya nomi (ixtiyoriy)",
+      ph_password_min:"Kamida 8 ta belgi",
+      flag:"🇺🇿", name:"O'zbek"
+    },
+    ru: {
+      btn_login:"Войти", tab_register:"Регистрация",
+      login_title:"Добро пожаловать!", login_sub:"Войдите в аккаунт",
+      btn_login_do:"Войти", label_email:"EMAIL", label_password:"\u041f\u0410\u0420\u041e\u041b\u042c",
+      ph_email:"you@example.com", ph_password:"••••••••",
+      btn_google:"Войти через Google", or:"или",
+      no_account:"Нет аккаунта? Зарегистрируйтесь \u2192",
+      forgot_pass:"Забыл пароль",
+      reg_title:"Создать аккаунт", reg_sub:"Начните бесплатно \u2014 карта не нужна",
+      btn_register:"Зарегистрироваться",
+      label_name:"\u0424\u0418\u041e", label_company:"\u041a\u041e\u041c\u041f\u0410\u041d\u0418\u042f",
+      ph_fullname:"Имя и фамилия", ph_company:"Название компании (необязательно)",
+      ph_password_min:"Минимум 8 символов",
+      flag:"🇷🇺", name:"Русский"
+    },
+    en: {
+      btn_login:"Sign in", tab_register:"Sign up",
+      login_title:"Welcome back!", login_sub:"Sign in to your account",
+      btn_login_do:"Sign in", label_email:"EMAIL", label_password:"PASSWORD",
+      ph_email:"you@example.com", ph_password:"••••••••",
+      btn_google:"Continue with Google", or:"or",
+      no_account:"No account? Sign up \u2192",
+      forgot_pass:"Forgot password",
+      reg_title:"Create account", reg_sub:"Start free \u2014 no credit card needed",
+      btn_register:"Create account",
+      label_name:"FULL NAME", label_company:"COMPANY",
+      ph_fullname:"Your full name", ph_company:"Company name (optional)",
+      ph_password_min:"At least 8 characters",
+      flag:"🇬🇧", name:"English"
+    }
+  };
+
+  const T = TEXTS[lang] || TEXTS.uz;
+
+  const atL=document.getElementById('atLogin'); if(atL) atL.textContent=T.btn_login;
+  const atR=document.getElementById('atReg');   if(atR) atR.textContent=T.tab_register;
+  const lt=document.querySelector('#authLogin .auth-title'); if(lt) lt.textContent=T.login_title;
+  const ls=document.querySelector('#authLogin .auth-sub');   if(ls) ls.textContent=T.login_sub;
+  const lb=document.getElementById('loginBtn'); if(lb&&!lb.disabled) lb.textContent=T.btn_login_do;
+  const ae=document.getElementById('authEmail'); if(ae) ae.placeholder=T.ph_email;
+  const ap=document.getElementById('authPass');  if(ap) ap.placeholder=T.ph_password;
+  const dv=document.querySelector('#authLogin .auth-divider span'); if(dv) dv.textContent=T.or;
+  const gb=document.getElementById('googleLoginBtn'); if(gb) gb.innerHTML='🌐 '+T.btn_google;
+  const na=document.querySelector('#authLogin .auth-note a:first-child'); if(na) na.textContent=T.no_account;
+  const fp=document.querySelector('#authLogin .auth-note a:last-child'); if(fp) fp.textContent=T.forgot_pass;
+  const ll=document.querySelectorAll('#authLogin .auth-label');
+  if(ll[0]) ll[0].textContent=T.label_email;
+  if(ll[1]) ll[1].textContent=T.label_password;
+
+  const rt=document.querySelector('#authRegister .auth-title'); if(rt) rt.textContent=T.reg_title;
+  const rs=document.querySelector('#authRegister .auth-sub');   if(rs) rs.textContent=T.reg_sub;
+  const rb=document.getElementById('registerBtn'); if(rb&&!rb.disabled) rb.textContent=T.btn_register;
+  const an=document.getElementById('authName');      if(an) an.placeholder=T.ph_fullname;
+  const ac=document.getElementById('authCompany');   if(ac) ac.placeholder=T.ph_company;
+  const are=document.getElementById('authRegEmail'); if(are) are.placeholder=T.ph_email;
+  const arp=document.getElementById('authRegPass');  if(arp) arp.placeholder=T.ph_password_min;
+  const rl=document.querySelectorAll('#authRegister .auth-label');
+  if(rl[0]) rl[0].textContent=T.label_name;
+  if(rl[1]) rl[1].textContent=T.label_company;
+  if(rl[2]) rl[2].textContent=T.label_email;
+  if(rl[3]) rl[3].textContent=T.label_password;
+
+  const flagEl=document.getElementById('authLangFlag'); if(flagEl) flagEl.textContent=T.flag;
+  const nameEl=document.getElementById('authLangName'); if(nameEl) nameEl.textContent=T.name;
+  ['uz','ru','en'].forEach(l=>{
+    const btn=document.getElementById('alb-'+l);
+    if(btn){ btn.style.background=l===lang?'var(--surface2)':''; btn.style.fontWeight=l===lang?'700':'400'; }
+  });
+  const drop=document.getElementById('authLangDrop');
+  if(drop) drop.style.display='none';
+}
+
 // ── AUTH INIT ─────────────────────────────────────────────────────────────
 async function initAuth(){
   const sb = getSB();
@@ -5529,5 +5901,103 @@ document.addEventListener('DOMContentLoaded', ()=>{
   initAuth();
 });
 </script>
+
+<!-- ══ PROFIL MODAL ══════════════════════════════════════════════════════ -->
+<div id="profileModal" class="prof-overlay" onclick="if(event.target===this)closeProfileModal()">
+  <div class="prof-box">
+    <div class="prof-hd">
+      <div class="prof-title">👤 Profil sozlamalari</div>
+      <button class="prof-close-btn" onclick="closeProfileModal()">✕</button>
+    </div>
+    <div class="prof-body">
+
+      <!-- Avatar -->
+      <div class="prof-avatar-wrap">
+        <div class="prof-avatar-big" id="profAvatarBig" onclick="document.getElementById('avatarFileInp').click()">
+          <span id="profAvatarInitials">U</span>
+        </div>
+        <input type="file" id="avatarFileInp" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
+        <div class="prof-avatar-info">
+          <div class="prof-avatar-name" id="profAvatarName">—</div>
+          <div class="prof-avatar-email" id="profAvatarEmail">—</div>
+          <span class="prof-avatar-plan" id="profAvatarPlan">FREE</span>
+        </div>
+      </div>
+
+      <!-- Shaxsiy ma'lumotlar -->
+      <div class="prof-section">
+        <div class="prof-section-title">👤 Shaxsiy ma'lumotlar</div>
+        <div class="prof-field">
+          <div class="prof-label">ISM FAMILIYA</div>
+          <input class="prof-input" type="text" id="profName" placeholder="To'liq ismingiz">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">TELEFON</div>
+          <input class="prof-input" type="tel" id="profPhone" placeholder="+998 90 000 00 00">
+        </div>
+      </div>
+
+      <!-- Kompaniya -->
+      <div class="prof-section">
+        <div class="prof-section-title">🏢 Kompaniya ma'lumotlari</div>
+        <div class="prof-field">
+          <div class="prof-label">KOMPANIYA NOMI</div>
+          <input class="prof-input" type="text" id="profCompany" placeholder="MChJ «TechVision UZ»">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">MANZIL</div>
+          <input class="prof-input" type="text" id="profAddress" placeholder="Toshkent, Yunusobod tumani">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">EMAIL</div>
+          <input class="prof-input" type="email" id="profEmail" placeholder="info@company.uz">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">WEB SAYT</div>
+          <input class="prof-input" type="text" id="profWebsite" placeholder="www.company.uz">
+        </div>
+      </div>
+
+      <!-- Kafolat -->
+      <div class="prof-section">
+        <div class="prof-section-title">🛡 Kafolat va shartlar</div>
+        <div class="prof-field">
+          <div class="prof-label">KAFOLAT MUDDATI</div>
+          <input class="prof-input" type="text" id="profWarranty" placeholder="12 oy (1 yil)">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">TAKLIF AMAL QILISH MUDDATI</div>
+          <input class="prof-input" type="text" id="profQuoteValidity" placeholder="30 kun">
+        </div>
+        <div class="prof-field">
+          <div class="prof-label">QO'SHIMCHA SHARTLAR</div>
+          <textarea class="prof-input" id="profTerms" rows="3" placeholder="To'lov shartlari, montaj xizmati va boshqa muhim shartlar..." style="resize:vertical;line-height:1.5"></textarea>
+        </div>
+      </div>
+
+      <!-- Pechat / Muhur -->
+      <div class="prof-section">
+        <div class="prof-section-title">🔏 Kompaniya muhuri / logotipi</div>
+        <div class="prof-seal-wrap" onclick="document.getElementById('sealFileInp').click()" id="profSealWrap">
+          <div id="profSealPreview">
+            <div style="font-size:32px;margin-bottom:6px">🔏</div>
+            <div class="prof-seal-hint">Muhur yoki logotip rasmini yuklang<br><span style="font-size:11px;color:var(--text3)">PNG, JPG · Shaffof fon tavsiya etiladi</span></div>
+          </div>
+        </div>
+        <input type="file" id="sealFileInp" accept="image/*" style="display:none" onchange="handleSealUpload(this)">
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);cursor:pointer">
+            <input type="checkbox" id="profSealOnPdf" checked style="accent-color:var(--accent)">
+            PDF da ko'rsatish
+          </label>
+          <button onclick="removeSeal()" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0">🗑 O'chirish</button>
+        </div>
+      </div>
+
+      <button class="prof-save-btn" onclick="saveProfile()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
