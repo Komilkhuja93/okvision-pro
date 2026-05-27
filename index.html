@@ -2794,6 +2794,15 @@ function importSimple(wb, supplierHint, sheetImages={}){
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
+
+// Kategoriya nomini tarjima qilish
+function transCat(cat){
+  if(!cat) return cat;
+  if(typeof LANG==="undefined"||LANG==="uz") return cat;
+  const ru={"IP Kamera":"IP-u043au0430u043cu0435u0440u0430","Analog Kamera":"u0410u043du0430u043bu043eu0433u043eu0432u0430u044f u043au0430u043cu0435u0440u0430","PTZ Kamera":"PTZ-u043au0430u043cu0435u0440u0430","NVR / DVR":"NVR / DVR","Kirish nazorati":"u041au043eu043du0442u0440u043eu043bu044c u0434u043eu0441u0442u0443u043fu0430","Tarmoq qurilmasi":"u0421u0435u0442u0435u0432u043eu0435 u043eu0431u043eu0440u0443u0434u043eu0432u0430u043du0438u0435","HDD / Xotira":"HDD / u041fu0430u043cu044fu0442u044c","Optika / Kabel":"u041eu043fu0442u0438u043au0430 / u041au0430u0431u0435u043bu044c","Yong'in xavfsizligi":"u041fu043eu0436u0430u0440u043du0430u044f u0431u0435u0437u043eu043fu0430u0441u043du043eu0441u0442u044c","Ogohlantirish":"u041eu043fu043eu0432u0435u0449u0435u043du0438u0435","Aksessuar":"u0410u043au0441u0435u0441u0441u0443u0430u0440u044b","Kategoriyasiz":"u0411u0435u0437 u043au0430u0442u0435u0433u043eu0440u0438u0438"};
+  const en={"IP Kamera":"IP Camera","Analog Kamera":"Analog Camera","PTZ Kamera":"PTZ Camera","NVR / DVR":"NVR / DVR","Kirish nazorati":"Access Control","Tarmoq qurilmasi":"Network Equipment","HDD / Xotira":"HDD / Storage","Optika / Kabel":"Optics / Cable","Yong'in xavfsizligi":"Fire Safety","Ogohlantirish":"Alarm","Aksessuar":"Accessories","Kategoriyasiz":"Uncategorized"};
+  return (LANG==="ru"?ru:en)[cat]||cat;
+}
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0}return h>>>0}
 function catEmoji(c){
   if(c==='Kategoriyasiz')return'📂';
@@ -2899,7 +2908,7 @@ function renderCats(){
   const chips=document.getElementById('mainCatChips');
   if(chips){
     const allCount=PRODS.length;
-    let html=`<button class="main-cat-chip${actCat==='all'?' active':''}" onclick="setC('all')">🔍 ${t('h_all_chip')} <span class="chip-cnt">${allCount}</span></button>`;
+    let html=`<button class="main-cat-chip${actCat==='all'?' active':''}" onclick="setC('all')">🔍 ${LANG==='ru'?'Все':LANG==='en'?'All':t('h_all_chip')||'Barchasi'} <span class="chip-cnt">${allCount}</span></button>`;
     const getEm=(c)=>{if(typeof getCmCatEmoji==='function')return getCmCatEmoji(c);const m={'IP Kamera':'📷','PTZ Kamera':'🔭','NVR / DVR':'💾','Tarmoq qurilmasi':'🌐','Kirish nazorati':'🔐','HDD / Xotira':'🖴','Optika / Kabel':'🔗',"Yong'in xavfsizligi":'🔥','Ogohlantirish':'🔔','Aksessuar':'🔌'};return m[c]||'📦';};
     html+=cats.map(c=>{
       const cnt=PRODS.filter(p=>p.cat===c).length;
@@ -5246,7 +5255,7 @@ function renderCmCats(){
   const customNames=cmCustomCats.map(c=>c.name);
   const allCats=[...new Set([...builtIn,...fromProds,...customNames])].filter(Boolean);
 
-  document.getElementById('cmCatCount').textContent=allCats.length+' ta';
+  document.getElementById('cmCatCount').textContent=allCats.length+(LANG==='ru'?' шт':LANG==='en'?' items':' ta');
 
   const html=allCats.map(cat=>{
     const cnt=PRODS.filter(p=>p.cat===cat).length;
@@ -5254,7 +5263,7 @@ function renderCmCats(){
     const isCustom=cmCustomCats.some(c=>c.name===cat);
     return`<div class="cm-cat-item${cmActiveCat===cat?' active':''}" onclick="selectCmCat('${cat.replace(/'/g,"\'")}')">
       <span class="cm-cat-em">${em}</span>
-      <span class="cm-cat-name">${cat}</span>
+      <span class="cm-cat-name">${transCat(cat)}</span>
       <span class="cm-cat-cnt">${cnt}</span>
       ${isCustom?`<button class="cm-cat-del" onclick="event.stopPropagation();deleteCmCat('${cat.replace(/'/g,"\'")}')">✕</button>`:''}
     </div>`;
