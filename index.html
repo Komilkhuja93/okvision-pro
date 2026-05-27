@@ -2798,10 +2798,24 @@ function importSimple(wb, supplierHint, sheetImages={}){
 // Kategoriya nomini tarjima qilish
 function transCat(cat){
   if(!cat) return cat;
-  if(typeof LANG==="undefined"||LANG==="uz") return cat;
-  const ru={"IP Kamera":"IP-u043au0430u043cu0435u0440u0430","Analog Kamera":"u0410u043du0430u043bu043eu0433u043eu0432u0430u044f u043au0430u043cu0435u0440u0430","PTZ Kamera":"PTZ-u043au0430u043cu0435u0440u0430","NVR / DVR":"NVR / DVR","Kirish nazorati":"u041au043eu043du0442u0440u043eu043bu044c u0434u043eu0441u0442u0443u043fu0430","Tarmoq qurilmasi":"u0421u0435u0442u0435u0432u043eu0435 u043eu0431u043eu0440u0443u0434u043eu0432u0430u043du0438u0435","HDD / Xotira":"HDD / u041fu0430u043cu044fu0442u044c","Optika / Kabel":"u041eu043fu0442u0438u043au0430 / u041au0430u0431u0435u043bu044c","Yong'in xavfsizligi":"u041fu043eu0436u0430u0440u043du0430u044f u0431u0435u0437u043eu043fu0430u0441u043du043eu0441u0442u044c","Ogohlantirish":"u041eu043fu043eu0432u0435u0449u0435u043du0438u0435","Aksessuar":"u0410u043au0441u0435u0441u0441u0443u0430u0440u044b","Kategoriyasiz":"u0411u0435u0437 u043au0430u0442u0435u0433u043eu0440u0438u0438"};
-  const en={"IP Kamera":"IP Camera","Analog Kamera":"Analog Camera","PTZ Kamera":"PTZ Camera","NVR / DVR":"NVR / DVR","Kirish nazorati":"Access Control","Tarmoq qurilmasi":"Network Equipment","HDD / Xotira":"HDD / Storage","Optika / Kabel":"Optics / Cable","Yong'in xavfsizligi":"Fire Safety","Ogohlantirish":"Alarm","Aksessuar":"Accessories","Kategoriyasiz":"Uncategorized"};
-  return (LANG==="ru"?ru:en)[cat]||cat;
+  if(typeof LANG==='undefined'||LANG==='uz') return cat;
+  const ru={
+    'IP Kamera':'IP-камера','Analog Kamera':'Аналоговая камера',
+    'PTZ Kamera':'PTZ-камера','NVR / DVR':'NVR / DVR',
+    'Kirish nazorati':'Контроль доступа','Tarmoq qurilmasi':'Сетевое оборудование',
+    'HDD / Xotira':'HDD / Память','Optika / Kabel':'Оптика / Кабель',
+    "Yong'in xavfsizligi":'Пожарная безопасность','Ogohlantirish':'Оповещение',
+    'Aksessuar':'Аксессуары','Kategoriyasiz':'Без категории',
+  };
+  const en={
+    'IP Kamera':'IP Camera','Analog Kamera':'Analog Camera',
+    'PTZ Kamera':'PTZ Camera','NVR / DVR':'NVR / DVR',
+    'Kirish nazorati':'Access Control','Tarmoq qurilmasi':'Network Equipment',
+    'HDD / Xotira':'HDD / Storage','Optika / Kabel':'Optics / Cable',
+    "Yong'in xavfsizligi":'Fire Safety','Ogohlantirish':'Alarm',
+    'Aksessuar':'Accessories','Kategoriyasiz':'Uncategorized',
+  };
+  return (LANG==='ru'?ru:en)[cat]||cat;
 }
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0}return h>>>0}
 function catEmoji(c){
@@ -6210,14 +6224,14 @@ function setAuthLang(lang){
     ru: {
       btn_login:"Войти", tab_register:"Регистрация",
       login_title:"Добро пожаловать!", login_sub:"Войдите в аккаунт",
-      btn_login_do:"Войти", label_email:"EMAIL", label_password:"\u041f\u0410\u0420\u041e\u041b\u042c",
+      btn_login_do:"Войти", label_email:"EMAIL", label_password:"ПАРОЛЬ",
       ph_email:"you@example.com", ph_password:"••••••••",
       btn_google:"Войти через Google", or:"или",
       no_account:"Нет аккаунта? Зарегистрируйтесь \u2192",
       forgot_pass:"Забыл пароль",
       reg_title:"Создать аккаунт", reg_sub:"Начните бесплатно \u2014 карта не нужна",
       btn_register:"Зарегистрироваться",
-      label_name:"\u0424\u0418\u041e", label_company:"\u041a\u041e\u041c\u041f\u0410\u041d\u0418\u042f",
+      label_name:"ФИО", label_company:"КОМПАНИЯ",
       ph_fullname:"Имя и фамилия", ph_company:"Название компании (необязательно)",
       ph_password_min:"Минимум 8 символов",
       flag:"🇷🇺", name:"Русский"
