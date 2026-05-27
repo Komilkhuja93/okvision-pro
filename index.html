@@ -1252,19 +1252,19 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div class="cc">
         <div style="font-size:11px;font-weight:600;color:var(--accent);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">🏢 Kompaniyangiz</div>
         <div class="fg">
-          <div class="ff"><div class="fl">Kompaniya nomi</div><input class="fi" id="oCo" placeholder="MChJ «TechVision UZ»" oninput="sF()"></div>
-          <div class="ff"><div class="fl">Manzil</div><input class="fi" id="oAd" placeholder="Toshkent, Yunusobod tumani" oninput="sF()"></div>
-          <div><div class="fl">Telefon</div><input class="fi" id="oPh" placeholder="+998 99 000 00 00" oninput="sF()"></div>
-          <div><div class="fl">Email</div><input class="fi" id="oEm" placeholder="info@company.uz" oninput="sF()"></div>
+          <div class="ff"><div class="fl"><span data-i18n="lbl_company_name">Kompaniya nomi</span></div><input class="fi" id="oCo" placeholder="MChJ «TechVision UZ»" oninput="sF()"></div>
+          <div class="ff"><div class="fl"><span data-i18n="lbl_address">Manzil</span></div><input class="fi" id="oAd" placeholder="Toshkent, Yunusobod tumani" oninput="sF()"></div>
+          <div><div class="fl"><span data-i18n="lbl_phone">Telefon</span></div><input class="fi" id="oPh" placeholder="+998 99 000 00 00" oninput="sF()"></div>
+          <div><div class="fl"><span data-i18n="lbl_email_field">Email</span></div><input class="fi" id="oEm" placeholder="info@company.uz" oninput="sF()"></div>
         </div>
       </div>
       <div class="cc">
         <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">👤 Mijoz</div>
         <div class="fg">
-          <div class="ff"><div class="fl">Mijoz / Tashkilot</div><input class="fi" id="clN" placeholder="Abdullayev Jasur" oninput="sF()"></div>
-          <div class="ff"><div class="fl">Manzil / Ob'ekt</div><input class="fi" id="clA" placeholder="Samarqand, Bozor ko'chasi 14" oninput="sF()"></div>
-          <div><div class="fl">Telefon</div><input class="fi" id="clP" placeholder="+998 90 000 00 00" oninput="sF()"></div>
-          <div><div class="fl">Sana</div><input class="fi" id="qDt" type="date" oninput="sF()"></div>
+          <div class="ff"><div class="fl"><span data-i18n="lbl_client">Mijoz / Tashkilot</span></div><input class="fi" id="clN" placeholder="Abdullayev Jasur" oninput="sF()"></div>
+          <div class="ff"><div class="fl"><span data-i18n="lbl_obj">Manzil / Ob'ekt</span></div><input class="fi" id="clA" placeholder="Samarqand, Bozor ko'chasi 14" oninput="sF()"></div>
+          <div><div class="fl"><span data-i18n="lbl_phone">Telefon</span></div><input class="fi" id="clP" placeholder="+998 90 000 00 00" oninput="sF()"></div>
+          <div><div class="fl"><span data-i18n="lbl_date">Sana</span></div><input class="fi" id="qDt" type="date" oninput="sF()"></div>
         </div>
       </div>
     </div>
@@ -1274,7 +1274,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <th>#</th><th></th><th>Model</th><th>Kat.</th><th>Miqdor</th><th style="text-align:right">Narx</th><th style="text-align:right">Jami</th><th></th>
       </tr></thead><tbody id="qBody"></tbody></table></div>
       <div class="tb"><div style="text-align:right">
-        <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label">Jami summa</div>
+        <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label"><span data-i18n="q_total_label">Jami summa</span></div>
         <div class="ta" id="tAmt">$0</div>
         <div class="talt" id="tAlt"></div>
       </div></div>
@@ -1342,28 +1342,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 
   <div class="page" id="pg-hdd">
     <div style="margin-bottom:18px">
-      <div style="font-family:var(--fh);font-size:21px;font-weight:700;margin-bottom:3px">💾 HDD Kalkulyator</div>
-      <div style="font-size:13px;color:var(--text2)">Kuzatuv tizimingiz uchun zarur disk hajmini hisoblang</div>
+      <div style="font-family:var(--fh);font-size:21px;font-weight:700;margin-bottom:3px">💾 <span data-i18n="hdd_title">HDD Kalkulyator</span></div>
+      <div style="font-size:13px;color:var(--text2)"><span data-i18n="hdd_subtitle">Kuzatuv tizimingiz uchun zarur disk hajmini hisoblang</span></div>
     </div>
     <div class="hc">
       <div class="hh">
         <div class="hi">💾</div>
         <div>
-          <div class="ht">Disk Hajmi Hisoblash</div>
+          <div class="ht"><span data-i18n="hdd_card_title">Disk Hajmi Hisoblash</span></div>
           <div class="hs" id="hCamInfo">Taklifdagi kameralar avtomatik hisoblanadi</div>
         </div>
       </div>
       <div class="hb">
         <div class="hcl">
           <div>
-            <div class="hll">📷 Kameralar soni</div>
+            <div class="hll">📷 <span data-i18n="hdd_cams_label">Kameralar soni</span></div>
             <div style="display:flex;align-items:center;gap:8px">
               <input class="hni" type="number" id="hCams" min="1" max="256" value="1" oninput="calcHDD()">
               <div style="font-size:11px;color:var(--text3)" id="hAutoN"></div>
             </div>
           </div>
           <div>
-            <div class="hll">🎥 Yozuv sifati</div>
+            <div class="hll">🎥 <span data-i18n="hdd_quality_label">Yozuv sifati</span></div>
             <select class="hsel" id="hRes" onchange="calcHDD()">
               <option value="0.5">720p (1MP) — 0.5 GB/soat/kam.</option>
               <option value="1" selected>1080p (2MP) — 1 GB/soat/kam.</option>
@@ -1372,7 +1372,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             </select>
           </div>
           <div>
-            <div class="hll">🔄 Yozuv rejimi</div>
+            <div class="hll">🔄 <span data-i18n="hdd_mode_label">Yozuv rejimi</span></div>
             <select class="hsel" id="hMode" onchange="calcHDD()">
               <option value="1">24/7 — Doim yozuv</option>
               <option value="0.3">Harakat (Motion) ~30%</option>
@@ -1380,11 +1380,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             </select>
           </div>
           <div>
-            <div class="hll">📅 Saqlash muddati (kun)</div>
+            <div class="hll">📅 <span data-i18n="hdd_days_label">Saqlash muddati (kun)</span></div>
             <input class="hni" type="number" id="hDays" min="1" max="365" value="30" oninput="calcHDD()">
           </div>
           <div>
-            <div class="hll">🗜 Siqish algoritmi</div>
+            <div class="hll">🗜 <span data-i18n="hdd_codec_label">Siqish algoritmi</span></div>
             <select class="hsel" id="hCodec" onchange="calcHDD()">
               <option value="1">H.264 — standart</option>
               <option value="0.5" selected>H.265 / H.265+ — 50% tejash</option>
@@ -1403,8 +1403,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <div class="hrw"><span class="hrl">Kunlik</span><span class="hrv" id="hDay">—</span></div>
             <div class="hrw"><span class="hrl">Haftalik</span><span class="hrv" id="hWeek">—</span></div>
             <div class="hrw"><span class="hrl">Oylik (30 kun)</span><span class="hrv hi2" id="hMonth">—</span></div>
-            <div class="hrw"><span class="hrl">Kameralar</span><span class="hrv" id="hCC">—</span></div>
-            <div class="hrw"><span class="hrl">Arxiv muddati</span><span class="hrv" id="hDD">—</span></div>
+            <div class="hrw"><span class="hrl" data-i18n="hdd_cams_result">Kameralar</span><span class="hrv" id="hCC">—</span></div>
+            <div class="hrw"><span class="hrl" data-i18n="hdd_archive_result">Arxiv muddati</span><span class="hrv" id="hDD">—</span></div>
           </div>
           <div class="hrec" id="hRec"></div>
         </div>
@@ -1610,7 +1610,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button class="btn bs" onclick="switchTab('quote')">← <span data-i18n="btn_back">Orqaga</span></button>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
         <button class="btn bv" onclick="shareViaEmail()" title="Email yuborish" style="display:flex;align-items:center;gap:6px">
-          ✉️ <span data-i18n="btn_send_email">Email</span>
+          ✉️ <span data-i18n="btn_send_email"><span data-i18n="lbl_email_field">Email</span></span>
         </button>
         <button class="btn bv" onclick="shareViaTelegram()" title="Telegram yuborish" style="display:flex;align-items:center;gap:6px;background:rgba(0,136,204,.15);border-color:rgba(0,136,204,.4);color:#29b6f6">
           ✈️ <span data-i18n="btn_send_tg">Telegram</span>
@@ -3209,8 +3209,13 @@ function calcHDD(){
   document.getElementById('hDay').textContent=gbDay.toFixed(0)+' GB';
   document.getElementById('hWeek').textContent=(gbWeek/1024).toFixed(2)+' TB';
   document.getElementById('hMonth').textContent=(gbMonth/1024).toFixed(2)+' TB';
-  document.getElementById('hCC').textContent=cams+' ta';
-  document.getElementById('hDD').textContent=days+' kun';
+  const camUnit = LANG==='ru'?'шт':LANG==='en'?'pcs':'ta';
+  const dayUnit = LANG==='ru'?'дн':LANG==='en'?'days':'kun';
+  document.getElementById('hCC').textContent=cams+' '+camUnit;
+  document.getElementById('hDD').textContent=days+' '+dayUnit;
+  // hrl labellarni yangilash
+  document.querySelectorAll('[data-i18n="hdd_cams_result"]').forEach(el=>el.textContent=t('hdd_cams_result'));
+  document.querySelectorAll('[data-i18n="hdd_archive_result"]').forEach(el=>el.textContent=t('hdd_archive_result'));
   const needed=tbTotal;
   let rec='';
   if(needed<=2)rec='✅ 2 TB HDD yetarli';
@@ -4280,6 +4285,17 @@ const I18N = {
     // Tablar
     terms_link: 'Foydalanish shartlari',
     terms_suffix: 'ga rozilik bildirasiz.',
+    hdd_title:'HDD Kalkulyator', hdd_subtitle:'Kuzatuv tizimingiz uchun zarur disk hajmini hisoblang',
+    hdd_card_title:'Disk Hajmi Hisoblash',
+    hdd_cams_label:'Kameralar soni', hdd_quality_label:'Yozuv sifati',
+    hdd_mode_label:'Yozuv rejimi', hdd_days_label:'Saqlash muddati (kun)',
+    hdd_codec_label:'Siqish algoritmi', hdd_result:'NATIJA',
+    hdd_daily:'Kunlik', hdd_weekly:'Haftalik', hdd_monthly:'Oylik (30 kun)',
+    hdd_cams_result:'Kameralar', hdd_archive_result:'Arxiv muddati',
+    lbl_company_name:'Kompaniya nomi', lbl_address:'Manzil',
+    lbl_phone:'Telefon', lbl_email_field:'Email',
+    lbl_client:"Mijoz / Tashkilot", lbl_obj:"Manzil / Ob'ekt", lbl_date:'Sana',
+    col_model:'MODEL', col_cat:'KAT.', col_qty:'MIQDOR', col_price:'NARX', col_total:'JAMI',
     sync_connected:'● Ulangan', sync_saving:'● Saqlanmoqda...', sync_error:'● Xato',
     q_title:'Tijorat Taklifi', btn_clear_q:'Tozalash',
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
@@ -4411,6 +4427,17 @@ const I18N = {
   ru: {
     terms_link: 'Условиям использования',
     terms_suffix: ' я соглашаюсь.',
+    hdd_title:'Расчёт HDD', hdd_subtitle:'Рассчитайте необходимый объём диска для системы видеонаблюдения',
+    hdd_card_title:'Расчёт объёма диска',
+    hdd_cams_label:'Количество камер', hdd_quality_label:'Качество записи',
+    hdd_mode_label:'Режим записи', hdd_days_label:'Срок хранения (дни)',
+    hdd_codec_label:'Алгоритм сжатия', hdd_result:'РЕЗУЛЬТАТ',
+    hdd_daily:'Суточно', hdd_weekly:'Еженедельно', hdd_monthly:'Ежемесячно (30 дн)',
+    hdd_cams_result:'Камеры', hdd_archive_result:'Срок архива',
+    lbl_company_name:'Название компании', lbl_address:'Адрес',
+    lbl_phone:'Телефон', lbl_email_field:'Email',
+    lbl_client:'Клиент / Организация', lbl_obj:'Адрес / Объект', lbl_date:'Дата',
+    col_model:'МОДЕЛЬ', col_cat:'КАТ.', col_qty:'КОЛ-ВО', col_price:'ЦЕНА', col_total:'СУММА',
     sync_connected:'● Подключено', sync_saving:'● Сохраняется...', sync_error:'● Ошибка',
     q_title:'Коммерческое предложение', btn_clear_q:'Очистить',
     btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
@@ -4513,6 +4540,17 @@ const I18N = {
   en: {
     terms_link: 'Terms of Service',
     terms_suffix: ', I agree.',
+    hdd_title:'HDD Calculator', hdd_subtitle:'Calculate the required disk space for your surveillance system',
+    hdd_card_title:'Disk Space Calculator',
+    hdd_cams_label:'Number of cameras', hdd_quality_label:'Recording quality',
+    hdd_mode_label:'Recording mode', hdd_days_label:'Storage period (days)',
+    hdd_codec_label:'Compression algorithm', hdd_result:'RESULT',
+    hdd_daily:'Daily', hdd_weekly:'Weekly', hdd_monthly:'Monthly (30 days)',
+    hdd_cams_result:'Cameras', hdd_archive_result:'Archive period',
+    lbl_company_name:'Company name', lbl_address:'Address',
+    lbl_phone:'Phone', lbl_email_field:'Email',
+    lbl_client:'Client / Organization', lbl_obj:'Address / Object', lbl_date:'Date',
+    col_model:'MODEL', col_cat:'CAT.', col_qty:'QTY', col_price:'PRICE', col_total:'TOTAL',
     sync_connected:'● Connected', sync_saving:'● Saving...', sync_error:'● Error',
     q_title:'Commercial Proposal', btn_clear_q:'Clear',
     btn_view_print:'Preview & Print', btn_order:'Send order',
@@ -4729,6 +4767,36 @@ function setLang(lang) {
   document.querySelectorAll('[data-i18n="sidebar_ai"]').forEach(el=>el.textContent=t('sidebar_ai'));
   document.querySelectorAll('[data-i18n="sidebar_upload"]').forEach(el=>el.textContent=t('sidebar_upload'));
   document.querySelectorAll('[data-i18n="sidebar_format"]').forEach(el=>el.textContent=t('sidebar_format'));
+
+  // HDD sahifasi
+  ['hdd_title','hdd_subtitle','hdd_card_title','hdd_cams_label','hdd_quality_label',
+   'hdd_mode_label','hdd_days_label','hdd_codec_label','hdd_result',
+   'hdd_daily','hdd_weekly','hdd_monthly','hdd_cams_result','hdd_archive_result'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  // Taklif form labellar
+  ['lbl_company_name','lbl_address','lbl_phone','lbl_email_field',
+   'lbl_client','lbl_obj','lbl_date',
+   'col_model','col_cat','col_qty','col_price','col_total'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  // Taklif form placeholder
+  const quotePH = {
+    oCo: lang==='ru'?'ООО «TechVision UZ»':lang==='en'?'TechVision UZ LLC':"MChJ «TechVision UZ»",
+    oAd: lang==='ru'?'Ташкент, район Юнусабад':lang==='en'?'Tashkent, Yunusobod':"Toshkent, Yunusobod tumani",
+    oPh: '+998 99 000 00 00',
+    oEm: lang==='ru'?'info@company.uz':lang==='en'?'info@company.uz':'info@company.uz',
+    clN: lang==='ru'?'Абдуллаев Ясур':lang==='en'?'John Smith':"Abdullayev Jasur",
+    clA: lang==='ru'?'Самарканд, ул. Базарная 14':lang==='en'?"14 Bozor St, Samarkand":"Samarqand, Bozor ko'chasi 14",
+    clP: '+998 90 000 00 00',
+  };
+  Object.entries(quotePH).forEach(([id,ph])=>{
+    const el=document.getElementById(id); if(el) el.placeholder=ph;
+  });
 
   // Share to label
   const shareToLbl = document.getElementById('shareToLabel');
