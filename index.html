@@ -1433,6 +1433,59 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       </div>
       <div style="font-size:13px;color:var(--text2);margin-bottom:18px"><span data-i18n="h_import_sub">Excel yoki PDF prays-listni yuklang — platforma avtomatik o'qiydi va kategoriyalaydi</span></div>
 
+      <!-- ── YO'RIQNOMA ── -->
+      <div id="importGuide" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);margin-bottom:16px;overflow:hidden">
+        <div onclick="this.parentElement.querySelector('.guide-body').style.display=this.parentElement.querySelector('.guide-body').style.display==='none'?'block':'none';this.querySelector('span').textContent=this.parentElement.querySelector('.guide-body').style.display==='none'?'▼':'▲'"
+          style="padding:10px 16px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;background:rgba(0,212,255,.05)">
+          <div style="font-size:13px;font-weight:700;color:var(--accent)">📖 Import qilish yo'riqnomasi</div>
+          <span style="font-size:11px;color:var(--text3)">▼</span>
+        </div>
+        <div class="guide-body" style="display:none;padding:14px 16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+            <div style="background:var(--bg);border-radius:8px;padding:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">1️⃣ Hikvision / KSS / OKVISION</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">
+                Ko'p varaqlı Excel (.xlsx) faylni yuklang.<br>
+                <span style="color:var(--green)">✓</span> Rasmlar avtomatik chiqariladi<br>
+                <span style="color:var(--green)">✓</span> Kategoriyalar avtomatik<br>
+                <span style="color:var(--text3)">Supplier nomi: ixtiyoriy</span>
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px">2️⃣ Dahua / HiLook / TpLink</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">
+                Excel faylni yuklang.<br>
+                <span style="color:var(--amber)">⚠</span> Rasmlar alohida jadvalda bo'lsa chiqariladi<br>
+                <span style="color:var(--green)">✓</span> Narx va nom avtomatik<br>
+                <span style="color:var(--text3)">Supplier nomini kiriting</span>
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">3️⃣ PDF prays-list</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">
+                Faqat matnli PDF (skanerlangan emas).<br>
+                <span style="color:var(--green)">✓</span> Nom va narx avtomatik topiladi<br>
+                <span style="color:var(--red)">✗</span> Rasmlar chiqarilmaydi<br>
+                <span style="color:var(--text3)">Supplier nomini kiriting</span>
+              </div>
+            </div>
+            <div style="background:var(--bg);border-radius:8px;padding:12px">
+              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">4️⃣ Qo'lda qo'shish</div>
+              <div style="font-size:12px;color:var(--text2);line-height:1.6">
+                Katalogda yo'q mahsulot uchun.<br>
+                <span style="color:var(--green)">✓</span> Taklif sahifasida qo'lda kiritish<br>
+                <span style="color:var(--green)">✓</span> So'm yoki $ narx<br>
+                <span style="color:var(--text3)">Import shart emas</span>
+              </div>
+            </div>
+          </div>
+          <div style="margin-top:10px;padding:8px 12px;background:rgba(0,212,255,.06);border-radius:6px;font-size:11px;color:var(--text3);line-height:1.6">
+            💡 <strong>Maslahat:</strong> Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). 
+            Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.
+          </div>
+        </div>
+      </div>
+
       <!-- ── DRAG & DROP ZONE ── -->
       <div id="importDropZone"
         style="border:2px dashed var(--border2);border-radius:var(--rxl);padding:36px 24px;text-align:center;cursor:pointer;transition:.2s;margin-bottom:16px;background:var(--surface);position:relative"
@@ -2507,7 +2560,8 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     });
 
     let sectionCat=sheetDefaultCat;
-    rows.slice(headerRowIdx+1).forEach(row=>{
+    rows.slice(headerRowIdx+1).forEach((row, rowRelIdx)=>{
+      const rowAbsIdx = headerRowIdx + 1 + rowRelIdx;
       const name=String(row[cols.name]||'').trim();
       if(!name||name.length<3) return;
 
@@ -2550,9 +2604,9 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
 
       const pid='imp_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,28)+'_'+Math.abs(hashStr(name));
 
-      // Rasmni qidirish: sheetImages[sheetName][rowIndex]
-      const rowIdx = rows.slice(headerRowIdx+1).indexOf(row) + headerRowIdx + 1;
-      const imgData = (sheetImages[sheetName]||{})[rowIdx] || null;
+      // Rasmni qidirish — 0-based va 1-based variantlarni tekshirish
+      const _si = sheetImages[sheetName] || {};
+      const imgData = _si[rowAbsIdx] || _si[rowAbsIdx-1] || _si[rowAbsIdx+1] || null;
 
       importedProds.push({
         id:pid, name, cat:finalCat, em:catEmoji(finalCat), brand,
@@ -3240,13 +3294,13 @@ function buildPreview(){
   const quoteValidity = prof.quote_validity || '30 kun';
   const terms = prof.terms || '';
   const website = prof.website || '';
-  const sealOnPdf = document.getElementById('profSealOnPdf')?.checked !== false;
-  const seal = sealDataUrl || localStorage.getItem('okvSeal');
+  const _sealChk = document.getElementById('profSealOnPdf');
+  const sealOnPdf = _sealChk ? _sealChk.checked : true; // default: ko'rsatish
+  const seal = sealDataUrl || localStorage.getItem('okvSeal') || sessionStorage.getItem('okvSeal') || null;
 
   pvC.innerHTML=`
   <div class="pt2">
     <div style="display:flex;gap:14px;align-items:flex-start">
-      ${seal && sealOnPdf ? `<img src="${seal}" style="width:70px;height:70px;object-fit:contain;flex-shrink:0" alt="muhur">` : ''}
       <div>
         <div style="font-size:20px;font-weight:800;color:#0a0c10;font-family:'Inter',sans-serif">${oCo}</div>
         ${oAd?`<div style="font-size:12px;color:#8892a4;margin-top:3px">${oAd}</div>`:''}
@@ -3279,6 +3333,11 @@ function buildPreview(){
     ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>Taklif amal qilish muddati:</strong> ${quoteValidity}</div>`:''}
     ${terms?`<div style="margin-top:6px;color:#777;line-height:1.5">${terms}</div>`:''}
   </div>`:''}
+  ${seal && sealOnPdf ? `
+  <div style="margin-top:24px;text-align:center;padding-top:16px;border-top:1px solid #e8ecf4">
+    <img src="${seal}" style="max-width:140px;max-height:120px;object-fit:contain;opacity:0.92" alt="muhur">
+    ${oCo?`<div style="font-size:10px;color:#8892a4;margin-top:6px">${oCo}</div>`:''}
+  </div>` : ''}
   <div class="pft"><div>Taklif ${dt} sanasida tayyorlangan</div><div>${oCo}${oPh?' · '+oPh:oEm?' · '+oEm:''}</div></div>`;
   }catch(e){
     console.error('buildPreview xato:',e);
@@ -3769,6 +3828,8 @@ function filterP(){
   const q=(document.getElementById('srch')||{}).value||'';
   const ql=q.toLowerCase().trim();
   let list=PRODS.filter(p=>actCat==='all'||p.cat===actCat);
+
+  // Supplier filter
   if(actSupplier){
     list=list.filter(p=>{
       if(p._suppliers&&p._suppliers.includes(actSupplier)) return true;
@@ -3777,35 +3838,47 @@ function filterP(){
       return spMap[p.name.toLowerCase()]!==undefined;
     });
   }
-  if(ql){
-    // Normalize query: "4mp" → also match "4 mp", "4MP" etc.
-    const qlNorm=ql.replace(/\s+/g,'').replace(/mp$/i,'mp');
-    list=list.filter(p=>{
-      const nm=p.name.toLowerCase();
-      const nmNorm=nm.replace(/\s+/g,'');
-      const desc=(p.desc||'').toLowerCase();
-      const brand=(p.brand||'').toLowerCase();
-      const cat=p.cat.toLowerCase();
-      const specKeys=Object.keys(p.specs||{}).map(k=>k.toLowerCase()).join(' ');
-      const specVals=Object.values(p.specs||{}).map(v=>String(v).toLowerCase()).join(' ');
-      const full=nm+' '+desc+' '+specKeys+' '+specVals+' '+brand;
-      const fullNorm=full.replace(/\s+/g,'');
-      // MP-specific: "4mp" should match "4 mp", "4MP", "4-MP"
-      const mpM=qlNorm.match(/^(\d+)mp$/i);
-      if(mpM){
-        const n=mpM[1];
-        const mpRx=new RegExp('\\b'+n+'\\s*mp\\b','i');
-        const hasMP=mpRx.test(nm)||mpRx.test(desc)||mpRx.test(specVals)||
-               full.includes(n+'mp')||fullNorm.includes(n+'mp');
-        if(!hasMP) return false;
-        // Exclude analog unless user explicitly typed "analog"
-        const isAnalog=/\b(2ce|2cs|hdtvi|ahd|cvi|cvbs|turbo)\b/i.test(nm);
-        if(isAnalog&&!ql.includes('analog')&&!ql.includes('ahd')&&!ql.includes('hdtvi')) return false;
-        return true;
-      }
-      return full.includes(ql)||fullNorm.includes(qlNorm);
-    });
-  }
+
+  if(!ql){ renderList(list); return; }
+
+  // So'zlarni ajratish — har bir so'z alohida qidiriladi (AND mantiq)
+  const words = ql.split(/\s+/).filter(Boolean);
+  const qlNorm = ql.replace(/\s+/g,'');
+
+  list = list.filter(p=>{
+    const nm    = p.name.toLowerCase();
+    const nmN   = nm.replace(/\s+/g,'').replace(/[-_]/g,'');
+    const desc  = (p.desc||'').toLowerCase();
+    const brand = (p.brand||'').toLowerCase();
+    const sup   = (p._supplier||p._parentSupplier||'').toLowerCase();
+    const cat   = (p.cat||'').toLowerCase();
+    const sv    = Object.values(p.specs||{}).map(v=>String(v).toLowerCase()).join(' ');
+    const full  = nm+' '+desc+' '+sv+' '+brand+' '+sup+' '+cat;
+    const fullN = full.replace(/\s+/g,'');
+
+    // Model kodi bo'yicha to'g'ridan moslik (DS-2CD, IPC-HDW va h.k.)
+    const isModelQuery = /^[a-z]{1,4}[-_]?\d/i.test(ql);
+    if(isModelQuery){
+      return nm.includes(ql) || nmN.includes(qlNorm.replace(/[-_]/g,''));
+    }
+
+    // MP qidiruv: "4mp", "8 mp"
+    const mpM = qlNorm.match(/^(\d+)mp$/i);
+    if(mpM){
+      const n=mpM[1];
+      const mpRx=new RegExp('\b'+n+'\s*[mм][pп]\b','i');
+      const hasMP=mpRx.test(nm)||mpRx.test(desc)||mpRx.test(sv)||
+             nmN.includes(n+'mp')||fullN.includes(n+'mp');
+      if(!hasMP) return false;
+      const isAnalog=/\b(2ce|2cs|hdtvi|ahd|cvi|cvbs|turbo|analog)\b/i.test(nm);
+      if(isAnalog&&!/analog|ahd|hdtvi|cvi/i.test(ql)) return false;
+      return true;
+    }
+
+    // Har bir so'z full matnda bo'lishi kerak (AND)
+    return words.every(w => full.includes(w) || fullN.includes(w.replace(/\s+/g,'')));
+  });
+
   renderList(list);
 }
 
@@ -5275,7 +5348,7 @@ function deleteCmCat(cat){
 <script>
 
 // ══ PROFIL TIZIMI ══════════════════════════════════════════════════════════
-let sealDataUrl = localStorage.getItem('okvSeal') || null;
+let sealDataUrl = localStorage.getItem('okvSeal') || sessionStorage.getItem('okvSeal') || null;
 let avatarDataUrl = localStorage.getItem('okvAvatar') || null;
 
 function openProfileModal(){
@@ -5332,12 +5405,31 @@ function handleAvatarUpload(inp){
 
 function handleSealUpload(inp){
   const file = inp.files[0]; if(!file) return;
+  // Rasm hajmini kamaytirish — canvas orqali resize
+  const img = new Image();
   const reader = new FileReader();
   reader.onload = e => {
-    sealDataUrl = e.target.result;
-    localStorage.setItem('okvSeal', sealDataUrl);
-    updateSealPreview();
-    showToast('🔏 Muhur saqlandi');
+    img.onload = () => {
+      // Max 200x200 px ga kamaytirish
+      const MAX = 200;
+      const ratio = Math.min(MAX/img.width, MAX/img.height, 1);
+      const w = Math.round(img.width * ratio);
+      const h = Math.round(img.height * ratio);
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      sealDataUrl = canvas.toDataURL('image/png', 0.85);
+      try {
+        localStorage.setItem('okvSeal', sealDataUrl);
+      } catch(e) {
+        // localStorage to'lib ketgan — sessionStorage ga
+        try { sessionStorage.setItem('okvSeal', sealDataUrl); } catch(e2) {}
+      }
+      updateSealPreview();
+      showToast('🔏 Muhur saqlandi');
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
@@ -5359,24 +5451,46 @@ function removeSeal(){
 
 async function saveProfile(){
   const profile = {
-    full_name:       document.getElementById('profName').value.trim(),
-    phone:           document.getElementById('profPhone').value.trim(),
-    company_name:    document.getElementById('profCompany').value.trim(),
-    company_address: document.getElementById('profAddress').value.trim(),
-    company_email:   document.getElementById('profEmail').value.trim(),
-    website:         document.getElementById('profWebsite').value.trim(),
-    warranty:        document.getElementById('profWarranty').value.trim(),
-    quote_validity:  document.getElementById('profQuoteValidity').value.trim(),
-    terms:           document.getElementById('profTerms').value.trim(),
+    full_name:       (document.getElementById('profName')?.value||'').trim(),
+    phone:           (document.getElementById('profPhone')?.value||'').trim(),
+    company_name:    (document.getElementById('profCompany')?.value||'').trim(),
+    company_address: (document.getElementById('profAddress')?.value||'').trim(),
+    company_email:   (document.getElementById('profEmail')?.value||'').trim(),
+    website:         (document.getElementById('profWebsite')?.value||'').trim(),
+    warranty:        (document.getElementById('profWarranty')?.value||'').trim(),
+    quote_validity:  (document.getElementById('profQuoteValidity')?.value||'').trim(),
+    terms:           (document.getElementById('profTerms')?.value||'').trim(),
     updated_at:      new Date().toISOString(),
   };
 
   // Supabase ga saqlash
   const sb = getSB();
   if(sb && currentUser){
-    const { error } = await sb.from('profiles').update(profile).eq('id', currentUser.id);
-    if(error){ showToast('❌ Xato: ' + error.message); return; }
-    currentProfile = { ...currentProfile, ...profile };
+    console.log('Saving profile:', profile);
+    const { data, error } = await sb.from('profiles').update(profile).eq('id', currentUser.id).select();
+    if(error){
+      console.error('Profile save error:', error);
+      // Ustun yo'q bo'lsa — mavjud ustunlar bilan qayta urinish
+      if(error.message && error.message.includes('column')){
+        const basicProfile = {
+          full_name: profile.full_name,
+          phone: profile.phone,
+          updated_at: profile.updated_at,
+        };
+        const { error: err2 } = await sb.from('profiles').update(basicProfile).eq('id', currentUser.id);
+        if(err2){ showToast('❌ ' + err2.message); return; }
+        showToast('⚠️ Profil qisman saqlandi. SQL yangilanmagan — Supabase ga profile_update.sql ni yuklang');
+        currentProfile = { ...currentProfile, ...basicProfile };
+      } else {
+        showToast('❌ Xato: ' + error.message);
+        return;
+      }
+    } else {
+      currentProfile = { ...currentProfile, ...profile };
+    }
+  } else if(!currentUser){
+    // Offline — faqat localStorage
+    showToast('⚠️ Offline rejim — faqat qurilmada saqlandi');
   }
 
   // localStorage ga ham saqlash (offline uchun)
