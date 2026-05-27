@@ -1199,14 +1199,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           <div>
             <div class="mf-label">Kategoriya *</div>
             <select class="mf-sel" id="np_cat">
-              <option value="IP Kamera">📷 IP Kamera</option>
+              <option value="IP Kamera">📷 <span data-i18n="cat_ip">IP Kamera</span></option>
               <option value="PTZ Kamera">🔭 PTZ Kamera</option>
-              <option value="NVR / DVR">💾 NVR / DVR</option>
-              <option value="Tarmoq qurilmasi">🌐 Tarmoq qurilmasi</option>
-              <option value="Kirish nazorati">🔐 Kirish nazorati</option>
+              <option value="NVR / DVR">💾 <span data-i18n="cat_nvr">NVR / DVR</span></option>
+              <option value="Tarmoq qurilmasi">🌐 <span data-i18n="cat_net">Tarmoq qurilmasi</span></option>
+              <option value="Kirish nazorati">🔐 <span data-i18n="cat_access">Kirish nazorati</span></option>
               <option value="HDD / Xotira">🖴 HDD / Xotira</option>
               <option value="Optika / Kabel">🔗 Optika / Kabel</option>
-              <option value="Yong'in xavfsizligi">🔥 Yong'in xavfsizligi</option>
+              <option value="Yong'in xavfsizligi">🔥 <span data-i18n="cat_fire">Yong'in xavfsizligi</span></option>
               <option value="Ogohlantirish">🔔 Ogohlantirish</option>
               <option value="Aksesuar">🔌 Aksesuar</option>
             </select>
@@ -1480,8 +1480,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             </div>
           </div>
           <div style="margin-top:10px;padding:8px 12px;background:rgba(0,212,255,.06);border-radius:6px;font-size:11px;color:var(--text3);line-height:1.6">
-            💡 <strong>Maslahat:</strong> Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). 
-            Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.
+            💡 <strong id="importTipLabel">Maslahat:</strong> <span data-i18n="import_tip">Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.</span>
           </div>
         </div>
       </div>
@@ -1576,7 +1575,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_ip">DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid #f59e0b">
-            <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:4px">📹 Analog Kamera</div>
+            <div style="font-size:11px;font-weight:700;color:#f59e0b;margin-bottom:4px">📹 <span data-i18n="cat_analog">Analog Kamera</span></div>
             <div style="font-size:11px;color:var(--text3)"><span data-i18n="cat_desc_analog">2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari</span></div>
           </div>
           <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid var(--green)">
@@ -1597,7 +1596,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           </div>
         </div>
         <div style="padding:10px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)">
-          💡 Agar mahsulot kategoriyaga tushмаса — import paytida preview ko'rsatiladi va siz qo'lda tanlaysiz
+          💡 <span data-i18n="import_cat_hint">Agar mahsulot kategoriyaga tushmasa — import paytida preview ko'rsatiladi va siz qo'lda tanlaysiz</span>
         </div>
       </div>
 
@@ -4338,6 +4337,9 @@ const I18N = {
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
     q_empty:"Taklif bo'sh", q_empty_hint:"Katalogdan mahsulot qo'shing",
     q_total_label:'Jami summa',
+    cat_ip:'IP Kamera', cat_analog:'Analog Kamera', cat_nvr:'NVR / DVR',
+    cat_access:'Kirish nazorati', cat_net:'Tarmoq qurilmasi', cat_fire:"Yong'in xavfsizligi",
+    import_tip:"Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.",
     btn_clear_all: "Barcha ma'lumotlarni tozalash",
     import_guide_title: "Import qilish yo'riqnomasi",
     cat_desc_ip: "DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar",
@@ -4497,6 +4499,9 @@ const I18N = {
     btn_view_print:'Просмотр и печать', btn_order:'Отправить заказ',
     q_empty:'Предложение пусто', q_empty_hint:'Добавьте товары из каталога',
     q_total_label:'Итого',
+    cat_ip:'IP-камера', cat_analog:'Аналоговая камера', cat_nvr:'NVR / DVR',
+    cat_access:'Контроль доступа', cat_net:'Сетевое оборудование', cat_fire:'Пожарная безопасность',
+    import_tip:'При первом импорте укажите название поставщика (например: HIKVISION). При следующих импортах имя файла автоматически определяет поставщика.',
     btn_clear_all: 'Очистить все данные',
     import_guide_title: 'Инструкция по импорту',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn и похожие серии',
@@ -4627,6 +4632,9 @@ const I18N = {
     btn_view_print:'Preview & Print', btn_order:'Send order',
     q_empty:'Proposal is empty', q_empty_hint:'Add products from catalog',
     q_total_label:'Total',
+    cat_ip:'IP Camera', cat_analog:'Analog Camera', cat_nvr:'NVR / DVR',
+    cat_access:'Access Control', cat_net:'Network Equipment', cat_fire:'Fire Safety',
+    import_tip:'On first import, enter the supplier name (e.g. HIKVISION). On subsequent imports, the filename automatically identifies the supplier.',
     btn_clear_all: 'Clear all data',
     import_guide_title: 'Import guide',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn and similar series',
@@ -4860,12 +4868,18 @@ function setLang(lang) {
   // Qo'lda va xizmatlar section
   // Import sahifasi
   ['btn_clear_all','import_guide_title',
+   'cat_ip','cat_analog','cat_nvr','cat_access','cat_net','cat_fire',
+   'import_tip','import_cat_hint',
    'cat_desc_ip','cat_desc_analog','cat_desc_nvr',
    'cat_desc_access','cat_desc_net','cat_desc_fire'].forEach(key=>{
     document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
       const val=t(key); if(val) el.textContent=val;
     });
   });
+  // Maslahat/Tip label
+  const importTipLbl = document.getElementById('importTipLabel');
+  if(importTipLbl) importTipLbl.textContent = lang==='ru'?'Совет:':lang==='en'?'Tip:':'Maslahat:';
+
   // Prays-list Import sarlavhasi
   const importPageTitle = document.querySelector('#pg-guide [style*="font-size:22px"]');
   if(importPageTitle){
