@@ -1711,7 +1711,7 @@ function getQuoteSummary(){
       "Quyidagi tijorat taklifimizni e'tiboringizga havola etamiz:",
       ...lines,
       '',
-      `Jami: ${fmtP(total)}`,
+      `${LANG==='ru'?'Итого':LANG==='en'?'Total':'Jami'}: ${fmtP(total)}`,
       clientAddr ? `Manzil: ${clientAddr}` : '',
       '',
       '— OKVISION Pro platformasi orqali tayyorlandi'
@@ -3047,7 +3047,7 @@ function renderList(list){
   const items=list||(PRODS.filter(p=>actCat==='all'||p.cat===actCat).filter(p=>!actSupplier||( p._suppliers&&p._suppliers.includes(actSupplier))||(p._supplier===actSupplier)));
   const el=document.getElementById('mainProdList');
   const cntEl=document.getElementById('mainProdCount');
-  if(cntEl) cntEl.textContent=items.length?items.length+' ta mahsulot':'';
+  if(cntEl) cntEl.textContent=items.length?(items.length+(LANG==='ru'?' товаров':LANG==='en'?' products':' ta mahsulot')):'';
   if(!el) return;
   if(!items.length){
     const isEmpty=!PRODS.length;
@@ -3547,7 +3547,7 @@ function buildPreview(){
   ${grandPreview>total&&(svcTotal2>0||mqTotal2>0)?`<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
     <div style="font-size:13px;font-weight:600" id="grandTotalLabel">${LANG==='ru'?'ИТОГО':LANG==='en'?'GRAND TOTAL':'UMUMIY JAMI'}</div>
     <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
-  </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)}</div>`:''}`:''}
+  </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)} ${LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm"}</div>`:''}`:''}
   ${hddSec}
   ${warranty||quoteValidity||terms?`
   <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf4;font-size:12px;color:#555">
@@ -4176,38 +4176,45 @@ function buildComparison(prods){
   // Top 8 products with biggest price difference
   const topCompared=compared.sort((a,b)=>parseFloat(b.savedPct)-parseFloat(a.savedPct)).slice(0,8);
 
+  const _lAnalysis = LANG==='ru'?'Анализ дистрибьюторов':LANG==='en'?'Distributor analysis':'Distributor tahlili';
+  const _lProducts = LANG==='ru'?'товаров':LANG==='en'?'products':'ta mahsulot';
+  const _lRating   = LANG==='ru'?'Рейтинг дистрибьюторов (по совпадениям)':LANG==='en'?'Distributor ranking (by matches)':"Distributor reytingi (mos mahsulotlar bo'yicha)";
+  const _lCheaper  = LANG==='ru'?'x дешевле':LANG==='en'?'x cheaper':'x arzon';
+  const _lBigGap   = LANG==='ru'?'Наибольшая разница в цене':LANG==='en'?'Biggest price gap':'Eng katta narx farqi';
+  const _lSaving   = LANG==='ru'?'экономия':LANG==='en'?'saving':'tejash';
+  const _lWinner   = LANG==='ru'?'товаров дешевле':LANG==='en'?'products cheaper':'ta mahsulotda arzon';
+  const _lTotalSave= LANG==='ru'?'Потенциальная экономия:':LANG==='en'?'Potential savings:':'Jami tejash imkoni:';
+
   return `
   <div class="cmp-wrap">
-    <div class="cmp-title">📊 Distributor tahlili · ${prods.length} ta mahsulot</div>
+    <div class="cmp-title">📊 ${_lAnalysis} · ${prods.length} ${_lProducts}</div>
 
-    <!-- Distributor ranking table -->
     <div style="margin-bottom:8px">
-      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600">🏆 Distributor reytingi (mos mahsulotlar bo'yicha)</div>
+      <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600">🏆 ${_lRating}</div>
       ${distSummary.map((d,i)=>`
         <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:6px;background:${i===0?'rgba(0,229,160,.08)':'var(--surface2)'};margin-bottom:3px;border:1px solid ${i===0?'rgba(0,229,160,.2)':'var(--border)'}">
           <span style="font-size:11px;font-weight:700;color:${i===0?'var(--green)':i===1?'var(--amber)':'var(--text3)'};width:18px">#${i+1}</span>
           <span style="flex:1;font-size:11px;color:var(--text);font-weight:${i===0?'600':'400'}">${d.s}</span>
-          <span style="font-size:10px;color:var(--text3)">${d.matched} mahsulot</span>
+          <span style="font-size:10px;color:var(--text3)">${d.matched} ${_lProducts}</span>
           <span style="font-size:11px;font-weight:600;color:var(--accent)">${d.avgPrice>0?'avg '+fmtP(Math.round(d.avgPrice)):''}</span>
-          ${d.wins>0?`<span style="font-size:10px;background:rgba(0,229,160,.1);color:var(--green);border-radius:4px;padding:1px 6px">${d.wins}x arzon</span>`:''}
+          ${d.wins>0?`<span style="font-size:10px;background:rgba(0,229,160,.1);color:var(--green);border-radius:4px;padding:1px 6px">${d.wins}${_lCheaper}</span>`:''}
         </div>`).join('')}
     </div>
 
-    <!-- Top products with biggest price gap -->
     ${topCompared.length?`
-    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600">💰 Eng katta narx farqi</div>
+    <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;font-weight:600">💰 ${_lBigGap}</div>
     ${topCompared.map(c=>`
       <div class="cmp-row" onclick="showProd('${c.product.id}')">
         <div class="cmp-name">${c.product.name}</div>
         <div class="cmp-prices">
           ${c.prices.map((sp,i)=>`<span class="cmp-price ${i===0?'best':i===c.prices.length-1?'high':''}">${sp.s}: ${fmtP(sp.price)}</span>`).join('')}
         </div>
-        <div class="cmp-saved">-${c.savedPct}% tejash (${fmtP(c.savedAmount)})</div>
+        <div class="cmp-saved">-${c.savedPct}% ${_lSaving} (${fmtP(c.savedAmount)})</div>
       </div>`).join('')}`:''}
 
     <div class="cmp-summary">
-      <span>🏆 <strong style="color:var(--green)">${topWinner.s}</strong> — ${topWinner.wins} ta mahsulotda arzon</span>
-      ${totalCompared>0?`<span>Jami tejash imkoni: <strong style="color:var(--green)">${fmtP(Math.round(totalSaved))}</strong></span>`:''}
+      <span>🏆 <strong style="color:var(--green)">${topWinner.s}</strong> — ${topWinner.wins} ${_lWinner}</span>
+      ${totalCompared>0?`<span>${_lTotalSave} <strong style="color:var(--green)">${fmtP(Math.round(totalSaved))}</strong></span>`:''}
     </div>
   </div>`;
 }
@@ -4534,6 +4541,7 @@ const I18N = {
     cat_ip:'IP Kamera', cat_analog:'Analog Kamera', cat_nvr:'NVR / DVR',
     cat_access:'Kirish nazorati', cat_net:'Tarmoq qurilmasi', cat_fire:"Yong'in xavfsizligi",
     import_tip:"Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.",
+    btn_add_manual:"+ Qo'shish", btn_add_svc_lbl:"+ Xizmat qo'shish",
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:"Ko'p varaqlı Excel (.xlsx) faylni yuklang.",
     guide_hik_1:'Rasmlar avtomatik chiqariladi',
@@ -4726,6 +4734,7 @@ const I18N = {
     cat_ip:'IP-камера', cat_analog:'Аналоговая камера', cat_nvr:'NVR / DVR',
     cat_access:'Контроль доступа', cat_net:'Сетевое оборудование', cat_fire:'Пожарная безопасность',
     import_tip:'При первом импорте укажите название поставщика (например: HIKVISION). При следующих импортах имя файла автоматически определяет поставщика.',
+    btn_add_manual:'+ Добавить', btn_add_svc_lbl:'+ Добавить услугу',
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:'Загрузите многолистовой Excel (.xlsx).',
     guide_hik_1:'Изображения извлекаются автоматически',
@@ -4889,6 +4898,7 @@ const I18N = {
     cat_ip:'IP Camera', cat_analog:'Analog Camera', cat_nvr:'NVR / DVR',
     cat_access:'Access Control', cat_net:'Network Equipment', cat_fire:'Fire Safety',
     import_tip:'On first import, enter the supplier name (e.g. HIKVISION). On subsequent imports, the filename automatically identifies the supplier.',
+    btn_add_manual:'+ Add', btn_add_svc_lbl:'+ Add service',
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:'Upload multi-sheet Excel (.xlsx).',
     guide_hik_1:'Images extracted automatically',
