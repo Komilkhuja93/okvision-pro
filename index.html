@@ -3212,6 +3212,52 @@ function addSvcRow(name=''){
   setTimeout(()=>{const rows=document.querySelectorAll('.svc-row');if(rows.length){const inp=rows[rows.length-1].querySelector('input');if(inp)inp.focus()}},50);
 }
 
+
+// Kafolat va muddat qiymatlarini tarjima qilish
+function transWarranty(val){
+  if(!val) return val;
+  if(typeof LANG === 'undefined' || LANG === 'uz') return val;
+  const maps = {
+    ru: {
+      "12 oy (1 yil)": "12 мес (1 год)",
+      "6 oy": "6 мес",
+      "24 oy (2 yil)": "24 мес (2 года)",
+      "36 oy (3 yil)": "36 мес (3 года)",
+      "30 kun": "30 дней",
+      "14 kun": "14 дней",
+      "7 kun": "7 дней",
+      "60 kun": "60 дней",
+      "90 kun": "90 дней",
+    },
+    en: {
+      "12 oy (1 yil)": "12 months (1 year)",
+      "6 oy": "6 months",
+      "24 oy (2 yil)": "24 months (2 years)",
+      "36 oy (3 yil)": "36 months (3 years)",
+      "30 kun": "30 days",
+      "14 kun": "14 days",
+      "7 kun": "7 days",
+      "60 kun": "60 days",
+      "90 kun": "90 days",
+    }
+  };
+  // To'liq mos kelsa
+  const direct = (maps[LANG]||{})[val];
+  if(direct) return direct;
+  // Qisman tarjima — "kun" → "days/дней", "oy" → "months/мес", "yil" → "year/год"
+  let result = val;
+  if(LANG === 'ru'){
+    result = result.replace(/(\d+)\s*kun/gi, '$1 дней')
+                   .replace(/(\d+)\s*oy/gi, '$1 мес')
+                   .replace(/(\d+)\s*yil/gi, '$1 год');
+  } else if(LANG === 'en'){
+    result = result.replace(/(\d+)\s*kun/gi, '$1 days')
+                   .replace(/(\d+)\s*oy/gi, '$1 months')
+                   .replace(/(\d+)\s*yil/gi, '$1 year');
+  }
+  return result;
+}
+
 // Xizmat nomi — til bo'yicha
 function getSvcName(key){
   const names = {
@@ -3464,8 +3510,8 @@ function buildPreview(){
   ${hddSec}
   ${warranty||quoteValidity||terms?`
   <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf4;font-size:12px;color:#555">
-    ${warranty?`<div style="margin-bottom:4px">🛡 <strong>${LANG==='ru'?'Гарантийный срок:':LANG==='en'?'Warranty:':'Kafolat muddati:'}</strong> ${warranty}</div>`:''}
-    ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>${LANG==='ru'?'Срок действия предложения:':LANG==='en'?'Validity period:':'Taklif amal qilish muddati:'}</strong> ${quoteValidity}</div>`:''}
+    ${warranty?`<div style="margin-bottom:4px">🛡 <strong>${LANG==='ru'?'Гарантийный срок:':LANG==='en'?'Warranty:':'Kafolat muddati:'}</strong> ${transWarranty(warranty)}</div>`:''}
+    ${quoteValidity?`<div style="margin-bottom:4px">📅 <strong>${LANG==='ru'?'Срок действия предложения:':LANG==='en'?'Validity period:':'Taklif amal qilish muddati:'}</strong> ${transWarranty(quoteValidity)}</div>`:''}
     ${terms?`<div style="margin-top:6px;color:#777;line-height:1.5">${terms}</div>`:''}
   </div>`:''}
   ${seal && sealOnPdf ? `
@@ -5775,7 +5821,7 @@ function openProfileModal(){
   document.getElementById('profEmail').value     = p.company_email || '';
   document.getElementById('profWebsite').value   = p.website || '';
   document.getElementById('profWarranty').value  = p.warranty || '12 oy (1 yil)';
-  document.getElementById('profQuoteValidity').value = p.quote_validity || '30 kun';
+  document.getElementById('profQuoteValidity').value = p.quote_validity || (LANG==='ru'?'30 дней':LANG==='en'?'30 days':'30 kun');
   document.getElementById('profTerms').value     = p.terms || '';
   document.getElementById('profAvatarName').textContent  = p.full_name || currentUser?.email?.split('@')[0] || '—';
   document.getElementById('profAvatarEmail').textContent = currentUser?.email || '—';
