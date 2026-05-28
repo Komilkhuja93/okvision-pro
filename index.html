@@ -1314,14 +1314,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div class="svc-body">
         <div style="font-size:11px;color:var(--text3);margin-bottom:2px" data-i18n="svc_quick">Tez tanlash:</div>
         <div class="svc-presets">
-          <span class="svc-preset" onclick="addSvcPreset('Videokamera o\'rnatish xizmati')">📷 Kamera o'rnatish</span>
-          <span class="svc-preset" onclick="addSvcPreset('Domofon o\'rnatish xizmati')">🔔 Domofon o'rnatish</span>
-          <span class="svc-preset" onclick="addSvcPreset('Face ID o\'rnatish xizmati')">🪪 Face ID o'rnatish</span>
-          <span class="svc-preset" onclick="addSvcPreset('iVMS 4200 sozlamasi')">🖥 iVMS 4200</span>
-          <span class="svc-preset" onclick="addSvcPreset('HikCentral sozlamalari xizmati')">⚙️ HikCentral</span>
-          <span class="svc-preset" onclick="addSvcPreset('Server ko\'tarish xizmati')">🖧 Server ko'tarish</span>
-          <span class="svc-preset" onclick="addSvcPreset('VideoWall o\'rnatish xizmati')">📺 VideoWall</span>
-          <span class="svc-preset" onclick="addSvcPreset('Pullik avtoturargoh xizmati')">🅿️ Avtoturargoh</span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_cam'))">📷 <span data-i18n="svc_cam">Kamera o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_intercom'))">🔔 <span data-i18n="svc_intercom">Domofon o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_faceid'))">🪪 <span data-i18n="svc_faceid">Face ID o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_ivms'))">🖥 <span data-i18n="svc_ivms">iVMS 4200</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_hikcentral'))">⚙️ <span data-i18n="svc_hikcentral">HikCentral</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_server'))">🖧 <span data-i18n="svc_server">Server ko'tarish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_videowall'))">📺 <span data-i18n="svc_videowall">VideoWall</span></span>
+          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_parking'))">🅿️ <span data-i18n="svc_parking">Avtoturargoh</span></span>
         </div>
         <div id="svcRows" style="display:flex;flex-direction:column;gap:6px"></div>
         <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px" data-i18n="svc_empty_hint">Xizmat qo'shing yoki yuqoridan tanlang</div>
@@ -3211,6 +3211,45 @@ function addSvcRow(name=''){
   // focus last name input
   setTimeout(()=>{const rows=document.querySelectorAll('.svc-row');if(rows.length){const inp=rows[rows.length-1].querySelector('input');if(inp)inp.focus()}},50);
 }
+
+// Xizmat nomi — til bo'yicha
+function getSvcName(key){
+  const names = {
+    uz: {
+      svc_cam:"Videokamera o'rnatish xizmati",
+      svc_intercom:"Domofon o'rnatish xizmati",
+      svc_faceid:"Face ID o'rnatish xizmati",
+      svc_ivms:'iVMS 4200 sozlamasi',
+      svc_hikcentral:'HikCentral sozlamalari xizmati',
+      svc_server:"Server ko'tarish xizmati",
+      svc_videowall:"VideoWall o'rnatish xizmati",
+      svc_parking:'Pullik avtoturargoh xizmati',
+    },
+    ru: {
+      svc_cam:'Монтаж видеокамер',
+      svc_intercom:'Монтаж домофона',
+      svc_faceid:'Монтаж Face ID',
+      svc_ivms:'Настройка iVMS 4200',
+      svc_hikcentral:'Настройка HikCentral',
+      svc_server:'Монтаж сервера',
+      svc_videowall:'Монтаж VideoWall',
+      svc_parking:'Платная парковка',
+    },
+    en: {
+      svc_cam:'Camera installation',
+      svc_intercom:'Intercom installation',
+      svc_faceid:'Face ID installation',
+      svc_ivms:'iVMS 4200 setup',
+      svc_hikcentral:'HikCentral setup',
+      svc_server:'Server setup',
+      svc_videowall:'VideoWall installation',
+      svc_parking:'Paid parking service',
+    }
+  };
+  const lang = typeof LANG !== 'undefined' ? LANG : 'uz';
+  return (names[lang]||names.uz)[key]||(names.uz)[key]||key;
+}
+
 function addSvcPreset(name){
   // if already exists, just focus it
   const idx=services.findIndex(s=>s.name===name);
@@ -4416,6 +4455,10 @@ const I18N = {
     cat_desc_access: "DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD",
     cat_desc_net: "DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek",
     cat_desc_fire: "RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari",
+    svc_cam:"Kamera o'rnatish", svc_intercom:"Domofon o'rnatish",
+    svc_faceid:"Face ID o'rnatish", svc_ivms:'iVMS 4200',
+    svc_hikcentral:'HikCentral', svc_server:"Server ko'tarish",
+    svc_videowall:'VideoWall', svc_parking:'Avtoturargoh',
     mq_save_hint:'Bazaga saqlamoqchimisiz?', mq_empty_hint:"Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing",
     svc_quick:'Tez tanlash:', svc_empty_hint:"Xizmat qo'shing yoki yuqoridan tanlang",
     label_our_company:'Kompaniyangiz', label_client:'MIJOZ',
@@ -4584,6 +4627,10 @@ const I18N = {
     cat_desc_access: 'Серия DS-K, турникеты, шлагбаумы, DS-TMG, ридеры, терминалы, ZKTeco, KANIHAD',
     cat_desc_net: 'DS-3E/3T/3W коммутаторы/роутеры/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
     cat_desc_fire: 'RUBEZH, Bolid, пожарная сигнализация, smoke detector, fire alarm',
+    svc_cam:'Монтаж камер', svc_intercom:'Монтаж домофона',
+    svc_faceid:'Монтаж Face ID', svc_ivms:'iVMS 4200',
+    svc_hikcentral:'HikCentral', svc_server:'Монтаж сервера',
+    svc_videowall:'VideoWall', svc_parking:'Парковка',
     mq_save_hint:'Сохранить в базу?', mq_empty_hint:'Добавьте товары, которых нет в каталоге',
     svc_quick:'Быстрый выбор:', svc_empty_hint:'Добавьте услугу или выберите выше',
     label_our_company:'Наша компания', label_client:'КЛИЕНТ',
@@ -4723,6 +4770,10 @@ const I18N = {
     cat_desc_access: 'DS-K series, turnstiles, barriers, DS-TMG, readers, terminals, ZKTeco, KANIHAD',
     cat_desc_net: 'DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
     cat_desc_fire: 'RUBEZH, Bolid, fire alarm, smoke detector, fire alarm systems',
+    svc_cam:'Camera install', svc_intercom:'Intercom install',
+    svc_faceid:'Face ID install', svc_ivms:'iVMS 4200',
+    svc_hikcentral:'HikCentral', svc_server:'Server setup',
+    svc_videowall:'VideoWall', svc_parking:'Parking',
     mq_save_hint:'Save to catalog?', mq_empty_hint:'Add products not in the catalog here',
     svc_quick:'Quick select:', svc_empty_hint:'Add a service or select above',
     label_our_company:'Our company', label_client:'CLIENT',
@@ -4965,6 +5016,17 @@ function setLang(lang) {
   if(importPageTitle){
     importPageTitle.innerHTML = '📥 '+(lang==='ru'?'Импорт прайс-листа':lang==='en'?'Price List Import':'Prays-list Import');
   }
+
+  // Xizmat preset tugmalari
+  ['svc_cam','svc_intercom','svc_faceid','svc_ivms',
+   'svc_hikcentral','svc_server','svc_videowall','svc_parking'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+  // Narx ($) va Soni ustun headerlarini yangilash (qo'lda qo'shish)
+  const mqNarxLbl = document.getElementById('mqNarxLabel');
+  if(mqNarxLbl) mqNarxLbl.textContent = lang==='ru'?'Цена ($)':lang==='en'?'Price ($)':'Narx ($)';
 
   ['mq_save_hint','mq_empty_hint','svc_quick','svc_empty_hint',
    'btn_add_manual','btn_add_svc','btn_go_catalog',
