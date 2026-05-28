@@ -1812,6 +1812,18 @@ function savePRODS(){
       _suppliers:p._suppliers||[],
       _imported:true
     }));
+    // Rasmlarni ham saqlaymiz — har mahsulot uchun alohida key
+    // Katta rasmlar (>50KB) ni o'tkazib yuboramiz
+    imported.forEach(p=>{
+      if(p._imgData){
+        const key='img_'+p.id.slice(0,20);
+        try{
+          if(p._imgData.length < 150000){ // ~100KB limit per image
+            localStorage.setItem(key, p._imgData);
+          }
+        }catch(e){ /* storage full */ }
+      }
+    });
     const prodsJson=JSON.stringify(slim);
     const supJson=JSON.stringify(window.supplierPrices||{});
     // Hajm tekshiruvi (localStorage ~5MB)
@@ -1858,6 +1870,15 @@ function loadPRODS(){
     let count=0;
     imported.forEach(p=>{
       if(!existingIds.has(p.id)){
+        // Rasmni localStorage dan qayta yuklash
+        const imgKey = 'img_'+p.id.slice(0,20);
+        const savedImg = localStorage.getItem(imgKey);
+        if(savedImg) {
+          p._imgData = savedImg;
+          images[p.id] = savedImg;
+        } else if(images[p.id]) {
+          p._imgData = images[p.id];
+        }
         PRODS.push(p);
         existingIds.add(p.id);
         count++;
@@ -1895,7 +1916,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(savedRate){RATE=parseInt(savedRate)||12700;document.getElementById('rateInput').value=RATE;}
     const f=localStorage.getItem('cqF2');if(f){const d=JSON.parse(f);['oCo','oAd','oPh','oEm','clN','clA','clP','qDt'].forEach(k=>{if(d[k])document.getElementById(k).value=d[k]})}
     const p=localStorage.getItem('cqP2');if(p){prices=JSON.parse(p);updPC()}
-    const im=localStorage.getItem('cqIM2');if(im)images=JSON.parse(im);
+    const im=localStorage.getItem('cqIM2');if(im){try{images=JSON.parse(im);}catch(e){}}
     // ── Import qilingan mahsulotlarni tiklash (faqat session bo'lsa) ──
     // Auth orqali kirgan bo'lsa onUserLogin da yuklanadi
     // Agar Supabase session bo'lmasa — offline rejim uchun yuklaymiz
