@@ -3363,8 +3363,8 @@ function buildPreview(){
   const pvC=document.getElementById('pvC');
   if(!pvC) return;
   const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
-  const oCo=g('oCo')||'Kompaniya',oAd=g('oAd'),oPh=g('oPh'),oEm=g('oEm');
-  const clN=g('clN')||'Mijoz',clA=g('clA'),clP=g('clP'),dt=g('qDt')||new Date().toISOString().slice(0,10);
+  const oCo=g('oCo')||(LANG==='ru'?'Компания':LANG==='en'?'Company':'Kompaniya'),oAd=g('oAd'),oPh=g('oPh'),oEm=g('oEm');
+  const clN=g('clN')||(LANG==='ru'?'Клиент':LANG==='en'?'Client':'Mijoz'),clA=g('clA'),clP=g('clP'),dt=g('qDt')||new Date().toISOString().slice(0,10);
   let total=0;
   const rows=quote.map((item,i)=>{
     const pr=getPrice(item.product),lt=pr?pr*item.qty:null;
@@ -3447,18 +3447,18 @@ function buildPreview(){
     <div style="text-align:right">
       <div class="pbdg">${LANG==='ru'?'Коммерческое предложение':LANG==='en'?'Commercial Proposal':'Tijorat Taklifi'}</div>
       <div style="font-size:12px;color:#8892a4;margin-top:6px">№ ${qNo}</div>
-      <div style="font-size:12px;color:#8892a4">Sana: ${dt}</div>
+      <div style="font-size:12px;color:#8892a4">${LANG==='ru'?'Дата:':LANG==='en'?'Date:':'Sana:'} ${dt}</div>
     </div>
   </div>
   <div class="pmt">
     <div><div class="pml">${LANG==='ru'?'Кому':LANG==='en'?'To':'Kimga'}</div><div class="pmv"><strong>${clN}</strong>${clA?'<br>'+clA:''}${clP?'<br>'+clP:''}</div></div>
-    <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+' so\'m':'O\'zbek so\'mi (UZS)'}</div></div>
+    <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+(LANG==="ru"?' сум':LANG==="en"?' UZS':' so\'m'):LANG==="ru"?"Узбекский сум (UZS)":LANG==="en"?"Uzbek som (UZS)":"O\'zbek so\'mi (UZS)"}</div></div>
   </div>
-  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">So'mga ekvivalent</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">Mahsulot qo\'shilmagan</div>'}
+  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">${LANG==='ru'?'Эквивалент в сумах':LANG==='en'?'Equivalent in UZS':"So'mga ekvivalent"}</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">'+(LANG==="ru"?"Товары не добавлены":LANG==="en"?"No products added":"Mahsulot qo\'shilmagan")+"</div>"}
   ${mqHtml}
   ${svcHtml}
   ${grandPreview>total&&(svcTotal2>0||mqTotal2>0)?`<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:13px;font-weight:600" id="grandTotalLabel">UMUMIY JAMI</div>
+    <div style="font-size:13px;font-weight:600" id="grandTotalLabel">${LANG==='ru'?'ИТОГО':LANG==='en'?'GRAND TOTAL':'UMUMIY JAMI'}</div>
     <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
   </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)}</div>`:''}`:''}
   ${hddSec}
