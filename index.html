@@ -4925,6 +4925,13 @@ function t(key) {
 function setLang(lang) {
   LANG = lang;
   localStorage.setItem('okvLang', lang);
+  // Lang buttons highlight
+  ['uz','ru','en'].forEach(l=>{
+    const b=document.getElementById('lb-'+l);
+    if(b) b.classList.toggle('active',l===lang);
+    const mb=document.getElementById('mlb-'+l);
+    if(mb) mb.style.borderColor=l===lang?'var(--accent)':'var(--border)';
+  });
 
   // 1. Desktop + mob til tugmalari
   ['uz','ru','en'].forEach(l => {
@@ -5163,6 +5170,9 @@ function setLang(lang) {
   if(typeof updateDataStatus==='function') updateDataStatus();
   // HDD kalkulyator labellarni qayta render
   if(typeof calcHDD==='function') calcHDD();
+  // Preview sahifasi ochiq bo'lsa — qayta render
+  const pvEl = document.getElementById('pvC');
+  if(pvEl && pvEl.offsetParent !== null && typeof buildPreview==='function') buildPreview();
 
   const toast = lang==='uz' ? "🇺🇿 O'zbek tili" : lang==='ru' ? '🇷🇺 Русский язык' : '🇬🇧 English';
   if(typeof showToast==='function') showToast(toast);
@@ -5171,12 +5181,8 @@ function setLang(lang) {
 // DOMContentLoaded da tilni qo'llash
 document.addEventListener('DOMContentLoaded', () => {
   const saved = localStorage.getItem('okvLang') || 'uz';
-  if(saved !== 'uz') setLang(saved);
-  else {
-    // Faqat tugmani faollashtirish
-    const btn = document.getElementById('lb-uz');
-    if(btn) btn.classList.add('active');
-  }
+  // Har doim setLang chaqirish — barcha matnlar yangilansin
+  setLang(saved);
 });
 
 let tT;
@@ -6142,7 +6148,7 @@ async function onUserLogin(user){
 
   // Tilni qayta qo'llash (login keyin elementlar tayyor)
   const savedLang = localStorage.getItem('okvLang') || 'uz';
-  if(savedLang !== 'uz' && typeof setLang === 'function') setLang(savedLang);
+  if(typeof setLang === 'function') setLang(savedLang);
 }
 
 // ── Profil yuklash ────────────────────────────────────────────────────────
