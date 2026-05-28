@@ -1840,7 +1840,9 @@ function savePRODS(){
       _supplier:p._supplier||'',
       _parentSupplier:p._parentSupplier||'',
       _suppliers:p._suppliers||[],
-      _imported:true
+      _imported:true,
+      // Storage URL saqlash — sahifa yangilansa ham rasmlar saqlanadi
+      ...(p._imgUrl?{_imgUrl:p._imgUrl}:{})
     }));
     // Rasmlarni ham saqlaymiz — har mahsulot uchun alohida key
     // Katta rasmlar (>50KB) ni o'tkazib yuboramiz
@@ -1900,14 +1902,18 @@ function loadPRODS(){
     let count=0;
     imported.forEach(p=>{
       if(!existingIds.has(p.id)){
-        // Rasmni localStorage dan qayta yuklash
-        const imgKey = 'img_'+p.id.slice(0,20);
-        const savedImg = localStorage.getItem(imgKey);
-        if(savedImg) {
-          p._imgData = savedImg;
-          images[p.id] = savedImg;
-        } else if(images[p.id]) {
-          p._imgData = images[p.id];
+        // Rasmni qayta yuklash — avval _imgUrl, keyin localStorage
+        if(p._imgUrl && p._imgUrl.startsWith('http')){
+          images[p.id] = p._imgUrl;
+        } else {
+          const imgKey = 'img_'+p.id.slice(0,20);
+          try{
+            const savedImg = localStorage.getItem(imgKey);
+            if(savedImg){
+              p._imgData = savedImg;
+              images[p.id] = savedImg;
+            }
+          }catch(e){}
         }
         PRODS.push(p);
         existingIds.add(p.id);
@@ -2986,7 +2992,25 @@ function setImgUrl(id){
 }
 function removeImg(id){delete images[id];saveIM();showProd(id);renderList();showToast('🗑 Rasm o\'chirildi')}
 function saveIM(){try{localStorage.setItem('cqIM2',JSON.stringify(images))}catch(e){}}
-function getImg(p){return images[p.id]||null}
+function getImg(p){
+  if(!p) return null;
+  // 1. Storage URL (eng ishonchli)
+  if(p._imgUrl && p._imgUrl.startsWith('http')) return p._imgUrl;
+  // 2. images[] cache
+  if(images[p.id]){
+    const v = images[p.id];
+    if(v && (v.startsWith('http')||v.startsWith('data:'))) return v;
+  }
+  // 3. localStorage dan
+  try{
+    const k = 'img_'+p.id.slice(0,20);
+    const v = localStorage.getItem(k);
+    if(v) { images[p.id]=v; return v; }
+  }catch(e){}
+  // 4. base64 (eski)
+  if(p._imgData && p._imgData.startsWith('data:')) return p._imgData;
+  return null;
+}
 function toggleUrl(id){const el=document.getElementById('uRow_'+id);if(el)el.style.display=el.style.display==='none'?'block':'none'}
 
 // INLINE PRICE
@@ -6678,13 +6702,31 @@ async function loadFromCloud(){
     let loaded=0;
     data.forEach(row=>{
       if(!existingIds.has(row.id)){
-        PRODS.push({
+        const prod = {
           id:row.id, name:row.name, cat:row.cat, em:row.em, brand:row.brand,
           desc:row.desc, specs:row.specs||{},
           _usd:row.price_usd, _vat:row.price_vat,
           _supplier:row.supplier, _parentSupplier:row.parent_supplier,
           _sheet:row.sheet_name, _imported:true
-        });
+        };
+        // Storage dan rasm URL — agar saqlangan bo'lsa
+        if(currentUser){
+          const imgPath = `${currentUser.id}/${row.id}`;
+          const sb2 = getSB();
+          if(sb2){
+            // Sync emas, background da yuklaymiz
+            ['jpg','png'].forEach(ext=>{
+              if(!images[row.id]){
+                sb2.storage.from(STORAGE_BUCKET).getPublicUrl(imgPath+'.'+ext)
+                  .then?.(r=>{ /* no-op, URL static */ });
+              }
+            });
+            // To'g'ridan URL qurish
+            const supaUrl = `https://eieygoljglkgnxcdhjea.supabase.co/storage/v1/object/public/${STORAGE_BUCKET}/${currentUser.id}/${row.id}`;
+            prod._imgUrl = supaUrl+'.jpg';
+          }
+        }
+        PRODS.push(prod);
         existingIds.add(row.id);
         loaded++;
       }
