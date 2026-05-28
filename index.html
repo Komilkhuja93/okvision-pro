@@ -912,6 +912,34 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   border:1px solid var(--border2);color:var(--text2);cursor:pointer;
   font-size:17px;display:flex;align-items:center;justify-content:center}
 
+
+/* ═══ TAKLIF TARIXI MODAL ═══════════════════════════════════════════════ */
+.qh-overlay{position:fixed;inset:0;z-index:3500;background:rgba(0,0,0,.8);
+  backdrop-filter:blur(6px);display:none;align-items:flex-start;
+  justify-content:center;padding:40px 20px;overflow-y:auto}
+.qh-overlay.show{display:flex}
+.qh-box{background:var(--surface);border:1px solid var(--border2);border-radius:20px;
+  width:100%;max-width:580px;box-shadow:0 30px 80px rgba(0,0,0,.5)}
+.qh-hd{padding:18px 22px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;background:var(--surface);border-radius:20px 20px 0 0;z-index:1}
+.qh-title-main{font-size:16px;font-weight:700;color:var(--text)}
+.qh-body{padding:16px}
+.qh-item{display:flex;align-items:center;gap:12px;padding:12px 14px;
+  background:var(--bg);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:8px;transition:.15s}
+.qh-item:hover{border-color:var(--border2)}
+.qh-info{flex:1;min-width:0}
+.qh-title{font-size:13px;font-weight:600;color:var(--text);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qh-meta{font-size:11px;color:var(--text3);margin-top:2px}
+.qh-actions{display:flex;gap:6px;flex-shrink:0}
+.qh-btn{width:32px;height:32px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--surface2);display:flex;align-items:center;justify-content:center;
+  font-size:14px;cursor:pointer;transition:.15s;text-decoration:none}
+.qh-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.08)}
+.qh-btn-del:hover{border-color:var(--red);background:rgba(255,71,87,.08)}
+
 </style>
 </head>
 <body>
@@ -1076,8 +1104,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       </div>
     </div>
     <div class="user-menu-item" onclick="openProfileModal()">👤 <span data-i18n="menu_profile">Profil</span></div>
+    <div class="user-menu-item" onclick="openQuoteHistory()">📋 <span data-i18n="menu_quotes">Taklif tarixi</span></div>
     <div class="user-menu-item" onclick="openSubscription()">💳 <span data-i18n="menu_subscription">Obuna</span></div>
     <div class="user-menu-item" onclick="syncToCloud()">☁️ <span data-i18n="menu_sync">Bulutga saqlash</span></div>
+    <div class="user-menu-item" onclick="syncImagesToStorage()">🖼 <span data-i18n="menu_sync_images">Rasmlarni bulutga</span></div>
     <div class="user-menu-item" onclick="loadFromCloud()">⬇️ <span data-i18n="menu_load">Bulutdan yuklash</span></div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div class="user-menu-item danger" onclick="doSignOut()">🚪 <span data-i18n="menu_signout">Chiqish</span></div>
@@ -6104,6 +6134,271 @@ async function saveProfile(){
   showToast('✅ Profil saqlandi');
 }
 
+
+// ══ SUPABASE STORAGE — RASM SAQLASH ══════════════════════════════════════
+const STORAGE_BUCKET = 'OKVISION';
+
+// Base64 → Blob
+function base64ToBlob(base64, mimeType='image/jpeg'){
+  const parts = base64.split(';base64,');
+  const mime = parts[0].split(':')[1] || mimeType;
+  const raw = atob(parts[1]);
+  const arr = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) arr[i] = raw.charCodeAt(i);
+  return new Blob([arr], {type: mime});
+}
+
+// Rasmni Supabase Storage ga yuklash
+async function uploadImageToStorage(prodId, base64Data){
+  const sb = getSB();
+  if(!sb || !currentUser) return null;
+  try{
+    const blob = base64ToBlob(base64Data);
+    const ext = blob.type.includes('png') ? 'png' : 'jpg';
+    const path = `${currentUser.id}/${prodId}.${ext}`;
+    const { data, error } = await sb.storage
+      .from(STORAGE_BUCKET)
+      .upload(path, blob, { upsert: true, contentType: blob.type });
+    if(error){ console.warn('Storage upload error:', error.message); return null; }
+    // Public URL
+    const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    return urlData?.publicUrl || null;
+  }catch(e){ console.warn('Upload error:', e); return null; }
+}
+
+// Barcha mahsulot rasmlarini Storage ga yuklash (batch)
+async function syncImagesToStorage(){
+  const sb = getSB();
+  if(!sb || !currentUser){ showToast('❌ Avval tizimga kiring'); return; }
+  
+  const prodsWithImages = PRODS.filter(p => p._imgData && p._imgData.startsWith('data:'));
+  if(!prodsWithImages.length){ showToast("⚠️ Yuklash uchun rasm yo'q"); return; }
+  
+  showToast(`🔄 ${prodsWithImages.length} ta rasm yuklanmoqda...`);
+  let uploaded = 0, errors = 0;
+  
+  for(const prod of prodsWithImages){
+    const url = await uploadImageToStorage(prod.id, prod._imgData);
+    if(url){
+      prod._imgUrl = url;
+      delete prod._imgData; // base64 ni o'chirish — URL bilan almashtirish
+      images[prod.id] = url;
+      uploaded++;
+    } else {
+      errors++;
+    }
+    // Progress
+    if(uploaded % 10 === 0) showToast(`🔄 ${uploaded}/${prodsWithImages.length} rasm...`);
+  }
+  
+  // localStorage dan base64 larni tozalash
+  Object.keys(localStorage).forEach(k => {
+    if(k.startsWith('img_')) localStorage.removeItem(k);
+  });
+  try{ localStorage.removeItem('cqIM2'); }catch(e){}
+  
+  savePRODS(); // URL larni saqlash
+  showToast(`✅ ${uploaded} rasm bulutga yuklandi${errors>0?' ('+errors+' xato)':''}`);
+}
+
+// Storage dan rasm URL ni olish
+function getImageUrl(prod){
+  if(!prod) return null;
+  // Avval URL bor bo'lsa
+  if(prod._imgUrl && prod._imgUrl.startsWith('http')) return prod._imgUrl;
+  // Keyin base64
+  if(prod._imgData && prod._imgData.startsWith('data:')) return prod._imgData;
+  // images[] dan
+  if(images[prod.id]){
+    return images[prod.id];
+  }
+  return null;
+}
+
+// Import tugagandan keyin avtomatik Storage ga yuklash
+async function autoSyncImages(newProds){
+  if(!currentUser || !newProds?.length) return;
+  const withImgs = newProds.filter(p => p._imgData);
+  if(!withImgs.length) return;
+  
+  let uploaded = 0;
+  for(const prod of withImgs){
+    const url = await uploadImageToStorage(prod.id, prod._imgData);
+    if(url){
+      prod._imgUrl = url;
+      images[prod.id] = url;
+      // localStorage img_ ni o'chirish
+      try{ localStorage.removeItem('img_'+prod.id.slice(0,20)); }catch(e){}
+      uploaded++;
+    }
+  }
+  if(uploaded > 0){
+    console.log(`☁️ ${uploaded} rasm Storage ga yuklandi`);
+    savePRODS();
+  }
+}
+
+
+// ══ TAKLIF TARIXI — SUPABASE ══════════════════════════════════════════════
+
+// Taklifni Supabase ga saqlash
+async function saveQuoteToCloud(){
+  const sb = getSB();
+  if(!sb || !currentUser){ showToast('❌ Avval tizimga kiring'); return null; }
+
+  // Ma'lumotlarni yig'ish
+  const g = id => document.getElementById(id)?.value?.trim()||'';
+  const oCo = g('oCo'), oAd = g('oAd'), oPh = g('oPh'), oEm = g('oEm');
+  const clN = g('clN'), clA = g('clA'), clP = g('clP');
+  const dt  = g('qDt') || new Date().toISOString().slice(0,10);
+  const cur = document.querySelector('.cb.active')?.textContent?.trim()||'USD';
+
+  // Jami hisoblash
+  let totalUsd = 0;
+  quote.forEach(q => { totalUsd += (q._usd||0)*(q.qty||1); });
+  mqRows.forEach(m => { if(m.name&&m.price>0) totalUsd += m.price*(m.qty||1); });
+  svcRows.forEach(s => { if(s.name&&s.price>0) totalUsd += s.price*(s.qty||1); });
+
+  // Taklif raqami
+  const qNo = 'TT-' + Math.floor(100000+Math.random()*900000);
+
+  // Supabase ga saqlash
+  const { data: quoteData, error: qErr } = await sb.from('quotes').insert({
+    user_id: currentUser.id,
+    title: `${oCo} → ${clN} (${dt})`,
+    client_name: clN,
+    client_company: clN,
+    client_address: clA,
+    client_phone: clP,
+    total_usd: Math.round(totalUsd*100)/100,
+    total_uzs: Math.round(totalUsd * RATE),
+    rate: RATE,
+    currency: cur,
+    status: 'draft',
+    note: qNo,
+  }).select().single();
+
+  if(qErr){ console.error('Quote save error:', qErr); return null; }
+
+  // Quote items saqlash
+  const items = [];
+  quote.forEach((q,i) => {
+    items.push({
+      quote_id: quoteData.id,
+      product_id: q.id||null,
+      product_name: q.name,
+      supplier: q._supplier||'',
+      category: q.cat||'',
+      qty: q.qty||1,
+      unit: 'dona',
+      price_usd: q._usd||0,
+      total_usd: (q._usd||0)*(q.qty||1),
+      sort_order: i,
+    });
+  });
+  mqRows.forEach((m,i) => {
+    if(m.name&&m.price>0) items.push({
+      quote_id: quoteData.id,
+      product_name: m.name,
+      qty: m.qty||1,
+      unit: m.unit||'dona',
+      price_usd: m.price,
+      total_usd: m.price*(m.qty||1),
+      sort_order: quote.length+i,
+    });
+  });
+
+  if(items.length){
+    await sb.from('quote_items').insert(items);
+  }
+
+  return quoteData;
+}
+
+// PDF ni Storage ga yuklash
+async function savePdfToStorage(quoteId, pdfBlob){
+  const sb = getSB();
+  if(!sb || !currentUser || !pdfBlob) return null;
+  try{
+    const path = `${currentUser.id}/quotes/${quoteId}.pdf`;
+    const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, pdfBlob, {
+      upsert: true, contentType: 'application/pdf'
+    });
+    if(error){ console.warn('PDF upload error:', error.message); return null; }
+    const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+    // PDF URL ni quotes jadvaliga saqlash
+    await sb.from('quotes').update({ note: data.publicUrl }).eq('id', quoteId);
+    return data.publicUrl;
+  }catch(e){ console.warn('PDF storage error:', e); return null; }
+}
+
+// Taklif tarixi sahifasini ochish
+async function openQuoteHistory(){
+  const sb = getSB();
+  if(!sb || !currentUser){ showToast('❌ Avval tizimga kiring'); return; }
+  document.getElementById('userMenu')?.classList.remove('show');
+
+  const modal = document.getElementById('quoteHistoryModal');
+  if(!modal) return;
+  modal.classList.add('show');
+  document.body.style.overflow = 'hidden';
+
+  // Takliflarni yuklash
+  const listEl = document.getElementById('qhList');
+  listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">⏳ Yuklanmoqda...</div>';
+
+  const { data, error } = await sb.from('quotes')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  if(error || !data?.length){
+    listEl.innerHTML = "<div style='text-align:center;padding:30px;color:var(--text3)'>📋 Taklif tarixi yo'q</div>";
+    return;
+  }
+
+  listEl.innerHTML = data.map(q => {
+    const date = new Date(q.created_at).toLocaleDateString('uz-UZ');
+    const status = q.status==='sent'?'📤 Yuborilgan':q.status==='accepted'?'✅ Qabul':q.status==='rejected'?'❌ Rad':'📝 Qoralama';
+    const hasPdf = q.note && q.note.startsWith('http');
+    return `
+    <div class="qh-item" id="qhi-${q.id}">
+      <div class="qh-info">
+        <div class="qh-title">${q.title||'Taklif'}</div>
+        <div class="qh-meta">${date} · ${status} · $${q.total_usd||0}</div>
+      </div>
+      <div class="qh-actions">
+        ${hasPdf?`<a href="${q.note}" target="_blank" class="qh-btn qh-btn-dl" title="PDF yuklash">⬇️</a>`:''}
+        <button class="qh-btn qh-btn-del" onclick="deleteQuoteFromCloud('${q.id}')" title="O'chirish">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function closeQuoteHistory(){
+  document.getElementById('quoteHistoryModal')?.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+// Taklifni o'chirish
+async function deleteQuoteFromCloud(quoteId){
+  if(!confirm("Bu taklifni o'chirishni tasdiqlaysizmi?")) return;
+  const sb = getSB();
+  if(!sb) return;
+  // Quote items o'chirish (cascade bor, lekin qo'lda ham)
+  await sb.from('quote_items').delete().eq('quote_id', quoteId);
+  // PDF ni Storage dan o'chirish
+  const path = `${currentUser.id}/quotes/${quoteId}.pdf`;
+  await sb.storage.from(STORAGE_BUCKET).remove([path]);
+  // Quote o'chirish
+  const { error } = await sb.from('quotes').delete().eq('id', quoteId);
+  if(!error){
+    document.getElementById('qhi-'+quoteId)?.remove();
+    showToast("🗑 Taklif o'chirildi");
+  }
+}
+
 // ══ SUPABASE AUTH TIZIMI ══════════════════════════════════════════════════
 const SUPABASE_URL = 'https://eieygoljglkgnxcdhjea.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_P6mPl9e6dgbgDwCAC49GXQ_3lzGM94H';
@@ -6716,6 +7011,20 @@ document.addEventListener('DOMContentLoaded', ()=>{
       </div>
 
       <button class="prof-save-btn" onclick="saveProfile()">💾 Saqlash</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ TAKLIF TARIXI MODAL ═══════════════════════════════════════════════ -->
+<div id="quoteHistoryModal" class="qh-overlay" onclick="if(event.target===this)closeQuoteHistory()">
+  <div class="qh-box">
+    <div class="qh-hd">
+      <div class="qh-title-main">📋 <span data-i18n="menu_quotes">Taklif tarixi</span></div>
+      <button onclick="closeQuoteHistory()" style="width:30px;height:30px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);cursor:pointer;font-size:16px">✕</button>
+    </div>
+    <div class="qh-body">
+      <div id="qhList"></div>
     </div>
   </div>
 </div>
