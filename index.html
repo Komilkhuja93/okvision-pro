@@ -1443,39 +1443,39 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <div class="guide-body" style="display:none;padding:14px 16px">
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
             <div style="background:var(--bg);border-radius:8px;padding:12px">
-              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">1️⃣ Hikvision / KSS / OKVISION</div>
+              <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">1️⃣ <span data-i18n="guide_hik_title">Hikvision / KSS / OKVISION</span></div>
               <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                Ko'p varaqlı Excel (.xlsx) faylni yuklang.<br>
-                <span style="color:var(--green)">✓</span> Rasmlar avtomatik chiqariladi<br>
-                <span style="color:var(--green)">✓</span> Kategoriyalar avtomatik<br>
-                <span style="color:var(--text3)">Supplier nomi: ixtiyoriy</span>
+                <span data-i18n='guide_hik_sub'>Ko'p varaqlı Excel (.xlsx) faylni yuklang.</span><br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_hik_1">Rasmlar avtomatik chiqariladi</span><br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_hik_2">Kategoriyalar avtomatik</span><br>
+                <span style="color:var(--text3)"><span data-i18n="guide_hik_3">Supplier nomi: ixtiyoriy</span></span>
               </div>
             </div>
             <div style="background:var(--bg);border-radius:8px;padding:12px">
-              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px">2️⃣ Dahua / HiLook / TpLink</div>
+              <div style="font-size:12px;font-weight:700;color:var(--amber);margin-bottom:6px">2️⃣ <span data-i18n="guide_dah_title">Dahua / HiLook / TpLink</span></div>
               <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                Excel faylni yuklang.<br>
-                <span style="color:var(--amber)">⚠</span> Rasmlar alohida jadvalda bo'lsa chiqariladi<br>
-                <span style="color:var(--green)">✓</span> Narx va nom avtomatik<br>
-                <span style="color:var(--text3)">Supplier nomini kiriting</span>
+                <span data-i18n='guide_dah_sub'>Excel faylni yuklang.</span><br>
+                <span style="color:var(--amber)">⚠</span> <span data-i18n="guide_dah_1">Rasmlar alohida jadvalda bo'lsa chiqariladi</span><br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_dah_2">Narx va nom avtomatik</span><br>
+                <span style="color:var(--text3)"><span data-i18n="guide_sup_hint">Supplier nomini kiriting</span></span>
               </div>
             </div>
             <div style="background:var(--bg);border-radius:8px;padding:12px">
-              <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">3️⃣ PDF prays-list</div>
+              <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">3️⃣ <span data-i18n="guide_pdf_title">PDF prays-list</span></div>
               <div style="font-size:12px;color:var(--text2);line-height:1.6">
                 Faqat matnli PDF (skanerlangan emas).<br>
-                <span style="color:var(--green)">✓</span> Nom va narx avtomatik topiladi<br>
-                <span style="color:var(--red)">✗</span> Rasmlar chiqarilmaydi<br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_pdf_1">Nom va narx avtomatik topiladi</span><br>
+                <span style="color:var(--red)">✗</span> <span data-i18n="guide_pdf_2">Rasmlar chiqarilmaydi</span><br>
                 <span style="color:var(--text3)">Supplier nomini kiriting</span>
               </div>
             </div>
             <div style="background:var(--bg);border-radius:8px;padding:12px">
-              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">4️⃣ Qo'lda qo'shish</div>
+              <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:6px">4️⃣ <span data-i18n="guide_man_title">Qo'lda qo'shish</span></div>
               <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                Katalogda yo'q mahsulot uchun.<br>
-                <span style="color:var(--green)">✓</span> Taklif sahifasida qo'lda kiritish<br>
-                <span style="color:var(--green)">✓</span> So'm yoki $ narx<br>
-                <span style="color:var(--text3)">Import shart emas</span>
+                <span data-i18n='guide_man_sub'>Katalogda yo'q mahsulot uchun.</span><br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_man_1">Taklif sahifasida qo'lda kiritish</span><br>
+                <span style="color:var(--green)">✓</span> <span data-i18n="guide_man_2">So'm yoki $ narx</span><br>
+                <span style="color:var(--text3)"><span data-i18n="guide_man_3">Import shart emas</span></span>
               </div>
             </div>
           </div>
@@ -4513,6 +4513,24 @@ const I18N = {
     cat_ip:'IP Kamera', cat_analog:'Analog Kamera', cat_nvr:'NVR / DVR',
     cat_access:'Kirish nazorati', cat_net:'Tarmoq qurilmasi', cat_fire:"Yong'in xavfsizligi",
     import_tip:"Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.",
+    guide_hik_title:'Hikvision / KSS / OKVISION',
+    guide_hik_sub:"Ko'p varaqlı Excel (.xlsx) faylni yuklang.",
+    guide_hik_1:'Rasmlar avtomatik chiqariladi',
+    guide_hik_2:'Kategoriyalar avtomatik',
+    guide_hik_3:'Supplier nomi: ixtiyoriy',
+    guide_dah_title:'Dahua / HiLook / TpLink',
+    guide_dah_sub:'Excel faylni yuklang.',
+    guide_dah_1:"Rasmlar alohida jadvalda bo'lsa chiqariladi",
+    guide_dah_2:'Narx va nom avtomatik',
+    guide_sup_hint:'Supplier nomini kiriting',
+    guide_pdf_title:'PDF prays-list',
+    guide_pdf_1:'Nom va narx avtomatik topiladi',
+    guide_pdf_2:'Rasmlar chiqarilmaydi',
+    guide_man_title:"Qo'lda qo'shish",
+    guide_man_sub:"Katalogda yo'q mahsulot uchun.",
+    guide_man_1:"Taklif sahifasida qo'lda kiritish",
+    guide_man_2:"So'm yoki \$ narx",
+    guide_man_3:'Import shart emas',
     btn_clear_all: "Barcha ma'lumotlarni tozalash",
     import_guide_title: "Import qilish yo'riqnomasi",
     cat_desc_ip: "DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar",
@@ -4687,6 +4705,24 @@ const I18N = {
     cat_ip:'IP-камера', cat_analog:'Аналоговая камера', cat_nvr:'NVR / DVR',
     cat_access:'Контроль доступа', cat_net:'Сетевое оборудование', cat_fire:'Пожарная безопасность',
     import_tip:'При первом импорте укажите название поставщика (например: HIKVISION). При следующих импортах имя файла автоматически определяет поставщика.',
+    guide_hik_title:'Hikvision / KSS / OKVISION',
+    guide_hik_sub:'Загрузите многолистовой Excel (.xlsx).',
+    guide_hik_1:'Изображения извлекаются автоматически',
+    guide_hik_2:'Категории определяются автоматически',
+    guide_hik_3:'Название поставщика: необязательно',
+    guide_dah_title:'Dahua / HiLook / TpLink',
+    guide_dah_sub:'Загрузите файл Excel.',
+    guide_dah_1:'Изображения извлекаются если в отдельной таблице',
+    guide_dah_2:'Цена и наименование автоматически',
+    guide_sup_hint:'Введите название поставщика',
+    guide_pdf_title:'PDF прайс-лист',
+    guide_pdf_1:'Название и цена определяются автоматически',
+    guide_pdf_2:'Изображения не извлекаются',
+    guide_man_title:'Добавить вручную',
+    guide_man_sub:'Для товаров не в каталоге.',
+    guide_man_1:'Ввод вручную в разделе КП',
+    guide_man_2:'Цена в сумах или $',
+    guide_man_3:'Импорт не нужен',
     btn_clear_all: 'Очистить все данные',
     import_guide_title: 'Инструкция по импорту',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn и похожие серии',
@@ -4832,6 +4868,24 @@ const I18N = {
     cat_ip:'IP Camera', cat_analog:'Analog Camera', cat_nvr:'NVR / DVR',
     cat_access:'Access Control', cat_net:'Network Equipment', cat_fire:'Fire Safety',
     import_tip:'On first import, enter the supplier name (e.g. HIKVISION). On subsequent imports, the filename automatically identifies the supplier.',
+    guide_hik_title:'Hikvision / KSS / OKVISION',
+    guide_hik_sub:'Upload multi-sheet Excel (.xlsx).',
+    guide_hik_1:'Images extracted automatically',
+    guide_hik_2:'Categories detected automatically',
+    guide_hik_3:'Supplier name: optional',
+    guide_dah_title:'Dahua / HiLook / TpLink',
+    guide_dah_sub:'Upload Excel file.',
+    guide_dah_1:'Images extracted if in separate sheet',
+    guide_dah_2:'Price and name auto-detected',
+    guide_sup_hint:'Enter supplier name',
+    guide_pdf_title:'PDF price list',
+    guide_pdf_1:'Name and price found automatically',
+    guide_pdf_2:'Images not extracted',
+    guide_man_title:'Add manually',
+    guide_man_sub:'For products not in catalog.',
+    guide_man_1:'Enter manually in proposal',
+    guide_man_2:'Price in UZS or $',
+    guide_man_3:'No import needed',
     btn_clear_all: 'Clear all data',
     import_guide_title: 'Import guide',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn and similar series',
@@ -5095,6 +5149,16 @@ function setLang(lang) {
   if(importPageTitle){
     importPageTitle.innerHTML = '📥 '+(lang==='ru'?'Импорт прайс-листа':lang==='en'?'Price List Import':'Prays-list Import');
   }
+
+  // Import guide card matnlari
+  ['guide_hik_title','guide_hik_sub','guide_hik_1','guide_hik_2','guide_hik_3',
+   'guide_dah_title','guide_dah_sub','guide_dah_1','guide_dah_2','guide_sup_hint',
+   'guide_pdf_title','guide_pdf_1','guide_pdf_2',
+   'guide_man_title','guide_man_sub','guide_man_1','guide_man_2','guide_man_3'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
 
   // Import natija tugmalari
   ['btn_go_to_catalog','btn_manage_categories'].forEach(key=>{
