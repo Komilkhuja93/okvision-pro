@@ -2757,40 +2757,79 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
 
 // ── SIMPLE FORMAT (1-sheet: Model | Narx) ──────────────────────────────────
 function importSimple(wb, supplierHint, sheetImages={}){
-  const supplierName=supplierHint||'Supplier';
-  const ws=wb.Sheets[wb.SheetNames[0]];
-  const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
-  const importedProds=[];
+  const supplierName = supplierHint || wb.SheetNames[0] || 'Supplier';
+  const sheetName = wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+  const importedProds = [];
 
-  // Try to detect header
-  let headerIdx=0;
-  let namCol=0, priceCol=1;
+  // Header detection — Dahua: A=Наименование, B=Изображение, C=Цена, D=Описание
+  let headerIdx=0, namCol=0, priceCol=-1, specCol=-1, imgCol=-1;
   for(let i=0;i<Math.min(5,rows.length);i++){
-    const r=rows[i].map(c=>String(c||'').toLowerCase());
-    const ni=r.findIndex(c=>/наимен|model|name|nomi|товар|product/i.test(c));
-    const pi=r.findIndex(c=>/цена|price|narx|usd|\$/i.test(c));
-    if(ni>=0||pi>=0){ namCol=ni>=0?ni:0; priceCol=pi>=0?pi:1; headerIdx=i; break; }
+    const r = rows[i];
+    let found = false;
+    r.forEach((h,ci)=>{
+      const hl = String(h||'').toLowerCase().trim();
+      if(!hl) return;
+      if(namCol<0&&/наимен|model|name|nomi|товар|product/i.test(hl)){namCol=ci;found=true;}
+      if(priceCol<0&&/цена.*usd|usd|долл/i.test(hl)) priceCol=ci;
+      if(priceCol<0&&/^цена$|^price$|^narx$/i.test(hl)&&!/ндс/i.test(hl)) priceCol=ci;
+      if(specCol<0&&/описан|характер|spec|tavs|desc/i.test(hl)) specCol=ci;
+      if(imgCol<0&&/изображ|image|rasm|фото|photo/i.test(hl)) imgCol=ci;
+    });
+    if(found){headerIdx=i;break;}
   }
 
-  rows.slice(headerIdx+1).forEach(row=>{
+  // Narx ustuni topilmasa — raqamli ustunni qidirish
+  if(priceCol<0){
+    const cands={};
+    for(let r=headerIdx+1;r<Math.min(headerIdx+20,rows.length);r++){
+      (rows[r]||[]).forEach((v,ci)=>{
+        if(ci===namCol||ci===imgCol||ci===specCol) return;
+        const n=parseFloat(String(v||'').replace(/[^0-9.]/g,''));
+        if(!isNaN(n)&&n>0&&n<100000) cands[ci]=(cands[ci]||0)+1;
+      });
+    }
+    let best=-1,bestN=0;
+    for(const[c,n] of Object.entries(cands)) if(n>bestN){bestN=n;best=parseInt(c);}
+    if(best>=0&&bestN>=3) priceCol=best;
+  }
+
+  const sImgs = sheetImages[sheetName] || {};
+
+  rows.slice(headerIdx+1).forEach((row, relIdx)=>{
+    const absIdx = headerIdx + 1 + relIdx;
     if(!row[namCol]) return;
-    const name=String(row[namCol]).trim();
+    const name = String(row[namCol]).trim();
     if(name.length<3) return;
-    const priceStr=String(row[priceCol]||'').replace(/[^0-9.,]/g,'').replace(',','.');
-    const usd=parseFloat(priceStr);
+    // Narx
+    const priceRaw = priceCol>=0 ? String(row[priceCol]||'') : '';
+    const usd = parseFloat(priceRaw.replace(/[^0-9.,]/g,'').replace(',','.'));
     if(!usd||usd<=0) return;
-    const cat=smartCatGlobal(name,'');
-    importedProds.push({name, _usd:usd, price:usd, cat, em:catEmoji(cat||'Aksessuar'), desc:name, specs:{}});
+    // Desc
+    const desc = specCol>=0 ? String(row[specCol]||'').replace(/&gt;/g,'>').replace(/[\r\n]+/g,' ').trim() : '';
+    // Image — row 0-based absIdx
+    const img = sImgs[absIdx]||sImgs[absIdx-1]||sImgs[absIdx+1]||null;
+    // Category
+    const cat = smartCatGlobal(name,'');
+    const pid = 'simp_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,28)+'_'+Math.abs(hashStr(name));
+    importedProds.push({
+      id:pid, name, _usd:usd, price:usd, cat,
+      em:catEmoji(cat||'Aksessuar'), desc, specs:{},
+      _supplier:supplierName, _parentSupplier:supplierName,
+      _sheet:sheetName, _imported:true,
+      ...(img?{_imgData:img}:{})
+    });
   });
 
   setImportProgress(100,'✅ Tayyor');
   setTimeout(hideImportProgress,600);
 
   if(!importedProds.length){
-    showToast('⚠️ Format tanilmadi. Model|Narx ustunlari kerak.');
+    showToast('⚠️ Format tanilmadi. Наименование|Цена ustunlari kerak.');
     return;
   }
-  finishImport(importedProds, supplierName, wb.SheetNames[0]);
+  finishImport(importedProds, supplierName, sheetName);
 }
 
 // ── HELPERS ──────────────────────────────────────────────────────────────
@@ -6061,10 +6100,20 @@ async function syncToCloud(){
         sheet_name: p._sheet||''
       }));
       const {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
-      if(error) errors++; else saved+=batch.length;
+      if(error){
+        console.error('Sync error:', error.message, error.details, error.hint);
+        errors++;
+        if(errors===1) showToast('⚠️ Xato: '+error.message);
+      } else saved+=batch.length;
     }
     if(ind){ ind.textContent='● Ulangan'; ind.className='sync-indicator'; }
-    showToast(`☁️ ${saved} ta mahsulot saqlandi`);
+    if(errors>0){
+      showToast(`⚠️ ${saved} saqlandi, ${errors} xato. Console da ko'ring`);
+    } else if(saved>0){
+      showToast(`☁️ ${saved} ta mahsulot saqlandi`);
+    } else {
+      showToast("⚠️ Saqlash uchun mahsulot yo'q. Avval import qiling");
+    }
     toggleUserMenu();
   }catch(e){
     if(ind){ ind.textContent='● Xato'; ind.className='sync-indicator'; ind.style.color='var(--red)'; }
