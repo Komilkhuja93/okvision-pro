@@ -1522,15 +1522,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <div style="font-size:14px;font-weight:700" id="previewTitle">Kategoriyasi aniqlanmaganlar</div>
             <div style="font-size:11px;color:var(--text3);margin-top:2px" id="previewSubtitle">Quyida ro'yxatdan har biriga kategoriya tanlang</div>
           </div>
-          <button onclick="applyImportPreview()" class="btn bp" style="font-size:12px;padding:7px 16px">✅ Importni tasdiqlash</button>
+          <button onclick="applyImportPreview()" class="btn bp" style="font-size:12px;padding:7px 16px">✅ <span data-i18n="btn_import_confirm">Importni tasdiqlash</span></button>
         </div>
         <div style="max-height:340px;overflow-y:auto">
           <table id="previewTable" style="width:100%;border-collapse:collapse;font-size:12px">
             <thead>
               <tr style="background:var(--surface2)">
-                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)">Mahsulot nomi</th>
-                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);width:80px">Narx</th>
-                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);width:180px">Kategoriya</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border)" data-i18n="col_product_name">Mahsulot nomi</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);width:80px" data-i18n="col_price">Narx</th>
+                <th style="padding:7px 10px;text-align:left;color:var(--text3);font-weight:600;border-bottom:1px solid var(--border);width:180px" data-i18n="col_category">Kategoriya</th>
               </tr>
             </thead>
             <tbody id="previewBody"></tbody>
@@ -1542,8 +1542,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div id="importResultBox" style="display:none;background:var(--surface);border:1px solid rgba(0,229,160,.25);border-radius:var(--rl);padding:16px 18px;margin-bottom:16px">
         <div id="importResultContent"></div>
         <div style="display:flex;gap:8px;margin-top:12px">
-          <button onclick="switchTab('catalog')" class="btn bp" style="flex:1">📦 Katalogga o'tish</button>
-          <button onclick="openCatManager()" class="btn bv" style="flex:1">🗂 Kategoriyalarni sozlash</button>
+          <button onclick="switchTab('catalog')" class="btn bp" style="flex:1">📦 <span data-i18n="btn_go_to_catalog">Katalogga o'tish</span></button>
+          <button onclick="openCatManager()" class="btn bv" style="flex:1">🗂 <span data-i18n="btn_manage_categories">Kategoriyalarni sozlash</span></button>
         </div>
       </div>
 
@@ -2171,8 +2171,15 @@ function showImportPreview(unknown, known, supplierName, fileName){
   const sub=document.getElementById('previewSubtitle');
   if(!box||!body) return;
 
-  title.innerHTML=`📂 ${unknown.length} ta mahsulot <span style="color:var(--amber)">"Kategoriyasiz"</span> papkasiga qo'yildi`;
-  sub.textContent=`${known.length} ta avtomatik aniqlandi · Quyida kategoriyasizlarni ko'chiring (ixtiyoriy)`;
+  const _un = LANG==='ru'?'Без категории':LANG==='en'?'Uncategorized':'Kategoriyasiz';
+  const _placed = LANG==='ru'?`📂 ${unknown.length} товаров в папке <span style="color:var(--amber)">"Без категории"</span>`:
+                  LANG==='en'?`📂 ${unknown.length} products in <span style="color:var(--amber)">"Uncategorized"</span>`:
+                  `📂 ${unknown.length} ta mahsulot <span style="color:var(--amber)">"Kategoriyasiz"</span> papkasiga qo'yildi`;
+  const _detected = LANG==='ru'?`${known.length} определено автоматически · Переместите нераспознанные ниже`:
+                    LANG==='en'?`${known.length} auto-detected · Move uncategorized items below (optional)`:
+                    `${known.length} ta avtomatik aniqlandi · Quyida kategoriyasizlarni ko'chiring (ixtiyoriy)`;
+  title.innerHTML=_placed;
+  sub.textContent=_detected;
 
   const catOpts=ALL_CATS.filter(c=>c!=='Kategoriyasiz').map(c=>`<option value="${c}">${catEmoji(c)} ${c}</option>`).join('');
   body.innerHTML=unknown.map((p,i)=>`
@@ -2290,30 +2297,43 @@ function showImportResult(known, resolved, supplierName, fileName){
     .join('');
 
   const suppliers=Object.keys(window.supplierPrices||{});
+  const _impOk = LANG==='ru'?`${supplierName} успешно импортирован`:LANG==='en'?`${supplierName} successfully imported`:`${supplierName} muvaffaqiyatli import qilindi`;
+  const _impSub = uncatCount
+    ? (LANG==='ru'?`${total} товаров импортировано · <span style='color:var(--amber)'>📂 ${uncatCount} без категории</span>`:
+       LANG==='en'?`${total} products imported · <span style='color:var(--amber)'>📂 ${uncatCount} uncategorized</span>`:
+       `${total} mahsulot import qilindi · <span style='color:var(--amber)'>📂 ${uncatCount} ta Kategoriyasiz</span>`)
+    : (LANG==='ru'?`${total} товаров импортировано, все категоризированы`:
+       LANG==='en'?`${total} products imported, all categorized`:
+       `${total} mahsulot import qilindi, barchasi kategoriyalangan`);
+  const _lTotal = LANG==='ru'?'Всего':LANG==='en'?'Total':'Jami';
+  const _lAuto  = LANG==='ru'?'Авто':LANG==='en'?'Auto':'Avtomatik';
+  const _lManual= LANG==='ru'?'Вручную':LANG==='en'?'Manual':"Qo'lda";
+  const _lSuppliers = LANG==='ru'?'Все поставщики:':LANG==='en'?'All suppliers:':'Barcha supplierlar:';
+
   resContent.innerHTML=`
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <div style="font-size:28px">✅</div>
       <div>
-        <div style="font-size:15px;font-weight:700">${supplierName} muvaffaqiyatli import qilindi</div>
-        <div style="font-size:12px;color:var(--text2);margin-top:2px">${total} mahsulot import qilindi${uncatCount?` · <span style='color:var(--amber)'>📂 ${uncatCount} ta Kategoriyasiz</span>`:', barchasi kategoriyalangan'}</div>
+        <div style="font-size:15px;font-weight:700">${_impOk}</div>
+        <div style="font-size:12px;color:var(--text2);margin-top:2px">${_impSub}</div>
       </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
       <div style="background:var(--surface2);border-radius:var(--r);padding:10px;text-align:center">
         <div style="font-size:20px;font-weight:700;color:var(--accent)">${total}</div>
-        <div style="font-size:10px;color:var(--text3)">Jami</div>
+        <div style="font-size:10px;color:var(--text3)">${_lTotal}</div>
       </div>
       <div style="background:var(--surface2);border-radius:var(--r);padding:10px;text-align:center">
         <div style="font-size:20px;font-weight:700;color:var(--green)">${known.length}</div>
-        <div style="font-size:10px;color:var(--text3)">Avtomatik</div>
+        <div style="font-size:10px;color:var(--text3)">${_lAuto}</div>
       </div>
       <div style="background:var(--surface2);border-radius:var(--r);padding:10px;text-align:center">
         <div style="font-size:20px;font-weight:700;color:var(--purple)">${resolved.length}</div>
-        <div style="font-size:10px;color:var(--text3)">Qo'lda</div>
+        <div style="font-size:10px;color:var(--text3)">${_lManual}</div>
       </div>
     </div>
     ${catBadges?`<div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${catBadges}</div>`:''}
-    ${suppliers.length>1?`<div style="font-size:11px;color:var(--text3)">📦 Barcha supplierlar: ${suppliers.map(s=>`<span style="color:var(--accent)">${s}</span>`).join(' · ')}</div>`:''}`;
+    ${suppliers.length>1?`<div style="font-size:11px;color:var(--text3)">📦 ${_lSuppliers} ${suppliers.map(s=>`<span style="color:var(--accent)">${s}</span>`).join(' · ')}</div>`:''}`;
   resBox.style.display='block';
   resBox.scrollIntoView({behavior:'smooth',block:'start'});
 }
@@ -4501,6 +4521,8 @@ const I18N = {
     cat_desc_access: "DS-K seriya, turniket, shlagbaum, DS-TMG, reader, terminal, ZKTeco, KANIHAD",
     cat_desc_net: "DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek",
     cat_desc_fire: "RUBEZH, Bolid, пожар, smoke detector, fire alarm tizimlari",
+    btn_go_to_catalog:"Katalogga o'tish", btn_manage_categories:"Kategoriyalarni sozlash",
+    col_product_name:'Mahsulot nomi', col_category:'Kategoriya',
     svc_cam:"Kamera o'rnatish", svc_intercom:"Domofon o'rnatish",
     svc_faceid:"Face ID o'rnatish", svc_ivms:'iVMS 4200',
     svc_hikcentral:'HikCentral', svc_server:"Server ko'tarish",
@@ -4673,6 +4695,8 @@ const I18N = {
     cat_desc_access: 'Серия DS-K, турникеты, шлагбаумы, DS-TMG, ридеры, терминалы, ZKTeco, KANIHAD',
     cat_desc_net: 'DS-3E/3T/3W коммутаторы/роутеры/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
     cat_desc_fire: 'RUBEZH, Bolid, пожарная сигнализация, smoke detector, fire alarm',
+    btn_go_to_catalog:'Перейти в каталог', btn_manage_categories:'Управление категориями',
+    col_product_name:'Наименование', col_category:'Категория',
     svc_cam:'Монтаж камер', svc_intercom:'Монтаж домофона',
     svc_faceid:'Монтаж Face ID', svc_ivms:'iVMS 4200',
     svc_hikcentral:'HikCentral', svc_server:'Монтаж сервера',
@@ -4816,6 +4840,8 @@ const I18N = {
     cat_desc_access: 'DS-K series, turnstiles, barriers, DS-TMG, readers, terminals, ZKTeco, KANIHAD',
     cat_desc_net: 'DS-3E/3T/3W switch/router/WiFi, TP-Link, Mikrotik, Ubiquiti, Wi-Tek',
     cat_desc_fire: 'RUBEZH, Bolid, fire alarm, smoke detector, fire alarm systems',
+    btn_go_to_catalog:'Go to catalog', btn_manage_categories:'Manage categories',
+    col_product_name:'Product name', col_category:'Category',
     svc_cam:'Camera install', svc_intercom:'Intercom install',
     svc_faceid:'Face ID install', svc_ivms:'iVMS 4200',
     svc_hikcentral:'HikCentral', svc_server:'Server setup',
@@ -5069,6 +5095,20 @@ function setLang(lang) {
   if(importPageTitle){
     importPageTitle.innerHTML = '📥 '+(lang==='ru'?'Импорт прайс-листа':lang==='en'?'Price List Import':'Prays-list Import');
   }
+
+  // Import natija tugmalari
+  ['btn_go_to_catalog','btn_manage_categories'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
+
+  // Import preview jadval ustunlari
+  ['col_product_name','col_category','col_price','btn_import_confirm'].forEach(key=>{
+    document.querySelectorAll(`[data-i18n="${key}"]`).forEach(el=>{
+      const val=t(key); if(val) el.textContent=val;
+    });
+  });
 
   // Xizmat preset tugmalari
   ['svc_cam','svc_intercom','svc_faceid','svc_ivms',
