@@ -2181,7 +2181,7 @@ function showImportPreview(unknown, known, supplierName, fileName){
   title.innerHTML=_placed;
   sub.textContent=_detected;
 
-  const catOpts=ALL_CATS.filter(c=>c!=='Kategoriyasiz').map(c=>`<option value="${c}">${catEmoji(c)} ${c}</option>`).join('');
+  const catOpts=ALL_CATS.filter(c=>c!=='Kategoriyasiz').map(c=>`<option value="${c}">${catEmoji(c)} ${typeof transCat==='function'?transCat(c):c}</option>`).join('');
   body.innerHTML=unknown.map((p,i)=>`
     <tr style="border-bottom:1px solid var(--border)">
       <td style="padding:7px 10px;color:var(--text);font-size:11px">${p.name.slice(0,50)}</td>
@@ -2293,7 +2293,7 @@ function showImportResult(known, resolved, supplierName, fileName){
   const catCount={};
   [...known,...resolved].forEach(p=>{catCount[p.cat]=(catCount[p.cat]||0)+1});
   const catBadges=Object.entries(catCount).sort((a,b)=>b[1]-a[1])
-    .map(([c,n])=>`<span style="background:var(--surface2);border-radius:5px;padding:3px 9px;font-size:11px;color:var(--text2)">${catEmoji(c)} ${c}: <strong style="color:var(--text)">${n}</strong></span>`)
+    .map(([c,n])=>`<span style="background:var(--surface2);border-radius:5px;padding:3px 9px;font-size:11px;color:var(--text2)">${catEmoji(c)} ${typeof transCat==='function'?transCat(c):c}: <strong style="color:var(--text)">${n}</strong></span>`)
     .join('');
 
   const suppliers=Object.keys(window.supplierPrices||{});
@@ -2986,7 +2986,7 @@ function renderCats(){
     html+=cats.map(c=>{
       const cnt=PRODS.filter(p=>p.cat===c).length;
       const em=getEm(c);
-      return`<button class="main-cat-chip${actCat===c?' active':''}" onclick="setC('${c}')">${em} ${c} <span class="chip-cnt">${cnt}</span></button>`;
+      return`<button class="main-cat-chip${actCat===c?' active':''}" onclick="setC('${c}')">${em} ${typeof transCat==='function'?transCat(c):c} <span class="chip-cnt">${cnt}</span></button>`;
     }).join('');
     chips.innerHTML=html;
   }
@@ -5257,12 +5257,12 @@ function updateDataStatus(){
   const ps=document.getElementById('dataStatProds');
   const ss=document.getElementById('dataStatSups');
   const pr=document.getElementById('dataStatPrices');
-  const tProd = typeof t==='function' ? t('stat_products_short') : 'ta mahsulot';
-  const tSup  = typeof t==='function' ? t('stat_suppliers_short'): 'ta supplier';
-  const tPrc  = typeof t==='function' ? t('stat_prices_short')   : 'ta narx';
-  if(ps) ps.innerHTML='📦 '+PRODS.length+' <span data-i18n="stat_products_short">'+tProd+'</span>';
-  if(ss) ss.textContent='🏢 '+Object.keys(window.supplierPrices||{}).length+' '+tSup;
-  if(pr) pr.textContent='💰 '+Object.keys(prices||{}).length+' '+tPrc;
+  const tProd = LANG==='ru'?' товаров':LANG==='en'?' products':' ta mahsulot';
+  const tSup  = LANG==='ru'?' поставщиков':LANG==='en'?' suppliers':' ta supplier';
+  const tPrc  = LANG==='ru'?' цен':LANG==='en'?' prices':' ta narx';
+  if(ps) ps.innerHTML='📦 '+PRODS.length+tProd;
+  if(ss) ss.textContent='🏢 '+Object.keys(window.supplierPrices||{}).length+tSup;
+  if(pr) pr.textContent='💰 '+Object.keys(prices||{}).length+tPrc;
 }
 
 function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove();clearTimeout(tT);const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);tT=setTimeout(()=>t.remove(),2800)}
