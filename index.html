@@ -1956,8 +1956,8 @@ document.addEventListener('DOMContentLoaded',()=>{
     // ── Import qilingan mahsulotlarni tiklash (faqat session bo'lsa) ──
     // Auth orqali kirgan bo'lsa onUserLogin da yuklanadi
     // Agar Supabase session bo'lmasa — offline rejim uchun yuklaymiz
-    const _savedUid = localStorage.getItem('okvUserId');
-    if(_savedUid) loadPRODS(); // session mavjud, oldingi ma'lumotlar yuklansin
+    // loadPRODS har doim chaqirilsin — login bo'lmasa ham localStorage dan yuklash
+    loadPRODS();
     const q=localStorage.getItem('cqQ2');
     if(q){
       JSON.parse(q).forEach(({id,qty,name})=>{
@@ -2334,9 +2334,13 @@ function applyProds(importedProds, supplierName){
 
   try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
   savePRODS();
-  saveIM(); // Rasmlarni ham saqlash
+  saveIM(); // Rasmlarni localStorage ga saqlash
   updPC(); renderCats(); renderList(); filterP();
   if(selP) showProd(selP.id);
+  // Storage ga avtomatik yuklash (background)
+  if(typeof autoSyncImages==='function' && newProds?.length){
+    setTimeout(()=>autoSyncImages(newProds), 500);
+  }
   return {newProds, updatedProds};
 }
 
@@ -6242,23 +6246,40 @@ function getImageUrl(prod){
 // Import tugagandan keyin avtomatik Storage ga yuklash
 async function autoSyncImages(newProds){
   if(!currentUser || !newProds?.length) return;
-  const withImgs = newProds.filter(p => p._imgData);
-  if(!withImgs.length) return;
-  
-  let uploaded = 0;
+  const withImgs = newProds.filter(p => p._imgData && p._imgData.startsWith('data:'));
+  if(!withImgs.length){
+    console.log("autoSyncImages: rasm yo'q");
+    return;
+  }
+  console.log(`🔄 ${withImgs.length} ta rasm Storage ga yuklanmoqda...`);
+  let uploaded = 0, errors = 0;
   for(const prod of withImgs){
-    const url = await uploadImageToStorage(prod.id, prod._imgData);
-    if(url){
-      prod._imgUrl = url;
-      images[prod.id] = url;
-      // localStorage img_ ni o'chirish
-      try{ localStorage.removeItem('img_'+prod.id.slice(0,20)); }catch(e){}
-      uploaded++;
+    try{
+      const url = await uploadImageToStorage(prod.id, prod._imgData);
+      if(url){
+        prod._imgUrl = url;
+        images[prod.id] = url;
+        try{ localStorage.removeItem('img_'+prod.id.slice(0,20)); }catch(e){}
+        uploaded++;
+      } else {
+        errors++;
+        console.warn('Upload failed for:', prod.id);
+      }
+    }catch(e){
+      errors++;
+      console.warn('Upload error:', e.message);
     }
   }
+  console.log(`☁️ ${uploaded} rasm yuklandi, ${errors} xato`);
   if(uploaded > 0){
-    console.log(`☁️ ${uploaded} rasm Storage ga yuklandi`);
     savePRODS();
+    renderList(); // Rasmlar bilan qayta render
+    if(uploaded === withImgs.length){
+      showToast(`🖼 ${uploaded} ta rasm bulutga yuklandi`);
+    }
+  }
+  if(errors > 0 && uploaded === 0){
+    showToast('⚠️ Rasmlar yuklanmadi — Storage sozlamalarini tekshiring');
   }
 }
 
@@ -6569,6 +6590,9 @@ async function onUserLogin(user){
     window.supplierPrices = {};
     prices = {}; images = {}; quote = [];
     renderCats(); renderList(); renderQ();
+  } else if(savedUserId === user.id) {
+    // Bir xil foydalanuvchi — localStorage dan yuklash (cloud yuklanishini kutmasdan)
+    loadPRODS();
   }
 
   // Bu foydalanuvchi ID ni saqlash
@@ -6732,6 +6756,7 @@ async function loadFromCloud(){
       }
     });
     if(loaded>0){
+      savePRODS(); // Cloud dan yuklangan mahsulotlarni localStorage ga saqlash
       renderCats(); renderList(); filterP();
       console.log(`☁️ ${loaded} ta mahsulot bulutdan yuklandi`);
     }
