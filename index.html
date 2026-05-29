@@ -949,8 +949,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 <div class="mob-topbar" style="display:none">
   <div class="mob-logo">
     <div class="mob-logo-ic">📹</div>
-    <div style="font-size:13px;line-height:1.1">
-      <span>OKV</span><span style="color:var(--accent)">PRO</span>
+    <div style="font-size:11px;line-height:1.1;font-family:var(--fh);font-weight:800">
+      <span>OKVISION</span><span style="color:var(--accent)"> Pro</span>
     </div>
   </div>
   <!-- AI qidiruv -->
@@ -1015,14 +1015,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 <!-- ══ KURS SOZLASH SHEET ════════════════════════════════════════════════ -->
 <div id="mobRateModal" class="mob-rate-modal" style="display:none" onclick="if(event.target===this)closeMobRate()">
   <div class="mob-rate-sheet">
-    <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:16px">💱 Dollar kursi</div>
+    <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:16px">💱 <span id="mobRateTitle">Dollar kursi</span></div>
     <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px">
       <span style="font-size:24px;color:var(--accent);font-family:var(--fh);font-weight:800">1$</span>
       <span style="color:var(--text3)">=</span>
       <input type="number" id="mobRateInp" value="12200" min="1000" max="99999"
         style="flex:1;background:var(--surface2);border:1.5px solid var(--accent);border-radius:10px;padding:10px 14px;font-size:20px;font-weight:700;color:var(--accent);font-family:var(--fh);outline:none;text-align:center"
         oninput="updateRate(this.value);document.getElementById('rateInput').value=this.value;document.getElementById('mobRateVal').textContent=this.value">
-      <span style="font-size:18px;color:var(--text2);font-weight:600">so'm</span>
+      <span style="font-size:18px;color:var(--text2);font-weight:600" id="mobRateSomLabel">so'm</span>
     </div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
       <button onclick="setMobRate(12000)" style="padding:8px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:13px;cursor:pointer">12 000</button>
@@ -1031,7 +1031,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <button onclick="setMobRate(12700)" style="padding:8px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:13px;cursor:pointer">12 700</button>
       <button onclick="setMobRate(13000)" style="padding:8px 14px;border-radius:8px;background:var(--surface2);border:1px solid var(--border2);color:var(--text2);font-size:13px;cursor:pointer">13 000</button>
     </div>
-    <button onclick="closeMobRate()" style="width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#0a0c10;border:none;font-size:15px;font-weight:700;cursor:pointer">Saqlash</button>
+    <button onclick="closeMobRate()" style="width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#0a0c10;border:none;font-size:15px;font-weight:700;cursor:pointer"><span data-i18n="btn_save_mob">Saqlash</span></button>
   </div>
 </div>
 
@@ -2334,12 +2334,17 @@ function applyProds(importedProds, supplierName){
 
   try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
   savePRODS();
-  saveIM(); // Rasmlarni localStorage ga saqlash
+  saveIM();
   updPC(); renderCats(); renderList(); filterP();
   if(selP) showProd(selP.id);
-  // Storage ga avtomatik yuklash (background)
-  if(typeof autoSyncImages==='function' && newProds?.length){
-    setTimeout(()=>autoSyncImages(newProds), 500);
+  // Supabase ga avtomatik saqlash (background)
+  if(newProds?.length){
+    setTimeout(async ()=>{
+      // 1. Mahsulotlarni Supabase ga upsert
+      if(typeof syncToCloud==='function') await syncToCloud(true); // silent=true
+      // 2. Rasmlarni Storage ga yuklash
+      if(typeof autoSyncImages==='function') await autoSyncImages(newProds);
+    }, 800);
   }
   return {newProds, updatedProds};
 }
@@ -4618,6 +4623,7 @@ const I18N = {
     guide_man_1:"Taklif sahifasida qo'lda kiritish",
     guide_man_2:"So'm yoki \$ narx",
     guide_man_3:'Import shart emas',
+    btn_save_mob:'Saqlash',
     btn_clear_all: "Barcha ma'lumotlarni tozalash",
     import_guide_title: "Import qilish yo'riqnomasi",
     cat_desc_ip: "DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar",
@@ -4811,6 +4817,7 @@ const I18N = {
     guide_man_1:'Ввод вручную в разделе КП',
     guide_man_2:'Цена в сумах или $',
     guide_man_3:'Импорт не нужен',
+    btn_save_mob:'Сохранить',
     btn_clear_all: 'Очистить все данные',
     import_guide_title: 'Инструкция по импорту',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn и похожие серии',
@@ -4975,6 +4982,7 @@ const I18N = {
     guide_man_1:'Enter manually in proposal',
     guide_man_2:'Price in UZS or $',
     guide_man_3:'No import needed',
+    btn_save_mob:'Save',
     btn_clear_all: 'Clear all data',
     import_guide_title: 'Import guide',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn and similar series',
@@ -5180,8 +5188,39 @@ function setLang(lang) {
     });
   });
 
+  // Mob lang indicator
+  const mobLangEl = document.getElementById('mobLangIc');
+  if(mobLangEl) mobLangEl.textContent = lang.toUpperCase();
+  // Mob lang modal check marks
+  ['uz','ru','en'].forEach(l=>{
+    const chk = document.getElementById('mlb-'+l+'-check');
+    if(chk) chk.style.display = l===lang?'inline':'none';
+    const btn = document.getElementById('mlb-'+l);
+    if(btn) btn.style.borderColor = l===lang?'var(--accent)':'var(--border)';
+  });
   // Mob rate label
   document.querySelectorAll('.mob-rate-lbl').forEach(el=>el.textContent=t('cur_som'));
+  const mobRateTitle = document.getElementById('mobRateTitle');
+  if(mobRateTitle) mobRateTitle.textContent = lang==='ru'?'Курс доллара':lang==='en'?'Dollar rate':'Dollar kursi';
+  const mobRateSom = document.getElementById('mobRateSomLabel');
+  if(mobRateSom) mobRateSom.textContent = lang==='ru'?'сум':lang==='en'?'UZS':"so'm";
+  const btnSaveMob = document.querySelector('[data-i18n="btn_save_mob"]');
+  if(btnSaveMob) btnSaveMob.textContent = lang==='ru'?'Сохранить':lang==='en'?'Save':'Saqlash';
+  // Mob bottom nav
+  const mobNavLabels = {
+    mnCatalog: {uz:'Katalog', ru:'Каталог', en:'Catalog'},
+    mnQuote:   {uz:'Taklif',  ru:'КП',      en:'Proposal'},
+    mnImport:  {uz:'Import',  ru:'Импорт',  en:'Import'},
+    mnPrint:   {uz:'Chop',    ru:'Печать',  en:'Print'},
+    mnCats:    {uz:'Kategoriyalar', ru:'Категории', en:'Categories'},
+  };
+  Object.entries(mobNavLabels).forEach(([id, labels])=>{
+    const el = document.getElementById(id);
+    if(el){
+      const span = el.querySelector('span:last-child') || el.querySelector('span');
+      if(span) span.textContent = labels[lang]||labels.uz;
+    }
+  });
 
   // Supplier input placeholder
   const supInp=document.getElementById('supplierNameInput');
@@ -6666,11 +6705,11 @@ document.addEventListener('click', e=>{
 });
 
 // ── CLOUD SYNC ────────────────────────────────────────────────────────────
-async function syncToCloud(){
-  if(!currentUser){ showToast("❌ Avval tizimga kiring"); return; }
+async function syncToCloud(silent=false){
+  if(!currentUser){ if(!silent) showToast("❌ Avval tizimga kiring"); return; }
   const sb = getSB(); if(!sb) return;
   const ind = document.getElementById('syncIndicator');
-  if(ind){ ind.textContent='● Saqlanmoqda...'; ind.className='sync-indicator syncing'; }
+  if(ind && !silent){ ind.textContent='● Saqlanmoqda...'; ind.className='sync-indicator syncing'; }
   try{
     const imported = PRODS.filter(p=>p._imported);
     let saved=0, errors=0;
@@ -6699,14 +6738,16 @@ async function syncToCloud(){
       } else saved+=batch.length;
     }
     if(ind){ ind.textContent='● Ulangan'; ind.className='sync-indicator'; }
-    if(errors>0){
-      showToast(`⚠️ ${saved} saqlandi, ${errors} xato. Console da ko'ring`);
-    } else if(saved>0){
-      showToast(`☁️ ${saved} ta mahsulot saqlandi`);
-    } else {
-      showToast("⚠️ Saqlash uchun mahsulot yo'q. Avval import qiling");
+    if(!silent){
+      if(errors>0){
+        showToast(`⚠️ ${saved} saqlandi, ${errors} xato`);
+      } else if(saved>0){
+        showToast(`☁️ ${saved} ta mahsulot saqlandi`);
+      } else {
+        showToast("⚠️ Saqlash uchun mahsulot yo'q");
+      }
+      toggleUserMenu();
     }
-    toggleUserMenu();
   }catch(e){
     if(ind){ ind.textContent='● Xato'; ind.className='sync-indicator'; ind.style.color='var(--red)'; }
     showToast('❌ Saqlashda xato: '+e.message);
@@ -6717,11 +6758,14 @@ async function loadFromCloud(){
   if(!currentUser) return;
   const sb = getSB(); if(!sb) return;
   try{
+    // Avval localStorage dan yuklab olamiz (tez)
+    // Keyin cloud dan farqlarni qo'shamiz
     const { data, error } = await sb.from('products')
       .select('*')
       .eq('user_id', currentUser.id)
-      .limit(5000);
-    if(error||!data?.length) return;
+      .limit(10000);
+    if(error){ console.warn('Cloud load error:', error.message); return; }
+    if(!data?.length){ console.log("Cloud: mahsulot yo'q"); return; }
     const existingIds = new Set(PRODS.map(p=>p.id));
     let loaded=0;
     data.forEach(row=>{
