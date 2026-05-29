@@ -2511,11 +2511,12 @@ async function extractExcelImages(arrayBuffer) {
         // rId
         const ridMatch = blockContent.match(/r:embed="(rId\d+)"/);
         if(rowMatch && ridMatch){
-          const row = parseInt(rowMatch[1]); // 0-based
+          const row0 = parseInt(rowMatch[1]); // 0-based
           const mediaName = imgRels[ridMatch[1]];
           if(mediaName && mediaFiles[mediaName]){
-            // Row + 1 = Excel qator (header 1 bo'lsa, ma'lumot 2-qatordan)
-            result[sheetName][row] = mediaFiles[mediaName];
+            // 0-based va 1-based har ikkalasini saqlash — import da mos kelsin
+            result[sheetName][row0] = mediaFiles[mediaName];     // 0-based
+            result[sheetName][row0+1] = mediaFiles[mediaName];   // 1-based
           }
         }
       });
@@ -2894,8 +2895,9 @@ function importSimple(wb, supplierHint, sheetImages={}){
     if(!usd||usd<=0) return;
     // Desc
     const desc = specCol>=0 ? String(row[specCol]||'').replace(/&gt;/g,'>').replace(/[\r\n]+/g,' ').trim() : '';
-    // Image — row 0-based absIdx
-    const img = sImgs[absIdx]||sImgs[absIdx-1]||sImgs[absIdx+1]||null;
+    // Image — 0-based va 1-based har ikkalasini tekshirish
+    const img = sImgs[absIdx]||sImgs[absIdx-1]||sImgs[absIdx+1]||
+                sImgs[absIdx+headerIdx]||sImgs[absIdx-headerIdx]||null;
     // Category
     const cat = smartCatGlobal(name,'');
     const pid = 'simp_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,28)+'_'+Math.abs(hashStr(name));
@@ -3149,6 +3151,21 @@ function showProd(id){
   const p=PRODS.find(x=>x.id===id);if(!p)return;
   selP=p;switchTab('catalog');
   const pr=getPrice(p),inq=quote.some(q=>q.product.id===p.id),img=getImg(p);
+  // Til bo'yicha matnlar
+  const _lSpecs   = LANG==='ru'?'Технические характеристики':LANG==='en'?'Technical specs':'Texnik xususiyatlar';
+  const _lFile    = LANG==='ru'?'Файл':LANG==='en'?'File':'Fayl';
+  const _lDel     = LANG==='ru'?'🗑 Удалить':LANG==='en'?'🗑 Delete':"🗑 O'chirish";
+  const _lSave    = LANG==='ru'?'💾 Сохранить':LANG==='en'?'💾 Save':'💾 Saqlash';
+  const _lPricePh = LANG==='ru'?'Цена $':LANG==='en'?'Price $':'Narx $';
+  const _lPriceHint= LANG==='ru'?'введите цену напрямую':LANG==='en'?'enter price directly':"narxni to'g'ridan kiriting";
+  const _lNoPr    = LANG==='ru'?'Цена не указана':LANG==='en'?'No price set':'Narx kiritilmagan';
+  const _lRemoveQ = LANG==='ru'?'✕ Убрать из КП':LANG==='en'?'✕ Remove':'✕ Taklifdan chiqarish';
+  const _lAddQ    = LANG==='ru'?'+ Добавить в КП':LANG==='en'?'+ Add to proposal':"+ Taklifga qo'shish";
+  const _lViewQ   = LANG==='ru'?'📋 Открыть КП':LANG==='en'?'📋 View proposal':"📋 Taklifni ko'rish";
+  const _lCheaper = LANG==='ru'?'✓ дешевле':LANG==='en'?'✓ cheaper':'✓ arzon';
+  const _lVat     = LANG==='ru'?'НДС':LANG==='en'?'VAT':'QQS';
+  const _lSom     = LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm";
+
   const specsH=Object.entries(p.specs).map(([k,v])=>`<div class="si2"><div class="sl2">${k}</div><div class="sv">${v}</div></div>`).join('');
   document.getElementById('ph0').style.display='none';
   document.getElementById('det').innerHTML=`
@@ -3160,7 +3177,7 @@ function showProd(id){
         </div>
         <div class="iact">
           <label class="ibtn" style="cursor:pointer;position:relative;overflow:hidden">
-            📁 Fayl
+            📁 ${_lFile}
             <input type="file" accept="image/*" style="position:absolute;opacity:0;inset:0;cursor:pointer" onchange="handleImgFile('${p.id}',this)">
           </label>
           <div class="ibtn" onclick="toggleUrl('${p.id}')">🔗 URL link</div>
@@ -3171,17 +3188,17 @@ function showProd(id){
             <button class="iub" onclick="setImgUrl('${p.id}')">OK</button>
           </div>
         </div>
-        ${img?`<button class="ibtn" style="width:100%;margin-top:2px" onclick="removeImg('${p.id}')">🗑 O'chirish</button>`:''}
+        ${img?`<button class="ibtn" style="width:100%;margin-top:2px" onclick="removeImg('${p.id}')">${_lDel}</button>`:''}
       </div>
       <div>
-        <div class="dcat">${p.brand} · ${p.cat}</div>
+        <div class="dcat">${p.brand} · ${typeof transCat==='function'?transCat(p.cat):p.cat}</div>
         <div class="dtit">${p.name}</div>
         <div class="ddsc">${p.desc}</div>
         ${pr
           ?`<div class="dpr">
               <span class="pm">${fmtP(pr)}</span>
-              <span class="pa">${cur==='USD'?'≈ '+fmtUZS(pr*RATE):'= $'+pr.toLocaleString()}</span>
-              ${p._vat?`<span style="font-size:11px;background:rgba(255,193,7,.1);color:var(--amber);border:1px solid rgba(255,193,7,.25);border-radius:5px;padding:1px 8px">QQS: ${p._vat.toLocaleString()} so'm</span>`:''}
+              <span class="pa">${cur==='USD'?'≈ '+fmtUZS(pr*RATE)+' '+_lSom:'= $'+pr.toLocaleString()}</span>
+              ${p._vat?`<span style="font-size:11px;background:rgba(255,193,7,.1);color:var(--amber);border:1px solid rgba(255,193,7,.25);border-radius:5px;padding:1px 8px">${_lVat}: ${p._vat.toLocaleString()} ${_lSom}</span>`:''}
             </div>
             ${(()=>{
               const sp=window.supplierPrices||{};
@@ -3189,36 +3206,36 @@ function showProd(id){
                 const sprice=pmap[p.name.toLowerCase()];
                 if(!sprice)return'';
                 const isMin=sprice===Math.min(...Object.values(sp).map(pm=>pm[p.name.toLowerCase()]||Infinity));
-                return`<span style="font-size:11px;padding:2px 9px;border-radius:5px;background:${isMin?'rgba(0,229,160,.12)':'var(--surface3)'};color:${isMin?'var(--green)':'var(--text2)'};border:1px solid ${isMin?'rgba(0,229,160,.3)':'var(--border2)'}">
-                  ${sup}: $${sprice}${isMin?' ✓ arzon':''}
-                </span>`;
+                const bg=isMin?'rgba(0,229,160,.12)':'var(--surface3)';
+                const cl=isMin?'var(--green)':'var(--text2)';
+                const br=isMin?'rgba(0,229,160,.3)':'var(--border2)';
+                return`<span style="font-size:11px;padding:2px 9px;border-radius:5px;background:${bg};color:${cl};border:1px solid ${br}">${sup}: $${sprice}${isMin?' '+_lCheaper:''}</span>`;
               }).filter(Boolean);
               return rows.length>1?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">${rows.join('')}</div>`:'';
             })()}`
-          :`<div class="dpr"><span class="pno">Narx kiritilmagan</span></div>`}
+          :`<div class="dpr"><span class="pno">${_lNoPr}</span></div>`}
         <div class="per">
-          <input class="pei" type="number" id="pEd_${p.id}" placeholder="Narx $" value="${pr||''}">
-          <button class="peb" onclick="savePiEdit('${p.id}')">💾 Saqlash</button>
-          <span style="font-size:11px;color:var(--text3)">narxni to'g'ridan kiriting</span>
+          <input class="pei" type="number" id="pEd_${p.id}" placeholder="${_lPricePh}" value="${pr||''}">
+          <button class="peb" onclick="savePiEdit('${p.id}')">${_lSave}</button>
+          <span style="font-size:11px;color:var(--text3)">${_lPriceHint}</span>
         </div>
         <div class="dac">
           ${inq
-            ?`<button class="btn bd" onclick="removeFromQ('${p.id}')">✕ Taklifdan chiqarish</button>`
-            :`<button class="btn bp" onclick="addToQ('${p.id}');updateMobBadge()"><span data-i18n='btn_quote'>+ Taklifga qo\'shish</span></button>`}
-          <button class="btn bs" onclick="switchTab('quote')"><span data-i18n='btn_view_quote'>📋 Taklifni ko\'rish</span></button>
+            ?`<button class="btn bd" onclick="removeFromQ('${p.id}')">${_lRemoveQ}</button>`
+            :`<button class="btn bp" onclick="addToQ('${p.id}');updateMobBadge()">${_lAddQ}</button>`}
+          <button class="btn bs" onclick="switchTab('quote')">${_lViewQ}</button>
         </div>
-        <!-- Mobil: sticky quick-add -->
         ${window&&window.innerWidth<=768?`
         <div style="margin-top:10px">
           <button onclick="${inq?`removeFromQ('${p.id}')`:`addToQ('${p.id}');updateMobBadge()`}"
             style="width:100%;padding:14px;border-radius:12px;background:${inq?'rgba(255,71,87,.15)':'var(--accent)'};color:${inq?'var(--red)':'#0a0c10'};border:1px solid ${inq?'rgba(255,71,87,.4)':'var(--accent)'};font-size:15px;font-weight:700;cursor:pointer">
-            ${inq?'✕ Taklifdan chiqarish':'➕ Taklifga qo\'shish'} ${pr?' · '+fmtP(pr):''}
+            ${inq?_lRemoveQ:'➕ '+_lAddQ.slice(2)} ${pr?' · '+fmtP(pr):''}
           </button>
         </div>`:''}
       </div>
     </div>
     <div class="db">
-      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Texnik xususiyatlar</div>
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">${_lSpecs}</div>
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
