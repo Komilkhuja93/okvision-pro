@@ -5406,6 +5406,13 @@ function setLang(lang) {
   if(cmRhTitleEl && cmRhTitleEl.textContent.includes('←')){
     cmRhTitleEl.textContent = '← '+t('cm_select_target');
   }
+  // Kategoriya modal supplier filter va kategoriyalar qayta render
+  const cmModal = document.getElementById('catManagerOverlay');
+  if(cmModal && cmModal.style.display!=='none' && cmModal.style.display!==''){
+    if(typeof renderCmSupFilter==='function') renderCmSupFilter();
+    if(typeof renderCmCats==='function') renderCmCats();
+    if(typeof renderCmProds==='function') renderCmProds();
+  }
 
   // HDD dropdown optionlarni yangilash
   document.querySelectorAll('[data-i18n-opt]').forEach(el => {
@@ -5727,7 +5734,8 @@ function selectCmCat(cat){
 
 function renderCmSupFilter(){
   const sups=[...new Set(PRODS.filter(p=>p._supplier).map(p=>p._supplier))].sort();
-  let html=`<button class="cm-sup-btn${cmSupFilter===''?' active':''}" onclick="setCmSup('')">Hammasi</button>`;
+  const _allLbl = LANG==='ru'?'Все':LANG==='en'?'All':'Hammasi';
+  let html=`<button class="cm-sup-btn${cmSupFilter===''?' active':''}" onclick="setCmSup('')">${_allLbl}</button>`;
   html+=sups.map(s=>`<button class="cm-sup-btn${cmSupFilter===s?' active':''}" onclick="setCmSup('${s.replace(/'/g,"\'")}')">📦 ${s}</button>`).join('');
   document.getElementById('cmSupFilter').innerHTML=html;
 }
@@ -6304,7 +6312,9 @@ async function syncImagesToStorage(){
   });
   try{ localStorage.removeItem('cqIM2'); }catch(e){}
   
-  savePRODS(); // URL larni saqlash
+  savePRODS();
+  if(typeof syncToCloud==='function') await syncToCloud(true); // URL larni Supabase ga
+  renderList();
   showToast(`✅ ${uploaded} rasm bulutga yuklandi${errors>0?' ('+errors+' xato)':''}`);
 }
 
@@ -6352,7 +6362,9 @@ async function autoSyncImages(newProds){
   console.log(`☁️ ${uploaded} rasm yuklandi, ${errors} xato`);
   if(uploaded > 0){
     savePRODS();
-    renderList(); // Rasmlar bilan qayta render
+    renderList();
+    // MUHIM: URL larni Supabase products jadvaliga ham yozish
+    if(typeof syncToCloud==='function') await syncToCloud(true);
     if(uploaded === withImgs.length){
       showToast(`🖼 ${uploaded} ta rasm bulutga yuklandi`);
     }
@@ -6768,7 +6780,8 @@ async function syncToCloud(silent=false){
         price_vat: p._vat||0,
         supplier: p._supplier||'',
         parent_supplier: p._parentSupplier||'',
-        sheet_name: p._sheet||''
+        sheet_name: p._sheet||'',
+        image_url: (p._imgUrl && p._imgUrl.startsWith('http')) ? p._imgUrl : null
       }));
       const {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
       if(error){
@@ -6817,22 +6830,10 @@ async function loadFromCloud(){
           _supplier:row.supplier, _parentSupplier:row.parent_supplier,
           _sheet:row.sheet_name, _imported:true
         };
-        // Storage dan rasm URL — agar saqlangan bo'lsa
-        if(currentUser){
-          const imgPath = `${currentUser.id}/${row.id}`;
-          const sb2 = getSB();
-          if(sb2){
-            // Sync emas, background da yuklaymiz
-            ['jpg','png'].forEach(ext=>{
-              if(!images[row.id]){
-                sb2.storage.from(STORAGE_BUCKET).getPublicUrl(imgPath+'.'+ext)
-                  .then?.(r=>{ /* no-op, URL static */ });
-              }
-            });
-            // To'g'ridan URL qurish
-            const supaUrl = `https://eieygoljglkgnxcdhjea.supabase.co/storage/v1/object/public/${STORAGE_BUCKET}/${currentUser.id}/${row.id}`;
-            prod._imgUrl = supaUrl+'.jpg';
-          }
+        // Rasm URL — Supabase dan
+        if(row.image_url && row.image_url.startsWith('http')){
+          prod._imgUrl = row.image_url;
+          images[row.id] = row.image_url;
         }
         PRODS.push(prod);
         existingIds.add(row.id);
