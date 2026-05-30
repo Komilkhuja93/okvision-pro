@@ -940,6 +940,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .qh-btn:hover{border-color:var(--accent);background:rgba(0,212,255,.08)}
 .qh-btn-del:hover{border-color:var(--red);background:rgba(255,71,87,.08)}
 
+
+.al-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--surface2);color:var(--text2);font-size:12px;cursor:pointer;
+  transition:.15s;font-family:inherit}
+.al-btn:hover{border-color:var(--accent);color:var(--text)}
+.al-btn.active{background:rgba(0,212,255,.12);border-color:var(--accent);color:var(--accent);font-weight:600}
+
 </style>
 </head>
 <body>
@@ -1828,6 +1835,15 @@ function shareViaWhatsApp(){
 
 function savePRODS(){
   try{
+    // Eski rasm kalitlarini tozalash (localStorage bo'shatish)
+    try{
+      const toRemove=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k && k.startsWith('img_')) toRemove.push(k);
+      }
+      toRemove.forEach(k=>localStorage.removeItem(k));
+    }catch(e){}
     const imported=PRODS.filter(p=>p._imported);
     // Har bir mahsulotdan faqat kerakli fieldlar saqlansin (hajm kamaytirish)
     const slim=imported.map(p=>({
@@ -4666,6 +4682,9 @@ const I18N = {
     reset_sent: 'Parol tiklash xati yuborildi',
     forgot_pass: 'Parolni unutdim',
     menu_profile: 'Profil',
+    prof_autolock:'Avtomatik chiqish (xavfsizlik)', prof_autolock_lbl:'FAOLSIZLIK VAQTI',
+    prof_autolock_hint:"Belgilangan vaqt davomida harakat bo'lmasa, profildan avtomatik chiqiladi",
+    al_off:"O'chiq", al_min:'daqiqa', al_hour:'soat', btn_save_prof:'Saqlash',
     menu_quotes: 'Taklif tarixi',
     menu_sync_images: 'Rasmlarni bulutga',
     menu_subscription: 'Obuna',
@@ -4862,6 +4881,9 @@ const I18N = {
     reset_sent: 'Письмо для сброса пароля отправлено',
     forgot_pass: 'Забыл пароль',
     menu_profile: 'Профиль',
+    prof_autolock:'Автовыход (безопасность)', prof_autolock_lbl:'ВРЕМЯ БЕЗДЕЙСТВИЯ',
+    prof_autolock_hint:'При отсутствии активности произойдёт автоматический выход',
+    al_off:'Выкл', al_min:'мин', al_hour:'час', btn_save_prof:'Сохранить',
     menu_quotes: 'История предложений',
     menu_sync_images: 'Фото в облако',
     menu_subscription: 'Подписка',
@@ -5029,6 +5051,9 @@ const I18N = {
     reset_sent: 'Password reset email sent',
     forgot_pass: 'Forgot password',
     menu_profile: 'Profile',
+    prof_autolock:'Auto-logout (security)', prof_autolock_lbl:'INACTIVITY TIME',
+    prof_autolock_hint:'You will be logged out automatically after the set period of inactivity',
+    al_off:'Off', al_min:'min', al_hour:'hour', btn_save_prof:'Save',
     menu_quotes: 'Quote history',
     menu_sync_images: 'Images to cloud',
     menu_subscription: 'Subscription',
@@ -6076,6 +6101,12 @@ let sealDataUrl = localStorage.getItem('okvSeal') || sessionStorage.getItem('okv
 let avatarDataUrl = localStorage.getItem('okvAvatar') || null;
 
 function openProfileModal(){
+  // Auto-lock active tugmani belgilash
+  setTimeout(()=>{
+    document.querySelectorAll('.al-btn').forEach(b=>{
+      b.classList.toggle('active', parseInt(b.dataset.min)===autoLockMinutes);
+    });
+  }, 50);
   document.getElementById('userMenu')?.classList.remove('show');
   const modal = document.getElementById('profileModal');
   if(!modal) return;
@@ -6671,6 +6702,8 @@ async function onUserLogin(user){
 
   // Bu foydalanuvchi ID ni saqlash
   localStorage.setItem('okvUserId', user.id);
+  // Auto-lock timerni boshlash
+  if(typeof resetAutoLockTimer==='function') resetAutoLockTimer();
 
   // Supabase dan faqat bu foydalanuvchining mahsulotlarini yuklash
   await loadFromCloud();
@@ -7059,6 +7092,39 @@ async function initAuth(){
   });
 }
 
+
+// ══ AUTO-LOCK (avtomatik chiqish) ════════════════════════════════════════
+let autoLockTimer = null;
+let autoLockMinutes = parseInt(localStorage.getItem('okvAutoLock')||'0'); // 0 = o'chiq
+
+function resetAutoLockTimer(){
+  if(autoLockTimer) clearTimeout(autoLockTimer);
+  if(autoLockMinutes > 0 && currentUser){
+    autoLockTimer = setTimeout(()=>{
+      showToast('🔒 Vaqt tugadi — avtomatik chiqildi');
+      doSignOut();
+    }, autoLockMinutes * 60 * 1000);
+  }
+}
+
+function setAutoLock(minutes){
+  autoLockMinutes = minutes;
+  localStorage.setItem('okvAutoLock', String(minutes));
+  resetAutoLockTimer();
+  const labels = {0:"O'chiq",5:'5 daqiqa',10:'10 daqiqa',30:'30 daqiqa',60:'1 soat'};
+  showToast('🔒 Auto-lock: '+(labels[minutes]||minutes+' daqiqa'));
+  document.querySelectorAll('.al-btn').forEach(b=>{
+    b.classList.toggle('active', parseInt(b.dataset.min)===minutes);
+  });
+}
+
+// Foydalanuvchi faolligi — timerni qayta boshlash
+['click','keydown','mousemove','touchstart','scroll'].forEach(evt=>{
+  document.addEventListener(evt, ()=>{
+    if(autoLockMinutes>0) resetAutoLockTimer();
+  }, {passive:true});
+});
+
 // ── DOMContentLoaded da auth ishga tushirish ─────────────────────────────
 document.addEventListener('DOMContentLoaded', ()=>{
   initAuth();
@@ -7157,7 +7223,23 @@ document.addEventListener('DOMContentLoaded', ()=>{
         </div>
       </div>
 
-      <button class="prof-save-btn" onclick="saveProfile()">💾 Saqlash</button>
+      <!-- Auto-lock (xavfsizlik) -->
+      <div class="prof-section">
+        <div class="prof-section-title">🔒 <span data-i18n="prof_autolock">Avtomatik chiqish (xavfsizlik)</span></div>
+        <div class="prof-field">
+          <div class="prof-label" data-i18n="prof_autolock_lbl">FAOLSIZLIK VAQTI</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="autoLockBtns">
+            <button class="al-btn" data-min="0" onclick="setAutoLock(0)">⏻ <span data-i18n="al_off">O'chiq</span></button>
+            <button class="al-btn" data-min="5" onclick="setAutoLock(5)">5 <span data-i18n="al_min">daqiqa</span></button>
+            <button class="al-btn" data-min="10" onclick="setAutoLock(10)">10 <span data-i18n="al_min">daqiqa</span></button>
+            <button class="al-btn" data-min="30" onclick="setAutoLock(30)">30 <span data-i18n="al_min">daqiqa</span></button>
+            <button class="al-btn" data-min="60" onclick="setAutoLock(60)">1 <span data-i18n="al_hour">soat</span></button>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:6px" data-i18n="prof_autolock_hint">Belgilangan vaqt davomida harakat bo'lmasa, profildan avtomatik chiqiladi</div>
+        </div>
+      </div>
+
+      <button class="prof-save-btn" onclick="saveProfile()">💾 <span data-i18n="btn_save_prof">Saqlash</span></button>
     </div>
   </div>
 </div>
