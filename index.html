@@ -3236,8 +3236,20 @@ function deleteSupplier(s){
   }
 }
 
-function setSupplier(s){actSupplier=s;renderCats();filterP()}
-function setC(c){actCat=c;actSupplier='';renderCats();filterP()}
+function setSupplier(s){
+  actSupplier=s;selP=null;
+  document.getElementById('det').innerHTML='';
+  document.getElementById('ph0').style.display='';
+  expandProdRow();
+  renderCats();filterP();
+}
+function setC(c){
+  actCat=c;actSupplier='';selP=null;
+  document.getElementById('det').innerHTML='';
+  document.getElementById('ph0').style.display='';
+  expandProdRow();
+  renderCats();filterP();
+}
 function renderList(list){
   const items=list||(PRODS.filter(p=>actCat==='all'||p.cat===actCat).filter(p=>!actSupplier||( p._suppliers&&p._suppliers.includes(actSupplier))||(p._supplier===actSupplier)));
   const el=document.getElementById('mainProdList');
@@ -3298,7 +3310,8 @@ function showProd(id){
 
   const specsH=Object.entries(p.specs).map(([k,v])=>`<div class="si2"><div class="sl2">${k}</div><div class="sv">${v}</div></div>`).join('');
   document.getElementById('ph0').style.display='none';
-  document.getElementById('det').innerHTML=`
+  const detEl=document.getElementById('det');
+  detEl.innerHTML=`
   <div class="dc">
     <div class="dh">
       <div class="imb">
@@ -3369,6 +3382,21 @@ function showProd(id){
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
+  // Mahsulot bosilganda prod-row ni yig'ib, det panelni ko'rsatish
+  setTimeout(()=>{
+    const row=document.getElementById('mainProdRow');
+    if(row){
+      // Prod-row ni kichraytirish (2 qator = ~108px) — detail ko'rinsin
+      const curH=row.offsetHeight;
+      if(curH>120){
+        row.style.maxHeight='108px';
+        try{localStorage.setItem('prodRowH','108')}catch(e){}
+      }
+    }
+    // main-scroll ni tepaga qaytarish
+    const ms=document.querySelector('.main-scroll');
+    if(ms) ms.scrollTop=0;
+  },30);
   renderList();
 }
 
@@ -4262,6 +4290,20 @@ function doAiSearch(val){
   }, 300);
 }
 
+
+// Prod-row balandligini boshqarish
+function expandProdRow(){
+  const row=document.getElementById('mainProdRow');
+  if(!row) return;
+  const saved=parseInt(localStorage.getItem('prodRowH')||'0');
+  row.style.maxHeight=(saved>120?saved:216)+'px';
+}
+function collapseProdRow(){
+  const row=document.getElementById('mainProdRow');
+  if(!row) return;
+  row.style.maxHeight='108px';
+  try{localStorage.setItem('prodRowH','108')}catch(e){}
+}
 function filterP(){
   const q=(document.getElementById('srch')||{}).value||'';
   const ql=q.toLowerCase().trim();
