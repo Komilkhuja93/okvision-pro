@@ -1831,31 +1831,16 @@ function savePRODS(){
     const imported=PRODS.filter(p=>p._imported);
     // Har bir mahsulotdan faqat kerakli fieldlar saqlansin (hajm kamaytirish)
     const slim=imported.map(p=>({
-      id:p.id, name:p.name, cat:p.cat, em:p.em, brand:p.brand||'',
-      desc:(p.desc||'').slice(0,120),
-      specs:p.specs||{},
+      id:p.id, name:p.name, cat:p.cat, em:p.em,
       _usd:p._usd||p.price||0,
       _vat:p._vat||0,
-      _sheet:p._sheet||'',
       _supplier:p._supplier||'',
-      _parentSupplier:p._parentSupplier||'',
-      _suppliers:p._suppliers||[],
+      _sheet:p._sheet||'',
       _imported:true,
-      // Storage URL saqlash — sahifa yangilansa ham rasmlar saqlanadi
       ...(p._imgUrl?{_imgUrl:p._imgUrl}:{})
     }));
-    // Rasmlarni ham saqlaymiz — har mahsulot uchun alohida key
-    // Katta rasmlar (>50KB) ni o'tkazib yuboramiz
-    imported.forEach(p=>{
-      if(p._imgData){
-        const key='img_'+p.id.slice(0,20);
-        try{
-          if(p._imgData.length < 150000){ // ~100KB limit per image
-            localStorage.setItem(key, p._imgData);
-          }
-        }catch(e){ /* storage full */ }
-      }
-    });
+    // Base64 rasmlarni localStorage ga SAQLAMAYMIZ — Storage URL yetarli
+    // (1000+ mahsulotda localStorage 5MB limitiga uriladi)
     const prodsJson=JSON.stringify(slim);
     const supJson=JSON.stringify(window.supplierPrices||{});
     // Hajm tekshiruvi (localStorage ~5MB)
@@ -1902,18 +1887,9 @@ function loadPRODS(){
     let count=0;
     imported.forEach(p=>{
       if(!existingIds.has(p.id)){
-        // Rasmni qayta yuklash — avval _imgUrl, keyin localStorage
+        // Rasm URL — Storage dan
         if(p._imgUrl && p._imgUrl.startsWith('http')){
           images[p.id] = p._imgUrl;
-        } else {
-          const imgKey = 'img_'+p.id.slice(0,20);
-          try{
-            const savedImg = localStorage.getItem(imgKey);
-            if(savedImg){
-              p._imgData = savedImg;
-              images[p.id] = savedImg;
-            }
-          }catch(e){}
         }
         PRODS.push(p);
         existingIds.add(p.id);
@@ -4690,6 +4666,8 @@ const I18N = {
     reset_sent: 'Parol tiklash xati yuborildi',
     forgot_pass: 'Parolni unutdim',
     menu_profile: 'Profil',
+    menu_quotes: 'Taklif tarixi',
+    menu_sync_images: 'Rasmlarni bulutga',
     menu_subscription: 'Obuna',
     menu_sync: 'Bulutga saqlash',
     menu_load: 'Bulutdan yuklash',
@@ -4884,6 +4862,8 @@ const I18N = {
     reset_sent: 'Письмо для сброса пароля отправлено',
     forgot_pass: 'Забыл пароль',
     menu_profile: 'Профиль',
+    menu_quotes: 'История предложений',
+    menu_sync_images: 'Фото в облако',
     menu_subscription: 'Подписка',
     menu_sync: 'Сохранить в облако',
     menu_load: 'Загрузить из облака',
@@ -5049,6 +5029,8 @@ const I18N = {
     reset_sent: 'Password reset email sent',
     forgot_pass: 'Forgot password',
     menu_profile: 'Profile',
+    menu_quotes: 'Quote history',
+    menu_sync_images: 'Images to cloud',
     menu_subscription: 'Subscription',
     menu_sync: 'Save to cloud',
     menu_load: 'Load from cloud',
@@ -6775,7 +6757,7 @@ async function syncToCloud(silent=false){
         cat: p.cat||'Kategoriyasiz',
         em: p.em||'📦',
         brand: p.brand||'',
-        desc: (p.desc||'').slice(0,200),
+        description: (p.desc||'').slice(0,200),
         specs: p.specs||{},
         price_usd: p._usd||0,
         price_vat: p._vat||0,
@@ -6814,19 +6796,31 @@ async function loadFromCloud(){
   try{
     // Avval localStorage dan yuklab olamiz (tez)
     // Keyin cloud dan farqlarni qo'shamiz
-    const { data, error } = await sb.from('products')
-      .select('*')
-      .eq('user_id', currentUser.id)
-      .limit(10000);
-    if(error){ console.warn('Cloud load error:', error.message); return; }
-    if(!data?.length){ console.log("Cloud: mahsulot yo'q"); return; }
+    // Supabase default 1000 limit — barcha mahsulotni olish uchun batch
+    let allData = [];
+    let from = 0;
+    const pageSize = 1000;
+    while(true){
+      const { data, error } = await sb.from('products')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .range(from, from + pageSize - 1);
+      if(error){ console.warn('Cloud load error:', error.message); break; }
+      if(!data?.length) break;
+      allData = allData.concat(data);
+      if(data.length < pageSize) break;
+      from += pageSize;
+      if(from > 200000) break; // xavfsizlik
+    }
+    if(!allData.length){ console.log("Cloud: mahsulot yo'q"); return; }
+    console.log(`☁️ Cloud dan ${allData.length} ta mahsulot olindi`);
     const existingIds = new Set(PRODS.map(p=>p.id));
     let loaded=0;
-    data.forEach(row=>{
+    allData.forEach(row=>{
       if(!existingIds.has(row.id)){
         const prod = {
           id:row.id, name:row.name, cat:row.cat, em:row.em, brand:row.brand,
-          desc:row.desc, specs:row.specs||{},
+          desc:row.description||row.desc||'', specs:row.specs||{},
           _usd:row.price_usd, _vat:row.price_vat,
           _supplier:row.supplier, _parentSupplier:row.parent_supplier,
           _sheet:row.sheet_name, _imported:true
