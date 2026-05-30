@@ -7,12 +7,20 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="OKVISION Pro">
+<meta name="description" content="OKVISION Pro — Kamera va kuzatuv tijorat taklifi platformasi. Excel import, AI qidiruv, narx tahlili.">
+<meta name="robots" content="noindex, nofollow">
+<meta property="og:title" content="OKVISION Pro — Tijorat Taklifi Platformasi">
+<meta property="og:description" content="Kamera va kuzatuv tijorat taklifi platformasi. Excel import, AI qidiruv, narx tahlili.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="theme-color" content="#0a0c10">
 <title>OKVISION Pro — Tijorat Taklifi Platformasi</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -962,11 +970,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   </div>
   <!-- AI qidiruv -->
   <div class="mob-search-bar">
-    <span style="font-size:14px;opacity:.5">🔍</span>
+    <span style="font-size:14px;opacity:.5" aria-hidden="true">🔍</span>
     <input id="mobSrch" type="search" placeholder="Model yoki tavsif..." data-i18n-ph="ph_search"
+      aria-label="Mahsulot qidirish"
       oninput="onAiSearch(this.value);document.getElementById('srch').value=this.value"
       onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
-    <button id="mobSrchClear" onclick="mobClearSearch()" style="display:none;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;line-height:1">✕</button>
+    <button id="mobSrchClear" onclick="mobClearSearch()" aria-label="Qidiruvni tozalash" style="display:none;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;line-height:1">✕</button>
   </div>
   <!-- Til tugmasi -->
   <div onclick="openMobLang()" style="display:flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);flex-shrink:0;cursor:pointer">
@@ -1154,12 +1163,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <span style="background:linear-gradient(135deg,#00d4ff,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:9px;font-weight:700;background-clip:text">BETA</span>
     </div>
     <div class="ai-search-wrap">
-      <span class="ai-search-icon" id="aiSrchIcon">🔍</span>
+      <span class="ai-search-icon" id="aiSrchIcon" aria-hidden="true">🔍</span>
       <input class="ai-search-inp" type="text" id="srch"
+        aria-label="Mahsulot qidirish"
         placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
-      <button class="ai-search-clear" id="aiSrchClear" onclick="clearAiSearch()">✕</button>
+      <button class="ai-search-clear" id="aiSrchClear" onclick="clearAiSearch()" aria-label="Qidiruvni tozalash">✕</button>
     </div>
     <div class="ai-thinking" id="aiThinking">
       <div class="ai-thinking-dots"><span></span><span></span><span></span></div>
@@ -1887,7 +1897,19 @@ function loadPRODS(){
     const savedSup=localStorage.getItem('cqSuppliers2');
     if(savedSup){
       const sp=JSON.parse(savedSup);
-      Object.assign(window.supplierPrices, sp);
+      // Emailli supplier nomlarini tozalash
+      const cleanedSp={};
+      Object.entries(sp).forEach(([key,pm])=>{
+        let cleanKey=key;
+        if(key.includes('@')){
+          const parts=key.split(/\s*›\s*/);
+          cleanKey=parts.filter(p=>!p.includes('@')).join(' › ').trim();
+          if(!cleanKey) return; // faqat email bo'lsa o'tkazib yuborish
+        }
+        if(!cleanedSp[cleanKey]) cleanedSp[cleanKey]={};
+        Object.assign(cleanedSp[cleanKey],pm);
+      });
+      Object.assign(window.supplierPrices, cleanedSp);
       // prices map ni ham qayta qurish
       Object.entries(sp).forEach(([,pm])=>{
         Object.entries(pm).forEach(([k,v])=>{
@@ -1902,6 +1924,15 @@ function loadPRODS(){
     let count=0;
     imported.forEach(p=>{
       if(!existingIds.has(p.id)){
+        // Email bo'lsa supplier nomini tozalash
+        if(p._supplier&&p._supplier.includes('@')){
+          const parts=p._supplier.split(/\s*›\s*/);
+          p._supplier=parts.filter(x=>!x.includes('@')).join(' › ').trim()||p._supplier;
+        }
+        if(p._parentSupplier&&p._parentSupplier.includes('@')){
+          const parts=p._parentSupplier.split(/\s*›\s*/);
+          p._parentSupplier=parts.filter(x=>!x.includes('@')).join(' › ').trim()||p._parentSupplier;
+        }
         // Rasm URL — Storage dan
         if(p._imgUrl && p._imgUrl.startsWith('http')){
           images[p.id] = p._imgUrl;
@@ -2193,6 +2224,8 @@ let _importSupplier='';
 
 function finishImport(importedProds, supplierName, fileName){
   _importSupplier=supplierName;
+  // Fayl nomini har bir mahsulotga belgilash
+  if(fileName) importedProds.forEach(p=>{ if(!p._sourceFile) p._sourceFile=fileName; });
   // Split: known category vs unknown
   const known=importedProds.filter(p=>p.cat);
   const unknown=importedProds.filter(p=>!p.cat);
@@ -2302,6 +2335,7 @@ function applyProds(importedProds, supplierName){
       if(!p._suppliers) p._suppliers=[effectiveSupplier];
       else if(!p._suppliers.includes(effectiveSupplier)) p._suppliers.push(effectiveSupplier);
       p._imported=true;
+      if(!p._sourceFile) p._sourceFile=p._sourceFile||'';
       // Excel dan chiqarilgan rasmni images[] va IndexedDB ga saqlash
       if(p._imgData){
         images[p.id] = p._imgData;
@@ -6446,7 +6480,9 @@ async function autoSyncImages(newProds){
 // Taklifni Supabase ga saqlash
 async function saveQuoteToCloud(){
   const sb = getSB();
-  if(!sb || !currentUser){ showToast('❌ Avval tizimga kiring'); return null; }
+  if(!sb || !currentUser){ return null; }
+  // Taklif tarixi faqat pullik rejalarda saqlanadi
+  if(!planAllowsCloud()){ return null; }
 
   // Ma'lumotlarni yig'ish
   const g = id => document.getElementById(id)?.value?.trim()||'';
@@ -6539,6 +6575,11 @@ async function openQuoteHistory(){
   const sb = getSB();
   if(!sb || !currentUser){ showToast('❌ Avval tizimga kiring'); return; }
   document.getElementById('userMenu')?.classList.remove('show');
+  // Bepul rejada taklif tarixi yo'q
+  if(!planAllowsCloud()){
+    showToast('🔒 Taklif tarixi faqat pullik obunada. Profil → Obuna');
+    return;
+  }
 
   const modal = document.getElementById('quoteHistoryModal');
   if(!modal) return;
@@ -6843,6 +6884,11 @@ document.addEventListener('click', e=>{
 // ── CLOUD SYNC ────────────────────────────────────────────────────────────
 async function syncToCloud(silent=false){
   if(!currentUser){ if(!silent) showToast("❌ Avval tizimga kiring"); return; }
+  // Bepul rejada bulutga saqlash cheklangan
+  if(!planAllowsCloud()){
+    if(!silent) showToast('🔒 Bulutga saqlash faqat pullik obunada (Starter/Pro/Business)');
+    return;
+  }
   const sb = getSB(); if(!sb) return;
   const ind = document.getElementById('syncIndicator');
   if(ind && !silent){ ind.textContent='● Saqlanmoqda...'; ind.className='sync-indicator syncing'; }
@@ -6865,6 +6911,7 @@ async function syncToCloud(silent=false){
         supplier: p._supplier||'',
         parent_supplier: p._parentSupplier||'',
         sheet_name: p._sheet||'',
+        source_file: p._sourceFile||'',
         image_url: (p._imgUrl && p._imgUrl.startsWith('http')) ? p._imgUrl : null
       }));
       const {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
@@ -6917,14 +6964,32 @@ async function loadFromCloud(){
     console.log(`☁️ Cloud dan ${allData.length} ta mahsulot olindi`);
     const existingIds = new Set(PRODS.map(p=>p.id));
     let loaded=0;
+    // Helper: emailni supplier nomidan tozalash
+    function cleanSupName(s){
+      if(!s) return s;
+      // "email@domain.com > BrandName" → "BrandName"
+      // "email@domain.com" → "" (faqat email bo'lsa)
+      if(s.includes('@')){
+        const parts=s.split(/\s*›\s*/);
+        const cleaned=parts.filter(p=>!p.includes('@')).join(' › ').trim();
+        return cleaned||'';
+      }
+      return s;
+    }
     allData.forEach(row=>{
       if(!existingIds.has(row.id)){
+        const rawSup=row.supplier||'';
+        const rawParent=row.parent_supplier||'';
+        // Email bo'lsa tozala, aks holda asl qiymat
+        const cleanedSup=cleanSupName(rawSup)||rawSup;
+        const cleanedParent=cleanSupName(rawParent)||rawParent;
         const prod = {
           id:row.id, name:row.name, cat:row.cat, em:row.em, brand:row.brand,
           desc:row.description||row.desc||'', specs:row.specs||{},
           _usd:row.price_usd, _vat:row.price_vat,
-          _supplier:row.supplier, _parentSupplier:row.parent_supplier,
-          _sheet:row.sheet_name, _imported:true
+          _supplier:cleanedSup, _parentSupplier:cleanedParent,
+          _sheet:row.sheet_name, _imported:true,
+          _sourceFile:row.source_file||''  // fayl nomi (yangi field)
         };
         // Rasm URL — Supabase dan
         if(row.image_url && row.image_url.startsWith('http')){
@@ -7175,6 +7240,26 @@ async function initAuth(){
   });
 }
 
+
+
+// ══ OBUNA / PLAN TEKSHIRUVI ═══════════════════════════════════════════════
+function getUserPlan(){
+  const p = currentProfile || {};
+  return (p.plan || 'free').toLowerCase();
+}
+function isPaidPlan(){
+  const plan = getUserPlan();
+  return ['starter','pro','business'].includes(plan);
+}
+function planAllowsCloud(){
+  // Bulutga saqlash faqat pullik rejalarda
+  return isPaidPlan();
+}
+function requirePaidPlan(featureName){
+  if(isPaidPlan()) return true;
+  showToast('🔒 '+(featureName||'Bu funksiya')+' faqat pullik obunada. Profil → Obuna');
+  return false;
+}
 
 // ══ AUTO-LOCK (avtomatik chiqish) ════════════════════════════════════════
 let autoLockTimer = null;
