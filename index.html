@@ -3382,18 +3382,8 @@ function showProd(id){
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
-  // Mahsulot bosilganda prod-row ni yig'ib, det panelni ko'rsatish
+  // Det panel ko'rinsin uchun scroll tepaga
   setTimeout(()=>{
-    const row=document.getElementById('mainProdRow');
-    if(row){
-      // Prod-row ni kichraytirish (2 qator = ~108px) — detail ko'rinsin
-      const curH=row.offsetHeight;
-      if(curH>120){
-        row.style.maxHeight='108px';
-        try{localStorage.setItem('prodRowH','108')}catch(e){}
-      }
-    }
-    // main-scroll ni tepaga qaytarish
     const ms=document.querySelector('.main-scroll');
     if(ms) ms.scrollTop=0;
   },30);
@@ -4296,13 +4286,22 @@ function expandProdRow(){
   const row=document.getElementById('mainProdRow');
   if(!row) return;
   const saved=parseInt(localStorage.getItem('prodRowH')||'0');
-  row.style.maxHeight=(saved>120?saved:216)+'px';
+  // Saqlangan qiymat bo'lsa uni ishlat, aks holda CSS default ga qaytarish
+  if(saved>120){
+    row.style.maxHeight=saved+'px';
+  } else {
+    row.style.maxHeight=''; // CSS da calc(100vh-200px) ishlaydi
+  }
 }
 function collapseProdRow(){
   const row=document.getElementById('mainProdRow');
   if(!row) return;
-  row.style.maxHeight='108px';
-  try{localStorage.setItem('prodRowH','108')}catch(e){}
+  // Faqat juda katta bo'lsa kichraytir
+  const curH=row.offsetHeight;
+  if(curH>150){
+    row.style.maxHeight='108px';
+    try{localStorage.setItem('prodRowH','108')}catch(e){}
+  }
 }
 function filterP(){
   const q=(document.getElementById('srch')||{}).value||'';
@@ -7001,11 +7000,8 @@ document.addEventListener('click', e=>{
 // ── CLOUD SYNC ────────────────────────────────────────────────────────────
 async function syncToCloud(silent=false){
   if(!currentUser){ if(!silent) showToast("❌ Avval tizimga kiring"); return; }
-  // Bepul rejada bulutga saqlash cheklangan
-  if(!planAllowsCloud()){
-    if(!silent) showToast('🔒 Bulutga saqlash faqat pullik obunada (Starter/Pro/Business)');
-    return;
-  }
+  // Import qilingan mahsulotlar BARCHA foydalanuvchilar uchun saqlanadi
+  // (plan cheklovi faqat qo'shimcha funksiyalar uchun)
   const sb = getSB(); if(!sb) return;
   const ind = document.getElementById('syncIndicator');
   if(ind && !silent){ ind.textContent='● Saqlanmoqda...'; ind.className='sync-indicator syncing'; }
@@ -7031,7 +7027,13 @@ async function syncToCloud(silent=false){
         source_file: p._sourceFile||'',
         image_url: (p._imgUrl && p._imgUrl.startsWith('http')) ? p._imgUrl : null
       }));
-      const {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
+      let {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
+      // Agar source_file ustuni yo'q bo'lsa — usiz qayta urinib ko'ramiz
+      if(error && error.message && error.message.includes('source_file')){
+        const batchNoSF = batch.map(({source_file,...rest})=>rest);
+        const r2 = await sb.from('products').upsert(batchNoSF, {onConflict:'id'});
+        error = r2.error;
+      }
       if(error){
         console.error('Sync error:', error.message, error.details, error.hint);
         errors++;
@@ -7043,9 +7045,12 @@ async function syncToCloud(silent=false){
       if(errors>0){
         showToast(`⚠️ ${saved} saqlandi, ${errors} xato`);
       } else if(saved>0){
-        showToast(`☁️ ${saved} ta mahsulot saqlandi`);
+        const _msg=LANG==='ru'?`☁️ ${saved} товаров сохранено в облако`:
+                   LANG==='en'?`☁️ ${saved} products saved to cloud`:
+                   `☁️ ${saved} ta mahsulot bulutga saqlandi`;
+        showToast(_msg);
       } else {
-        showToast("⚠️ Saqlash uchun mahsulot yo'q");
+        showToast(LANG==='ru'?'☁️ Всё актуально':LANG==='en'?'☁️ All up to date':"☁️ Hammasi yangilangan");
       }
       toggleUserMenu();
     }
