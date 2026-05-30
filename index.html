@@ -2315,7 +2315,7 @@ function applyProds(importedProds, supplierName){
       if(p._imgData && !images[p.id]){
         images[p.id] = p._imgData;
       }
-      delete p._imgData; // mahsulotda saqlash shart emas (katta hajm)
+      // _imgData ni SAQLAB QOLAMIZ — autoSyncImages Storage ga yuklash uchun kerak
       PRODS.push(p);
       existingNames.add(nm);
       newProds++;
@@ -6348,6 +6348,7 @@ async function autoSyncImages(newProds){
       if(url){
         prod._imgUrl = url;
         images[prod.id] = url;
+        delete prod._imgData; // Storage ga yuklandi — endi base64 kerak emas
         try{ localStorage.removeItem('img_'+prod.id.slice(0,20)); }catch(e){}
         uploaded++;
       } else {
