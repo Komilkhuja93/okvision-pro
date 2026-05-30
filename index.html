@@ -2302,11 +2302,11 @@ function applyProds(importedProds, supplierName){
       if(!p._suppliers) p._suppliers=[effectiveSupplier];
       else if(!p._suppliers.includes(effectiveSupplier)) p._suppliers.push(effectiveSupplier);
       p._imported=true;
-      // Excel dan chiqarilgan rasmni images[] ga saqlash
-      if(p._imgData && !images[p.id]){
+      // Excel dan chiqarilgan rasmni images[] va IndexedDB ga saqlash
+      if(p._imgData){
         images[p.id] = p._imgData;
+        idbSetImg(p.id, p._imgData); // IndexedDB ga — sahifa yangilansa ham qoladi
       }
-      // _imgData ni SAQLAB QOLAMIZ — autoSyncImages Storage ga yuklash uchun kerak
       PRODS.push(p);
       existingNames.add(nm);
       newProds++;
@@ -3017,22 +3017,72 @@ function setImgUrl(id){
 }
 function removeImg(id){delete images[id];saveIM();showProd(id);renderList();showToast('🗑 Rasm o\'chirildi')}
 function saveIM(){try{localStorage.setItem('cqIM2',JSON.stringify(images))}catch(e){}}
+
+// ══ INDEXEDDB — RASMLAR UCHUN (localStorage 5MB limitidan qochish) ════════
+let _imgDB = null;
+function openImgDB(){
+  return new Promise((resolve, reject)=>{
+    if(_imgDB){ resolve(_imgDB); return; }
+    const req = indexedDB.open('okvImages', 1);
+    req.onupgradeneeded = e => {
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('images')) db.createObjectStore('images');
+    };
+    req.onsuccess = e => { _imgDB = e.target.result; resolve(_imgDB); };
+    req.onerror = e => reject(e);
+  });
+}
+async function idbSetImg(id, data){
+  try{
+    const db = await openImgDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction('images','readwrite');
+      tx.objectStore('images').put(data, id);
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>resolve(false);
+    });
+  }catch(e){ return false; }
+}
+async function idbGetImg(id){
+  try{
+    const db = await openImgDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction('images','readonly');
+      const req = tx.objectStore('images').get(id);
+      req.onsuccess = ()=>resolve(req.result||null);
+      req.onerror = ()=>resolve(null);
+    });
+  }catch(e){ return null; }
+}
+async function idbGetAllImgs(){
+  try{
+    const db = await openImgDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction('images','readonly');
+      const store = tx.objectStore('images');
+      const result = {};
+      const req = store.openCursor();
+      req.onsuccess = e => {
+        const cur = e.target.result;
+        if(cur){ result[cur.key]=cur.value; cur.continue(); }
+        else resolve(result);
+      };
+      req.onerror = ()=>resolve({});
+    });
+  }catch(e){ return {}; }
+}
+
+
 function getImg(p){
   if(!p) return null;
   // 1. Storage URL (eng ishonchli)
   if(p._imgUrl && p._imgUrl.startsWith('http')) return p._imgUrl;
-  // 2. images[] cache
+  // 2. images[] cache (IndexedDB dan oldindan yuklangan)
   if(images[p.id]){
     const v = images[p.id];
     if(v && (v.startsWith('http')||v.startsWith('data:'))) return v;
   }
-  // 3. localStorage dan
-  try{
-    const k = 'img_'+p.id.slice(0,20);
-    const v = localStorage.getItem(k);
-    if(v) { images[p.id]=v; return v; }
-  }catch(e){}
-  // 4. base64 (eski)
+  // 3. base64 (import paytida)
   if(p._imgData && p._imgData.startsWith('data:')) return p._imgData;
   return null;
 }
@@ -6360,10 +6410,13 @@ async function autoSyncImages(newProds){
       if(url){
         prod._imgUrl = url;
         images[prod.id] = url;
-        delete prod._imgData; // Storage ga yuklandi — endi base64 kerak emas
-        try{ localStorage.removeItem('img_'+prod.id.slice(0,20)); }catch(e){}
+        delete prod._imgData;
+        // Storage ga yuklandi — IndexedDB dan o'chirish (URL yetarli)
+        try{ idbSetImg(prod.id, url); }catch(e){} // URL ni saqlab qo'yamiz
         uploaded++;
       } else {
+        // Storage xato — IndexedDB da base64 qoladi (zaxira)
+        if(prod._imgData) try{ idbSetImg(prod.id, prod._imgData); }catch(e){}
         errors++;
         console.warn('Upload failed for:', prod.id);
       }
@@ -6711,8 +6764,17 @@ async function onUserLogin(user){
   // Auto-lock timerni boshlash
   if(typeof resetAutoLockTimer==='function') resetAutoLockTimer();
 
+  // IndexedDB dan rasmlarni cache ga yuklash (Storage URL bo'lmaganlar uchun)
+  try{
+    const idbImgs = await idbGetAllImgs();
+    Object.assign(images, idbImgs);
+    if(Object.keys(idbImgs).length) console.log('🖼 IndexedDB dan',Object.keys(idbImgs).length,'rasm yuklandi');
+  }catch(e){ console.warn('IndexedDB load:', e); }
+
   // Supabase dan faqat bu foydalanuvchining mahsulotlarini yuklash
   await loadFromCloud();
+  // Rasmlar yuklangach qayta render
+  if(typeof renderList==='function') renderList();
 
   const name = currentProfile?.full_name || user.email?.split('@')[0] || '';
   showToast(`👋 Xush kelibsiz${name ? ', ' + name : ''}!`);
