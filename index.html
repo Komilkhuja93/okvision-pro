@@ -15,6 +15,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <meta name="theme-color" content="#0a0c10">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OKVISION Pro">
+<meta name="application-name" content="OKVISION Pro">
+<meta name="msapplication-TileColor" content="#0a0c10">
+<meta name="msapplication-TileImage" content="/icons/icon-144.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144.png">
 <title>OKVISION Pro — Tijorat Taklifi Platformasi</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
@@ -1125,6 +1136,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <div class="user-menu-item" onclick="syncToCloud()">☁️ <span data-i18n="menu_sync">Bulutga saqlash</span></div>
     <div class="user-menu-item" onclick="syncImagesToStorage()">🖼 <span data-i18n="menu_sync_images">Rasmlarni bulutga</span></div>
     <div class="user-menu-item" onclick="loadFromCloud()">⬇️ <span data-i18n="menu_load">Bulutdan yuklash</span></div>
+    <div class="user-menu-item" id="pwaInstallBtn" onclick="installPWA()" style="display:none;color:var(--accent)">📲 <span>Ilovani o'rnatish</span></div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div class="user-menu-item danger" onclick="doSignOut()">🚪 <span data-i18n="menu_signout">Chiqish</span></div>
   </div>
@@ -5671,31 +5683,54 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 let tT;
-function clearAllData(){
-  const prodCount=PRODS.filter(p=>p._imported).length;
-  const msg=prodCount>0
-    ?`Barcha import qilingan maʼlumotlar oʼchiriladi:
-• ${PRODS.length} ta mahsulot
-• ${Object.keys(window.supplierPrices||{}).length} ta supplier
-• Taklif va narxlar
-
-Davom etasizmi?`
-    :"Barcha saqlangan ma'lumotlar o'chiriladi. Davom etasizmi?";
+async function clearAllData(){
+  const prodCount=PRODS.length;
+  const supCount=Object.keys(window.supplierPrices||{}).length;
+  const _lang=LANG||'uz';
+  const cloudNote=currentUser?(_lang==='ru'?' (включая облако)':_lang==='en'?' (including cloud)':" (Supabase dan ham)"):'';
+  const msg=_lang==='ru'
+    ?`Будут удалены все данные${cloudNote}:\n• ${prodCount} товаров\n• ${supCount} поставщиков\n\nПродолжить?`
+    :_lang==='en'
+    ?`All data will be deleted${cloudNote}:\n• ${prodCount} products\n• ${supCount} suppliers\n\nContinue?`
+    :`Barcha ma'lumotlar o'chiriladi${cloudNote}:\n• ${prodCount} ta mahsulot\n• ${supCount} ta supplier\n\nDavom etasizmi?`;
   if(!confirm(msg)) return;
-  // Clear localStorage
+
+  // 1. Supabase dan o'chirish (login bo'lsa)
+  if(currentUser){
+    const sb=getSB();
+    if(sb){
+      const ind=document.getElementById('syncIndicator');
+      if(ind){ind.textContent='● O\u02BCchirilmoqda...';ind.className='sync-indicator syncing';}
+      try{
+        const {error}=await sb.from('products').delete().eq('user_id',currentUser.id);
+        if(error) console.warn('Cloud delete error:',error.message);
+        else console.log('\u2705 Supabase dan o\u02BCchirildi');
+        if(ind){ind.textContent='\u25CF Ulangan';ind.className='sync-indicator';}
+      }catch(e){
+        console.warn('Cloud delete failed:',e);
+        if(ind){ind.textContent='\u25CF Ulangan';ind.className='sync-indicator';}
+      }
+    }
+  }
+
+  // 2. localStorage tozalash
   ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2','cqSvc2','cqCustom2','cqMQ2','prodRowH'].forEach(k=>{
     try{localStorage.removeItem(k)}catch(e){}
   });
-  // Clear in-memory state
+
+  // 3. Memory tozalash
   PRODS.splice(0,PRODS.length);
   window.supplierPrices={};
   prices={};images={};quote=[];selP=null;actCat='all';actSupplier='';
-  // Re-render
+
+  // 4. Re-render
   updPC();renderCats();renderList();filterP();
   document.getElementById('det').innerHTML='';
   document.getElementById('ph0').style.display='';
   updateDataStatus();
-  showToast("✅ Barcha ma'lumotlar tozalandi");
+
+  const _msg=_lang==='ru'?"\u2705 \u0412\u0441\u0435 \u0434\u0430\u043D\u043D\u044B\u0435 \u0443\u0434\u0430\u043B\u0435\u043D\u044B":_lang==='en'?"\u2705 All data cleared":"\u2705 Barcha ma'lumotlar tozalandi";
+  showToast(_msg);
 }
 
 function updateDataStatus(){
@@ -7548,5 +7583,67 @@ document.addEventListener('DOMContentLoaded', ()=>{
   </div>
 </div>
 
+<script>
+// ── Service Worker ro'yxatdan o'tkazish ──────────────────────────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(reg => {
+        console.log('✅ SW registered:', reg.scope);
+        // Yangi versiya chiqsa foydalanuvchiga xabar berish
+        reg.addEventListener('updatefound', () => {
+          const newWorker = reg.installing;
+          newWorker.addEventListener('statechange', () => {
+            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+              showToast('🔄 Yangi versiya mavjud — sahifani yangilang');
+            }
+          });
+        });
+      })
+      .catch(err => console.warn('SW registration failed:', err));
+  });
+  // SW dan xabar olish (offline sync)
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (e.data?.type === 'SYNC_REQUESTED' && typeof syncToCloud === 'function') {
+      syncToCloud(true);
+    }
+  });
+}
+
+// ── PWA Install prompt ────────────────────────────────────────────────────
+let _pwaPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  // Install tugmasini ko'rsatish
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = '';
+});
+
+window.addEventListener('appinstalled', () => {
+  _pwaPrompt = null;
+  const btn = document.getElementById('pwaInstallBtn');
+  if (btn) btn.style.display = 'none';
+  if (typeof showToast === 'function') showToast('✅ OKVISION Pro o'rnatildi!');
+});
+
+function installPWA() {
+  if (!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(r => {
+    if (r.outcome === 'accepted') showToast('✅ O'rnatilmoqda...');
+    _pwaPrompt = null;
+  });
+}
+
+// ── URL parametrlaridan tab aniqlash ─────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab && typeof switchTab === 'function') {
+    setTimeout(() => switchTab(tab), 500);
+  }
+});
+</script>
 </body>
 </html>
