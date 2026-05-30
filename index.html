@@ -2580,6 +2580,15 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     'Hikvision':'IP Kamera','HiLook':'IP Kamera','Tapo':'IP Kamera','Новинки':'IP Kamera',
     'HiWatch':'IP Kamera','Канальное оборудование':'NVR / DVR',
     'Проектное оборудование':'IP Kamera',
+    // Hikvision prays-list sheet nomlari
+    'IP камеры':'IP Kamera','IP камеры (2)':'IP Kamera',
+    'NVR':'NVR / DVR','DVR':'NVR / DVR','Видеорегистраторы':'NVR / DVR',
+    'PTZ':'PTZ Kamera','PTZ камеры':'PTZ Kamera','Скоростные камеры':'PTZ Kamera',
+    'Домофоны':'Kirish nazorati','СКУД':'Kirish nazorati','Турникеты':'Kirish nazorati',
+    'Коммутаторы':'Tarmoq qurilmasi','Свитчи':'Tarmoq qurilmasi',
+    'HDD':'HDD / Xotira','Жесткие диски':'HDD / Xotira',
+    'Звуковое оборудование':'Ogohlantirish','Аудио':'Ogohlantirish',
+    'другие устройства':'Aksessuar','Аксессуары':'Aksessuar','прочее':'Aksessuar',
     'TpLink':'Tarmoq qurilmasi','TP-Link':'Tarmoq qurilmasi','Mercusys':'Tarmoq qurilmasi',
     'WiTek':'Tarmoq qurilmasi','WiTek ':'Tarmoq qurilmasi',
     'Ubiquiti and Mikrotik':'Tarmoq qurilmasi','Mikrotik':'Tarmoq qurilmasi',
@@ -2597,12 +2606,13 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
       if(!h) return;
       const hl=String(h).toLowerCase().trim();
       // Name column
-      if(cols.name<0&&/наимен|model|name|nomi|товар|product/i.test(hl)) cols.name=i;
+      if(cols.name<0&&/наимен|модел|model|name|nomi|товар|product/i.test(hl)) cols.name=i;
       // Description / spec
       else if(cols.spec<0&&/описан|характер|spec|tavs|desc/i.test(hl)) cols.spec=i;
       // Price USD
       else if(cols.price<0&&/цена.*usd|usd|долл|narx.*\$|price.*\$|^\$/i.test(hl)) cols.price=i;
-      else if(cols.price<0&&/^цена$|price|narx|стоим/i.test(hl)&&!hl.includes('ндс')) cols.price=i;
+      else if(cols.price<0&&/^цена$|^price$|^narx$/i.test(hl)&&!hl.includes('ндс')) cols.price=i;
+      else if(cols.price<0&&/цена|price|narx/i.test(hl)&&!hl.includes('ндс')&&!hl.includes('с нал')) cols.price=i;
       // VAT price
       else if(cols.vat<0&&/ндс|vat|qqs|с.*налог/i.test(hl)) cols.vat=i;
       // Image
@@ -2626,9 +2636,31 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
       const c=detectColumns(rows[i]);
       if(c.name>=0){cols=c;headerRowIdx=i;break}
     }
-    // Fallback: KSS-style fixed positions
-    if(!cols){cols={name:1, spec:2, price:3, vat:4, image:0};headerRowIdx=0}
-    if(cols.name<0) cols.name=cols.image>=0?1:0;
+    // Fallback: scan first 5 rows to find header
+    if(!cols){
+      // Try to find name by looking for longest text column in data
+      cols={name:-1, spec:-1, price:-1, vat:-1, image:-1};
+      headerRowIdx=0;
+    }
+    // If name still not found, find first column with string values (not numbers, not empty)
+    if(cols.name<0){
+      const dataStart=headerRowIdx+1;
+      const colTextCount={};
+      for(let r=dataStart;r<Math.min(dataStart+10,rows.length);r++){
+        (rows[r]||[]).forEach((v,ci)=>{
+          if(v&&isNaN(parseFloat(String(v)))&&String(v).trim().length>3)
+            colTextCount[ci]=(colTextCount[ci]||0)+1;
+        });
+      }
+      // Skip image col, pick text column with most hits
+      let bestTextCol=-1, bestTextCount=0;
+      Object.entries(colTextCount).forEach(([c,n])=>{
+        const ci=parseInt(c);
+        if(ci===cols.image) return;
+        if(n>bestTextCount){bestTextCount=n;bestTextCol=ci;}
+      });
+      cols.name=bestTextCol>=0?bestTextCol:(cols.image>=0?cols.image+1:2);
+    }
 
     // If price column not in header, scan data rows to find numeric column
     if(cols.price<0){
