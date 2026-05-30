@@ -1225,17 +1225,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   <div id="addProdModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeAddProdModal()">
     <div class="modal">
       <div class="modal-hd">
-        <div class="modal-title">➕ Yangi Mahsulot Qo'shish</div>
+        <div class="modal-title" id="addProdModalTitle">➕ Yangi Mahsulot Qo'shish</div>
         <button class="modal-close" onclick="closeAddProdModal()">✕</button>
       </div>
       <div class="modal-body">
         <div class="mf-grid">
           <div class="mf-full">
-            <div class="mf-label">Model nomi *</div>
+            <div class="mf-label" id="lbl_np_name">Model nomi *</div>
             <input class="mf-inp" id="np_name" placeholder="DS-2CD2047G2-LU 2.8mm">
           </div>
           <div>
-            <div class="mf-label">Brend</div>
+            <div class="mf-label" id="lbl_np_brand">Brend</div>
             <input class="mf-inp" id="np_brand" placeholder="Hikvision" list="brandList">
             <datalist id="brandList">
               <option value="Hikvision"><option value="Dahua"><option value="Uniview">
@@ -1244,7 +1244,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             </datalist>
           </div>
           <div>
-            <div class="mf-label">Kategoriya *</div>
+            <div class="mf-label" id="lbl_np_cat">Kategoriya *</div>
             <select class="mf-sel" id="np_cat">
               <option value="IP Kamera">📷 <span data-i18n="cat_ip">IP Kamera</span></option>
               <option value="PTZ Kamera">🔭 PTZ Kamera</option>
@@ -1259,28 +1259,28 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             </select>
           </div>
           <div>
-            <div class="mf-label">Narx (USD)</div>
+            <div class="mf-label" id="lbl_np_price">Narx (USD)</div>
             <input class="mf-inp" id="np_price" type="number" min="0" placeholder="0.00">
           </div>
           <div class="mf-full">
-            <div class="mf-label">Tavsif</div>
+            <div class="mf-label" id="lbl_np_desc">Tavsif</div>
             <input class="mf-inp" id="np_desc" placeholder="Qisqacha tavsif...">
           </div>
           <div class="mf-full">
-            <div class="mf-label">Texnik xususiyatlar <span style="color:var(--text3)">(ixtiyoriy)</span></div>
+            <div class="mf-label" id="lbl_np_spec">Texnik xususiyatlar <span style="color:var(--text3)" id="lbl_np_spec_opt">(ixtiyoriy)</span></div>
             <input class="mf-inp" id="np_spec" placeholder="4MP, IR 30m, H.265+, PoE...">
             <div class="mf-hint">Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"</div>
           </div>
         </div>
         <div style="background:var(--surface2);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:7px">
           <span style="font-size:16px">💡</span>
-          Mahsulot katalogga saqlanadi va keyingi safarlar ham ko'rinadi. Taklifga darhol qo'shish ham mumkin.
+          <span id="addProdHint">Mahsulot katalogga saqlanadi va keyingi safarlar ham ko'rinadi. Taklifga darhol qo'shish ham mumkin.</span>
         </div>
       </div>
       <div class="modal-ft">
-        <button class="btn bs" onclick="closeAddProdModal()">Bekor qilish</button>
-        <button class="btn bp" onclick="saveNewProduct(false)">💾 Saqlash</button>
-        <button class="btn" style="background:var(--green);color:#0a0c10;border:none" onclick="saveNewProduct(true)">➕ Saqlash & Taklifga qo'sh</button>
+        <button class="btn bs" id="btn_addprod_cancel" onclick="closeAddProdModal()">Bekor qilish</button>
+        <button class="btn bp" id="btn_addprod_save" onclick="saveNewProduct(false)">💾 Saqlash</button>
+        <button class="btn" id="btn_addprod_saveq" style="background:var(--green);color:#0a0c10;border:none" onclick="saveNewProduct(true)">➕ Saqlash & Taklifga qo'sh</button>
       </div>
     </div>
   </div>
@@ -3374,10 +3374,15 @@ function showProd(id){
 
 // QUOTE
 function addToQ(id){
-  const p=PRODS.find(x=>x.id===id);if(!p)return;
-  if(quote.some(q=>q.product.id===id)){showToast('⚠️ Allaqachon qo\'shilgan');return}
+  const p=PRODS.find(x=>x.id===id);
+  if(!p){showToast('⚠️ '+(LANG==="ru"?"Товар не найден":LANG==="en"?"Product not found":"Mahsulot topilmadi"));return;}
+  if(quote.some(q=>q.product.id===id)){
+    showToast('⚠️ '+(LANG==="ru"?"Уже добавлен в КП":LANG==="en"?"Already in proposal":"Allaqachon qo'shilgan"));
+    return;
+  }
   quote.push({product:p,qty:1});saveQ();renderQ();updBdg();updHDDCams();
-  showToast('✅ '+p.name+' qo\'shildi');showProd(id);
+  const _added=LANG==="ru"?"добавлен в КП":LANG==="en"?"added to proposal":"taklifga qo'shildi";
+  showToast('✅ '+p.name+' '+_added);showProd(id);
 }
 function removeFromQ(id){
   quote=quote.filter(q=>q.product.id!==id);
@@ -3876,7 +3881,7 @@ function closeAddProdModal(){
 }
 function saveNewProduct(addToQuote){
   const name=(document.getElementById('np_name')||{}).value.trim();
-  if(!name){showToast('❌ Model nomini kiriting!');document.getElementById('np_name').focus();return}
+  if(!name){showToast('❌ '+(LANG==='ru'?'Введите название модели':LANG==='en'?'Enter model name':'Model nomini kiriting'));document.getElementById('np_name').focus();return}
   const brand=(document.getElementById('np_brand')||{}).value.trim()||'Noma\'lum';
   const cat=(document.getElementById('np_cat')||{}).value||'IP Kamera';
   const priceVal=parseFloat((document.getElementById('np_price')||{}).value||'');
@@ -3887,7 +3892,7 @@ function saveNewProduct(addToQuote){
   if(specStr){specStr.split(',').forEach(s=>{const t=s.trim();if(t)specs[t]='';})}
   // Check duplicate
   if(PRODS.find(p=>p.name.toLowerCase()===name.toLowerCase())){
-    showToast('⚠️ Bu nom allaqachon katalogda bor!');return;
+    showToast('⚠️ '+(LANG==='ru'?'Такое название уже есть в каталоге':LANG==='en'?'This name already exists in catalog':'Bu nom allaqachon katalogda bor'));return;
   }
   const id='custom_'+Date.now();
   const em=catEmoji(cat);
@@ -3903,7 +3908,8 @@ function saveNewProduct(addToQuote){
   // Show banner
   const banner=document.getElementById('catAddBanner');
   if(banner)banner.style.display='flex';
-  showToast('✅ "'+name+'" katalogga qo\'shildi');
+  const _savedMsg=LANG==='ru'?'добавлен в каталог':LANG==='en'?'added to catalog':"katalogga qo'shildi";
+  showToast('✅ "'+name+'" '+_savedMsg);
   closeAddProdModal();
   if(addToQuote){
     switchTab('quote');
@@ -5383,6 +5389,43 @@ function setLang(lang) {
       if(span) span.textContent = labels[lang]||labels.uz;
     }
   });
+
+  // ── Yangi Mahsulot Modal i18n ──────────────────────────────────────────
+  const _isRu=lang==='ru', _isEn=lang==='en';
+  const _setEl=(id,txt)=>{const e=document.getElementById(id);if(e)e.textContent=txt;};
+  const _setInner=(id,html)=>{const e=document.getElementById(id);if(e)e.innerHTML=html;};
+  _setEl('addProdModalTitle', '➕ '+(_isRu?'Добавить товар':_isEn?'Add Product':"Yangi Mahsulot Qo'shish"));
+  _setEl('lbl_np_name', _isRu?'Название модели *':_isEn?'Model name *':'Model nomi *');
+  _setEl('lbl_np_brand', _isRu?'Бренд':_isEn?'Brand':'Brend');
+  _setEl('lbl_np_cat', _isRu?'Категория *':_isEn?'Category *':'Kategoriya *');
+  _setEl('lbl_np_price', _isRu?'Цена (USD)':_isEn?'Price (USD)':'Narx (USD)');
+  _setEl('lbl_np_desc', _isRu?'Описание':_isEn?'Description':'Tavsif');
+  _setInner('lbl_np_spec', (_isRu?'Технические характеристики':_isEn?'Technical specs':'Texnik xususiyatlar')+
+    ' <span style="color:var(--text3)">('+ (_isRu?'необязательно':_isEn?'optional':'ixtiyoriy') +')</span>');
+  _setEl('addProdHint', _isRu?'Товар сохранится в каталоге. Можно сразу добавить в КП.':
+    _isEn?'Product saved to catalog. Can be added to proposal immediately.':
+    "Mahsulot katalogga saqlanadi. Taklifga darhol qo'shish ham mumkin.");
+  _setEl('btn_addprod_cancel', _isRu?'Отмена':_isEn?'Cancel':'Bekor qilish');
+  _setEl('btn_addprod_save', _isRu?'💾 Сохранить':_isEn?'💾 Save':'💾 Saqlash');
+  _setEl('btn_addprod_saveq', _isRu?'➕ Сохранить & добавить в КП':_isEn?'➕ Save & add to proposal':"➕ Saqlash & Taklifga qo'sh");
+  // Modal select kategoriya options
+  const npCat=document.getElementById('np_cat');
+  if(npCat){
+    const catOpts=[
+      ['IP Kamera',    '📷', _isRu?'IP-камера':_isEn?'IP Camera':'IP Kamera'],
+      ['PTZ Kamera',   '🔭', _isRu?'PTZ камера':_isEn?'PTZ Camera':'PTZ Kamera'],
+      ['NVR / DVR',    '💾', 'NVR / DVR'],
+      ['Tarmoq qurilmasi','🌐',_isRu?'Сетевое оборудование':_isEn?'Network device':'Tarmoq qurilmasi'],
+      ['Kirish nazorati','🔐',_isRu?'Контроль доступа':_isEn?'Access control':'Kirish nazorati'],
+      ['HDD / Xotira', '🖴', 'HDD / '+(_isRu?'Память':_isEn?'Storage':'Xotira')],
+      ['Optika / Kabel','🔗',_isRu?'Оптика / Кабель':_isEn?'Optics / Cable':'Optika / Kabel'],
+      ["Yong'in xavfsizligi",'🔥',_isRu?'Пожарная безопасность':_isEn?'Fire safety':"Yong'in xavfsizligi"],
+      ['Ogohlantirish', '🔔',_isRu?'Оповещение':_isEn?'Alarm':'Ogohlantirish'],
+      ['Aksesuar',     '🔌', _isRu?'Аксессуары':_isEn?'Accessories':'Aksesuar'],
+    ];
+    const curVal=npCat.value;
+    npCat.innerHTML=catOpts.map(([val,em,lbl])=>`<option value="${val}"${curVal===val?' selected':''}>${em} ${lbl}</option>`).join('');
+  }
 
   // Supplier input placeholder
   const supInp=document.getElementById('supplierNameInput');
