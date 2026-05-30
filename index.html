@@ -1864,20 +1864,19 @@ function savePRODS(){
       // Katta bo'lsa supplierPrices ni qisqartirish
       console.warn('localStorage hajm chegarasiga yaqin:',Math.round((prodsJson.length+supJson.length)/1024),'KB');
     }
-    localStorage.setItem('cqPRODS2', prodsJson);
-    localStorage.setItem('cqSuppliers2', supJson);
-    console.log('💾 Saqlandi:',slim.length,'mahsulot,',Math.round((prodsJson.length+supJson.length)/1024),'KB');
-  }catch(e){
-    console.error('PRODS saqlashda xato:',e);
-    // QuotaExceededError bo'lsa supplierPrices siz saqlash
+    // Auth tokenni himoya qilish — avval mahsulotlarni saqlab ko'ramiz
     try{
-      const slim2=PRODS.filter(p=>p._imported).map(p=>({
-        id:p.id,name:p.name,cat:p.cat,em:p.em,_usd:p._usd||0,_supplier:p._supplier||'',_imported:true
-      }));
-      localStorage.setItem('cqPRODS2',JSON.stringify(slim2));
-      localStorage.removeItem('cqSuppliers2');
-      console.warn('Compressed save (no supplierPrices)');
-    }catch(e2){console.error('Compressed save ham xato:',e2);}
+      localStorage.setItem('cqPRODS2', prodsJson);
+      localStorage.setItem('cqSuppliers2', supJson);
+      console.log('💾 localStorage:',slim.length,'mahsulot,',Math.round((prodsJson.length+supJson.length)/1024),'KB');
+    }catch(quotaErr){
+      // localStorage to'ldi — mahsulotlarni localStorage ga saqlamaymiz
+      // Ular Supabase da bor, sahifa yangilanganda cloud dan yuklanadi
+      console.warn('⚠️ localStorage to\'ldi — mahsulotlar faqat Supabase da saqlanadi');
+      try{ localStorage.removeItem('cqPRODS2'); localStorage.removeItem('cqSuppliers2'); }catch(e){}
+    }
+  }catch(e){
+    console.warn('PRODS saqlashda xato (Supabase da saqlanadi):',e.message);
   }
   if(typeof updateDataStatus==='function') updateDataStatus();
 }
@@ -6560,7 +6559,14 @@ let currentProfile = null;
 function getSB(){
   if(!_sb){
     if(typeof window.supabase !== 'undefined'){
-      _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        auth: {
+          persistSession: true,
+          autoRefreshToken: true,
+          storageKey: 'okv-auth-token', // alohida key — mahsulotlardan ajratilgan
+          storage: window.localStorage
+        }
+      });
     } else {
       console.warn("Supabase SDK yuklanmagan");
       return null;
@@ -7068,6 +7074,21 @@ function setAuthLang(lang){
 
 // ── AUTH INIT ─────────────────────────────────────────────────────────────
 async function initAuth(){
+  // ── BIR MARTALIK MIGRATION: eski to'lib qolgan localStorage ni tozalash ──
+  if(!localStorage.getItem('okvCleanedV2')){
+    try{
+      // Eski img_ va katta cqPRODS2 ni tozalash
+      const toRemove=[];
+      for(let i=0;i<localStorage.length;i++){
+        const k=localStorage.key(i);
+        if(k && (k.startsWith('img_')||k==='cqIM2')) toRemove.push(k);
+      }
+      toRemove.forEach(k=>localStorage.removeItem(k));
+      localStorage.setItem('okvCleanedV2','1');
+      console.log('🧹 Eski localStorage tozalandi:',toRemove.length,'kalit');
+    }catch(e){}
+  }
+
   const sb = getSB();
   if(!sb){
     // Supabase yuklanmagan — offline rejim
