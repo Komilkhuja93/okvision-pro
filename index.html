@@ -6363,8 +6363,15 @@ function openProfileModal(){
   document.getElementById('profAvatarInitials').textContent = initials;
 
   // Avatar
+  const _b1 = document.getElementById('avatarDeleteBtn');
+  const _b2 = document.getElementById('avatarDeleteBtn2');
   if(avatarDataUrl){
     document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
+    if(_b1) _b1.style.display = '';
+    if(_b2) _b2.style.display = '';
+  } else {
+    if(_b1) _b1.style.display = 'none';
+    if(_b2) _b2.style.display = 'none';
   }
   // Seal
   updateSealPreview();
@@ -6380,16 +6387,50 @@ function closeProfileModal(){
 
 function handleAvatarUpload(inp){
   const file = inp.files[0]; if(!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    avatarDataUrl = e.target.result;
-    localStorage.setItem('okvAvatar', avatarDataUrl);
-    document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
-    // Topbardagi avatar ham yangilash
-    updateUserUI();
-    showToast('🖼 Avatar saqlandi');
+  // Rasmni kichraytirish — canvas orqali (max 256x256)
+  const img2 = new Image();
+  const r2 = new FileReader();
+  r2.onload = ev => {
+    img2.onload = () => {
+      const MAX = 256;
+      const canvas = document.createElement('canvas');
+      const ratio = Math.min(MAX/img2.width, MAX/img2.height, 1);
+      canvas.width = Math.round(img2.width * ratio);
+      canvas.height = Math.round(img2.height * ratio);
+      canvas.getContext('2d').drawImage(img2, 0, 0, canvas.width, canvas.height);
+      avatarDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+      localStorage.setItem('okvAvatar', avatarDataUrl);
+      document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
+      // O'chirish tugmalarini ko'rsatish
+      const b1 = document.getElementById('avatarDeleteBtn');
+      const b2 = document.getElementById('avatarDeleteBtn2');
+      if(b1) b1.style.display = '';
+      if(b2) b2.style.display = '';
+      updateUserUI();
+      // Supabase profiles jadvalida avatar_url saqlanmaydi (base64 katta)
+      // localStorage da saqlanadi
+      showToast('🖼 Avatar saqlandi');
+    };
+    img2.src = ev.target.result;
   };
-  reader.readAsDataURL(file);
+  r2.readAsDataURL(file);
+}
+
+function deleteAvatar(){
+  const _lang = LANG||'uz';
+  const msg = _lang==='ru'?'Удалить фото профиля?':_lang==='en'?'Remove profile photo?':"Profil rasmini o'chirasizmi?";
+  if(!confirm(msg)) return;
+  avatarDataUrl = null;
+  localStorage.removeItem('okvAvatar');
+  const initials = (currentProfile?.full_name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('profAvatarBig').innerHTML = `<span id="profAvatarInitials">${initials}</span>`;
+  const b1 = document.getElementById('avatarDeleteBtn');
+  const b2 = document.getElementById('avatarDeleteBtn2');
+  if(b1) b1.style.display = 'none';
+  if(b2) b2.style.display = 'none';
+  updateUserUI();
+  const _msg = _lang==='ru'?'✅ Фото удалено':_lang==='en'?'✅ Photo removed':"✅ Rasm o'chirildi";
+  showToast(_msg);
 }
 
 function handleSealUpload(inp){
@@ -7467,14 +7508,33 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
       <!-- Avatar -->
       <div class="prof-avatar-wrap">
-        <div class="prof-avatar-big" id="profAvatarBig" onclick="document.getElementById('avatarFileInp').click()">
-          <span id="profAvatarInitials">U</span>
+        <div style="position:relative;display:inline-block">
+          <div class="prof-avatar-big" id="profAvatarBig" onclick="document.getElementById('avatarFileInp').click()" title="Rasmni o'zgartirish">
+            <span id="profAvatarInitials">U</span>
+          </div>
+          <!-- O'chirish tugmasi — rasm bo'lsa chiqadi -->
+          <button id="avatarDeleteBtn" onclick="deleteAvatar()" title="Rasmni o'chirish"
+            style="display:none;position:absolute;top:-4px;right:-4px;width:22px;height:22px;
+            border-radius:50%;background:var(--red,#ff4757);border:2px solid var(--surface);
+            color:#fff;font-size:11px;cursor:pointer;line-height:1;padding:0;z-index:2">✕</button>
         </div>
         <input type="file" id="avatarFileInp" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
         <div class="prof-avatar-info">
           <div class="prof-avatar-name" id="profAvatarName">—</div>
           <div class="prof-avatar-email" id="profAvatarEmail">—</div>
           <span class="prof-avatar-plan" id="profAvatarPlan">FREE</span>
+          <div style="margin-top:6px;display:flex;gap:6px">
+            <button onclick="document.getElementById('avatarFileInp').click()"
+              style="font-size:11px;padding:3px 10px;background:var(--surface2);border:1px solid var(--border);
+              color:var(--text2);border-radius:6px;cursor:pointer">
+              📷 O'zgartirish
+            </button>
+            <button id="avatarDeleteBtn2" onclick="deleteAvatar()"
+              style="display:none;font-size:11px;padding:3px 10px;background:transparent;
+              border:1px solid var(--red,#ff4757);color:var(--red,#ff4757);border-radius:6px;cursor:pointer">
+              🗑 O'chirish
+            </button>
+          </div>
         </div>
       </div>
 
