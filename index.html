@@ -6385,52 +6385,107 @@ function closeProfileModal(){
   document.body.style.overflow = '';
 }
 
+// ── Avatar helper ─────────────────────────────────────────────────────────
+function _setAvatarUI(url){
+  avatarDataUrl = url;
+  if(url){
+    document.getElementById('profAvatarBig').innerHTML = `<img src="${url}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+    document.getElementById('avatarDeleteBtn') ?.style && (document.getElementById('avatarDeleteBtn').style.display='');
+    document.getElementById('avatarDeleteBtn2')?.style && (document.getElementById('avatarDeleteBtn2').style.display='');
+  } else {
+    const initials=(currentProfile?.full_name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+    document.getElementById('profAvatarBig').innerHTML=`<span id="profAvatarInitials">${initials}</span>`;
+    document.getElementById('avatarDeleteBtn') ?.style && (document.getElementById('avatarDeleteBtn').style.display='none');
+    document.getElementById('avatarDeleteBtn2')?.style && (document.getElementById('avatarDeleteBtn2').style.display='none');
+  }
+  updateUserUI();
+}
+
 function handleAvatarUpload(inp){
   const file = inp.files[0]; if(!file) return;
-  // Rasmni kichraytirish — canvas orqali (max 256x256)
   const img2 = new Image();
   const r2 = new FileReader();
   r2.onload = ev => {
-    img2.onload = () => {
+    img2.onload = async () => {
+      // 1. Canvas orqali resize (256x256)
       const MAX = 256;
       const canvas = document.createElement('canvas');
       const ratio = Math.min(MAX/img2.width, MAX/img2.height, 1);
-      canvas.width = Math.round(img2.width * ratio);
+      canvas.width  = Math.round(img2.width  * ratio);
       canvas.height = Math.round(img2.height * ratio);
       canvas.getContext('2d').drawImage(img2, 0, 0, canvas.width, canvas.height);
-      avatarDataUrl = canvas.toDataURL('image/jpeg', 0.85);
-      localStorage.setItem('okvAvatar', avatarDataUrl);
-      document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
-      // O'chirish tugmalarini ko'rsatish
-      const b1 = document.getElementById('avatarDeleteBtn');
-      const b2 = document.getElementById('avatarDeleteBtn2');
-      if(b1) b1.style.display = '';
-      if(b2) b2.style.display = '';
-      updateUserUI();
-      // Supabase profiles jadvalida avatar_url saqlanmaydi (base64 katta)
-      // localStorage da saqlanadi
-      showToast('🖼 Avatar saqlandi');
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+
+      // 2. localStorage ga saqlash (tez ko'rinish uchun)
+      localStorage.setItem('okvAvatar', dataUrl);
+      _setAvatarUI(dataUrl);
+      showToast('🖼 Yuklanmoqda...');
+
+      // 3. Supabase Storage ga yuklash
+      if(currentUser){
+        try{
+          const sb = getSB(); if(!sb) return;
+          // base64 → Blob
+          const res  = await fetch(dataUrl);
+          const blob = await res.blob();
+          const path = `${currentUser.id}/avatar.jpg`;
+
+          // Avval o'chirib, keyin yuklash (upsert)
+          await sb.storage.from('avatars').remove([path]);
+          const { error: upErr } = await sb.storage.from('avatars').upload(path, blob, {
+            contentType: 'image/jpeg', upsert: true
+          });
+          if(upErr){ console.warn('Avatar upload error:', upErr.message); showToast('🖼 Avatar saqlandi (local)'); return; }
+
+          // Public URL olish
+          const { data: urlData } = sb.storage.from('avatars').getPublicUrl(path);
+          const publicUrl = urlData?.publicUrl + '?t=' + Date.now(); // cache bust
+
+          // profiles jadvalida avatar_url saqlash
+          await sb.from('profiles').update({ avatar_url: publicUrl }).eq('id', currentUser.id);
+
+          // URL ni localStorage ga ham saqlash
+          localStorage.setItem('okvAvatarUrl', publicUrl);
+          showToast('✅ Avatar barcha qurilmalarda sinxronlandi');
+        } catch(e){
+          console.warn('Avatar sync error:', e);
+          showToast('🖼 Avatar saqlandi (local)');
+        }
+      } else {
+        showToast('🖼 Avatar saqlandi');
+      }
     };
     img2.src = ev.target.result;
   };
   r2.readAsDataURL(file);
 }
 
-function deleteAvatar(){
+async function deleteAvatar(){
   const _lang = LANG||'uz';
   const msg = _lang==='ru'?'Удалить фото профиля?':_lang==='en'?'Remove profile photo?':"Profil rasmini o'chirasizmi?";
   if(!confirm(msg)) return;
-  avatarDataUrl = null;
+
+  // 1. Local tozalash
   localStorage.removeItem('okvAvatar');
-  const initials = (currentProfile?.full_name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('profAvatarBig').innerHTML = `<span id="profAvatarInitials">${initials}</span>`;
-  const b1 = document.getElementById('avatarDeleteBtn');
-  const b2 = document.getElementById('avatarDeleteBtn2');
-  if(b1) b1.style.display = 'none';
-  if(b2) b2.style.display = 'none';
-  updateUserUI();
-  const _msg = _lang==='ru'?'✅ Фото удалено':_lang==='en'?'✅ Photo removed':"✅ Rasm o'chirildi";
-  showToast(_msg);
+  localStorage.removeItem('okvAvatarUrl');
+  _setAvatarUI(null);
+
+  // 2. Supabase dan o'chirish
+  if(currentUser){
+    try{
+      const sb = getSB(); if(!sb) return;
+      const path = `${currentUser.id}/avatar.jpg`;
+      await sb.storage.from('avatars').remove([path]);
+      await sb.from('profiles').update({ avatar_url: null }).eq('id', currentUser.id);
+      const _msg = _lang==='ru'?'✅ Фото удалено':_lang==='en'?'✅ Photo removed':"✅ Rasm o'chirildi";
+      showToast(_msg);
+    } catch(e){
+      console.warn('Avatar delete error:', e);
+      showToast(_lang==='ru'?'✅ Фото удалено локально':"✅ Rasm o'chirildi");
+    }
+  } else {
+    showToast(_lang==='ru'?'✅ Фото удалено':_lang==='en'?'✅ Photo removed':"✅ Rasm o'chirildi");
+  }
 }
 
 function handleSealUpload(inp){
@@ -7041,7 +7096,31 @@ async function onUserLogin(user){
 async function loadUserProfile(userId){
   const sb = getSB(); if(!sb) return;
   const { data } = await sb.from('profiles').select('*').eq('id', userId).single();
-  if(data) currentProfile = data;
+  if(data){
+    currentProfile = data;
+    // Avatar URL ni Supabase dan yuklash — barcha qurilmalarda sinxron
+    if(data.avatar_url){
+      avatarDataUrl = data.avatar_url;
+      localStorage.setItem('okvAvatar', data.avatar_url);
+      // UI yangilash (agar profil modali ochiq bo'lsa)
+      const profBig = document.getElementById('profAvatarBig');
+      if(profBig && data.avatar_url){
+        profBig.innerHTML = `<img src="${data.avatar_url}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+        const b1 = document.getElementById('avatarDeleteBtn');
+        const b2 = document.getElementById('avatarDeleteBtn2');
+        if(b1) b1.style.display = '';
+        if(b2) b2.style.display = '';
+      }
+    } else if(!data.avatar_url) {
+      // Supabase da rasm yo'q — localdan ham o'chirish (boshqa qurilmada o'chirilgan bo'lishi mumkin)
+      const localAv = localStorage.getItem('okvAvatarUrl');
+      if(!localAv){
+        // Local ham yo'q — tozalash
+        avatarDataUrl = null;
+        localStorage.removeItem('okvAvatar');
+      }
+    }
+  }
 }
 
 // ── UI yangilash ──────────────────────────────────────────────────────────
@@ -7049,7 +7128,8 @@ function updateUserUI(){
   if(!currentUser){ document.getElementById('userPill').style.display='none'; return; }
   const name = currentProfile?.full_name || currentUser.email?.split('@')[0] || 'User';
   const initials = name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  const av = avatarDataUrl || localStorage.getItem('okvAvatar');
+  // Avatar: Supabase URL → localStorage → null (ustuvorlik tartibi)
+  const av = currentProfile?.avatar_url || avatarDataUrl || localStorage.getItem('okvAvatar');
   const avatarEl = document.getElementById('userAvatar');
   if(av && avatarEl){
     avatarEl.innerHTML = `<img src="${av}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" alt="avatar">`;
@@ -7684,14 +7764,14 @@ window.addEventListener('appinstalled', () => {
   _pwaPrompt = null;
   const btn = document.getElementById('pwaInstallBtn');
   if (btn) btn.style.display = 'none';
-  if (typeof showToast === 'function') showToast('✅ OKVISION Pro o'rnatildi!');
+  if (typeof showToast === 'function') showToast(`✅ OKVISION Pro o'rnatildi!`);
 });
 
 function installPWA() {
   if (!_pwaPrompt) return;
   _pwaPrompt.prompt();
   _pwaPrompt.userChoice.then(r => {
-    if (r.outcome === 'accepted') showToast('✅ O'rnatilmoqda...');
+    if (r.outcome === 'accepted') showToast(`✅ O'rnatilmoqda...`);
     _pwaPrompt = null;
   });
 }
