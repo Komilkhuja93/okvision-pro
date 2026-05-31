@@ -1120,15 +1120,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   </button>
   <button class="mob-nav-item" id="mnCats" onclick="openCatManager()">
     <span class="mob-nav-ic">🗂</span>
-    <span class="mob-nav-lbl" data-i18n="tab_cats">Kategoriya</span>
+    <span class="mob-nav-lbl" id="mobNavCats">Kategoriyalar</span>
   </button>
   <button class="mob-nav-item" id="mnMore" onclick="mobNav('hdd')">
     <span class="mob-nav-ic">💾</span>
-    <span class="mob-nav-lbl" data-i18n="tab_hdd">HDD</span>
+    <span class="mob-nav-lbl" id="mobNavHdd">HDD Kalk.</span>
   </button>
   <button class="mob-nav-item" id="mnProfile" onclick="openProfileModal()">
     <span class="mob-nav-ic">👤</span>
-    <span class="mob-nav-lbl" data-i18n="tab_profile">Profil</span>
+    <span class="mob-nav-lbl" id="mobNavProfile">Profil</span>
   </button>
 </div>
 
@@ -1430,7 +1430,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <!-- XIZMATLAR BO'LIMI -->
     <div class="svc-wrap">
       <div class="svc-hd">
-        <div class="svc-ht">🔧 ${LANG==='ru'?'\u041C\u043E\u043D\u0442\u0430\u0436 \u0438 \u0423\u0441\u043B\u0443\u0433\u0438':LANG==='en'?'Installation & Services':"O'rnatish va Xizmatlar"}</div>
+        <div class="svc-ht" id="svcTitle">🔧 <span data-i18n="h_svc">O'rnatish va Xizmatlar</span></div>
         <button class="svc-add" onclick="addSvcRow()">+ <span data-i18n="btn_add_svc">Xizmat qo'shish</span></button>
       </div>
       <div class="svc-body">
@@ -5593,6 +5593,15 @@ function setLang(lang) {
   // Auth placeholder
   _setPh('authName',
     _isRu?'Ваше полное имя':_isEn?'Your full name':"To'liq ismingiz");
+  // Mobil nav labellar
+  // Barcha mobil nav labellar
+  const _mnP=document.getElementById('mobNavProfile');
+  if(_mnP) _mnP.textContent=_isRu?'Профиль':_isEn?'Profile':'Profil';
+  const _mnH=document.getElementById('mobNavHdd');
+  if(_mnH) _mnH.textContent=_isRu?'HDD Калк.':_isEn?'HDD Calc.':'HDD Kalk.';
+  const _mnC=document.getElementById('mobNavCats');
+  if(_mnC) _mnC.textContent=_isRu?'Категории':_isEn?'Categories':'Kategoriyalar';
+
   // mobSrch placeholder
   _setPh('mobSrch',
     _isRu?'Модель или описание...':_isEn?'Model or description...':'Model yoki tavsif...');
