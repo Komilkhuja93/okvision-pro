@@ -606,6 +606,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .main-prod-price{font-size:11px;color:var(--green);font-weight:600;white-space:nowrap}
 .main-prod-count{font-size:10px;color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;padding:0 4px}
 .main-scroll{flex:1;overflow-y:auto;padding:22px}
+/* ── DET PANEL ─────────────────────────────────────────────────────────── */
+#det:not(:empty){
+  display:block;
+  animation:fadeIn .15s ease;
+}
+#det:empty{display:none}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
 /* ── AI SEARCH ─────────────────────────────────────────────────────────── */
 .ai-search-wrap{position:relative;margin-bottom:4px}
 .ai-search-inp{width:100%;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--rl);padding:10px 40px 10px 38px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;transition:.2s;line-height:1.4}
@@ -1123,13 +1131,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <span class="mob-nav-lbl" data-i18n="tab_quote">Taklif</span>
     <span class="mob-nav-badge" id="mobQBdg"></span>
   </button>
+  <button class="mob-nav-item" id="mnImport" onclick="mobNav('import')">
+    <span class="mob-nav-ic">📥</span>
+    <span class="mob-nav-lbl" id="mobNavImport">Import</span>
+  </button>
   <button class="mob-nav-item" id="mnCats" onclick="openCatManager()">
     <span class="mob-nav-ic">🗂</span>
-    <span class="mob-nav-lbl" id="mobNavCats">Kategoriyalar</span>
-  </button>
-  <button class="mob-nav-item" id="mnMore" onclick="mobNav('hdd')">
-    <span class="mob-nav-ic">💾</span>
-    <span class="mob-nav-lbl" id="mobNavHdd">HDD Kalk.</span>
+    <span class="mob-nav-lbl" id="mobNavCats">Kategoriya</span>
   </button>
   <button class="mob-nav-item" id="mnProfile" onclick="openProfileModal()">
     <span class="mob-nav-ic">👤</span>
@@ -3320,6 +3328,7 @@ function setSupplier(s){
   document.getElementById('det').innerHTML='';
   document.getElementById('ph0').style.display='';
   expandProdRow();
+  document.getElementById('mobProdSheet')?.remove();
   renderCats();filterP();
 }
 function setC(c){
@@ -3327,6 +3336,7 @@ function setC(c){
   document.getElementById('det').innerHTML='';
   document.getElementById('ph0').style.display='';
   expandProdRow();
+  document.getElementById('mobProdSheet')?.remove();
   renderCats();filterP();
 }
 function renderList(list){
@@ -3461,17 +3471,30 @@ function showProd(id){
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
-  // Det panel ko'rinsin uchun scroll tepaga
-  setTimeout(()=>{
-    if(isMobile()){
-      // Mobilda bottom sheet ochish
-      showMobProdSheet(p);
-    } else {
+  // Desktop: det panel ko'rinsin
+  if(!isMobile()){
+    // main-cat-bar ni kichraytirish — det ko'rinsin uchun
+    const mrow=document.getElementById('mainProdRow');
+    if(mrow && mrow.offsetHeight > 200){
+      mrow.style.maxHeight='180px';
+      try{localStorage.setItem('prodRowH','180')}catch(e){}
+    }
+    setTimeout(()=>{
       const ms=document.querySelector('.main-scroll');
       if(ms) ms.scrollTop=0;
-    }
-  },30);
-  renderList();
+    },50);
+  } else {
+    // Mobil: bottom sheet
+    setTimeout(()=>showMobProdSheet(p),10);
+  }
+  // renderList — selP hilighting uchun (det ni tozalamasdan)
+  const _el=document.getElementById('mainProdList');
+  if(_el){
+    _el.querySelectorAll('.main-prod-item').forEach(item=>{
+      const isSelected = item.getAttribute('onclick')?.includes(p.id);
+      item.classList.toggle('sel', !!isSelected);
+    });
+  }
 }
 
 // ── Mobil mahsulot bottom sheet ──────────────────────────────────────────
@@ -3599,10 +3622,21 @@ function addToQ(id){
   quote.push({product:p,qty:1});saveQ();renderQ();updBdg();updHDDCams();
   const _added=LANG==="ru"?"добавлен в КП":LANG==="en"?"added to proposal":"taklifga qo'shildi";
   showToast('✅ '+p.name+' '+_added);
-  if(isMobile()){ showMobProdSheet(p); } else { showProd(id); }
+  if(isMobile()){
+    // Sheet ni yangilash — qayta ochish
+    document.getElementById('mobProdSheet')?.remove();
+    setTimeout(()=>showMobProdSheet(p),50);
+  } else {
+    // Desktop: faqat det panel yangilash va highlight
+    showProd(id);
+  }
 }
 function removeFromQ(id){
   quote=quote.filter(q=>q.product.id!==id);
+  if(isMobile()&&selP&&selP.id===id){
+    document.getElementById('mobProdSheet')?.remove();
+    setTimeout(()=>showMobProdSheet(selP),50);
+  }
   saveQ();renderQ();updBdg();updHDDCams();
   showToast('🗑 Olib tashlandi');if(selP&&selP.id===id)showProd(id);
 }
@@ -4495,8 +4529,7 @@ function expandProdRow(){
   const row=document.getElementById('mainProdRow');
   if(!row) return;
   const saved=parseInt(localStorage.getItem('prodRowH')||'0');
-  // Saqlangan qiymat bo'lsa uni ishlat, aks holda CSS default ga qaytarish
-  if(saved>120){
+  if(saved>250){
     row.style.maxHeight=saved+'px';
   } else {
     row.style.maxHeight=''; // CSS da calc(100vh-200px) ishlaydi
@@ -4950,7 +4983,7 @@ function updateMobBadge(){
 // Mob nav active state — switchTab dan KEYIN chaqiriladi
 function updateMobNav(name){
   if(!isMobile()) return;
-  const navMap={catalog:'mnCatalog',quote:'mnQuote',preview:'mnPreview',guide:'mnImport',import:'mnImport',hdd:'mnMore',profile:'mnProfile'};
+  const navMap={catalog:'mnCatalog',quote:'mnQuote',preview:'mnPreview',guide:'mnImport',import:'mnImport',hdd:'mnMore',profile:'mnProfile',cats:'mnCats'};
   document.querySelectorAll('.mob-nav-item').forEach(b=>b.classList.remove('active'));
   const a=navMap[name];
   if(a) document.getElementById(a)?.classList.add('active');
@@ -5724,8 +5757,10 @@ function setLang(lang) {
   if(_mnP) _mnP.textContent=_isRu?'Профиль':_isEn?'Profile':'Profil';
   const _mnH=document.getElementById('mobNavHdd');
   if(_mnH) _mnH.textContent=_isRu?'HDD Калк.':_isEn?'HDD Calc.':'HDD Kalk.';
+  const _mnI2=document.getElementById('mobNavImport');
+  if(_mnI2) _mnI2.textContent=_isRu?'Импорт':_isEn?'Import':'Import';
   const _mnC=document.getElementById('mobNavCats');
-  if(_mnC) _mnC.textContent=_isRu?'Категории':_isEn?'Categories':'Kategoriyalar';
+  if(_mnC) _mnC.textContent=_isRu?'Категории':_isEn?'Categories':'Kategoriya';
 
   // mobSrch placeholder
   _setPh('mobSrch',
@@ -7739,7 +7774,19 @@ async function loadFromCloud(){
     }
     if(!allData.length){ console.log("Cloud: mahsulot yo'q"); return; }
     console.log(`☁️ Cloud dan ${allData.length} ta mahsulot olindi`);
-    const existingIds = new Set(PRODS.map(p=>p.id));
+
+    // Cloud USTUNLIK qiladi — barcha cloud mahsulotlarini yuklaymiz
+    // Agar cloud da ko'proq mahsulot bo'lsa — localdan tozalab, cloud dan yuklaymiz
+    const cloudIds = new Set(allData.map(r=>r.id));
+    const localOnlyProds = PRODS.filter(p=>!cloudIds.has(p.id)&&!p._imported);
+    // Import qilingan lekin cloudda yo'q bo'lgan local mahsulotlar — saqlaymiz
+    const localImportedNotInCloud = PRODS.filter(p=>!cloudIds.has(p.id)&&p._imported);
+
+    // PRODS ni cloud bilan to'liq sinxronlash
+    PRODS.splice(0,PRODS.length);
+    // Local only (qo'lda qo'shilgan) mahsulotlarni qaytaramiz
+    localOnlyProds.forEach(p=>PRODS.push(p));
+
     let loaded=0;
     // Helper: emailni supplier nomidan tozalash
     function cleanSupName(s){
@@ -7753,39 +7800,39 @@ async function loadFromCloud(){
       }
       return s;
     }
+    // Barcha cloud mahsulotlarini yuklash (existingIds tekshirmasdan)
     allData.forEach(row=>{
-      if(!existingIds.has(row.id)){
-        const rawSup=row.supplier||'';
-        const rawParent=row.parent_supplier||'';
-        // Email bo'lsa tozala, aks holda asl qiymat
-        const cleanedSup=cleanSupName(rawSup)||rawSup;
-        const cleanedParent=cleanSupName(rawParent)||rawParent;
-        const prod = {
-          id:row.id, name:row.name, cat:row.cat, em:row.em, brand:row.brand,
-          desc:row.description||row.desc||'', specs:row.specs||{},
-          _usd:row.price_usd, _vat:row.price_vat,
-          _supplier:cleanedSup, _parentSupplier:cleanedParent,
-          _sheet:row.sheet_name, _imported:true,
-          _sourceFile:row.source_file||'',
-          _imgUrl:row.image_url||''  // Supabase Storage dan rasm URL
-        };
-        // Rasm URL ni images[] ga ham qo'shish
-        if(row.image_url) images[row.id]=row.image_url;
-        // Rasm URL — Supabase dan
-        if(row.image_url && row.image_url.startsWith('http')){
-          prod._imgUrl = row.image_url;
-          images[row.id] = row.image_url;
-        }
-        PRODS.push(prod);
-        existingIds.add(row.id);
-        loaded++;
+      const rawSup=row.supplier||'';
+      const rawParent=row.parent_supplier||'';
+      const cleanedSup=cleanSupName(rawSup)||rawSup;
+      const cleanedParent=cleanSupName(rawParent)||rawParent;
+      const prod = {
+        id:row.id, name:row.name, cat:row.cat, em:row.em, brand:row.brand,
+        desc:row.description||row.desc||'', specs:row.specs||{},
+        _usd:row.price_usd, _vat:row.price_vat,
+        _supplier:cleanedSup, _parentSupplier:cleanedParent,
+        _sheet:row.sheet_name, _imported:true,
+        _sourceFile:row.source_file||'',
+        _imgUrl:row.image_url||''
+      };
+      if(row.image_url && row.image_url.startsWith('http')){
+        prod._imgUrl = row.image_url;
+        images[row.id] = row.image_url;
       }
+      PRODS.push(prod);
+      loaded++;
     });
-    if(loaded>0){
-      savePRODS(); // Cloud dan yuklangan mahsulotlarni localStorage ga saqlash
-      renderCats(); renderList(); filterP();
-      console.log(`☁️ ${loaded} ta mahsulot bulutdan yuklandi`);
-    }
+    // supplierPrices qayta qurish
+    PRODS.forEach(p=>{
+      if(!p._usd) return;
+      const sup=p._parentSupplier||p._supplier||'';
+      const nm=p.name.toLowerCase();
+      if(!window.supplierPrices[sup]) window.supplierPrices[sup]={};
+      window.supplierPrices[sup][nm]=p._usd;
+    });
+    savePRODS();
+    renderCats(); renderList(); filterP();
+    console.log(`☁️ ${allData.length} ta mahsulot bulutdan yuklandi (local: ${localOnlyProds.length} ta saqlab qolindi)`);
   }catch(e){ console.warn('Cloud load xato:', e); }
 }
 
