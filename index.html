@@ -320,6 +320,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     border-bottom:1px solid #eef0f4!important;
     word-break:break-word!important;
     overflow:hidden!important;
+    font-size:11px!important;
+  }
+  /* Telefon uchun kichikroq shrift */
+  @media (max-width:600px){
+    .ptbl{font-size:9px!important}
+    .ptbl th,.ptbl td{padding:4px 5px!important}
+    .ptbl-svc th:nth-child(2),.ptbl-svc td:nth-child(2){width:50%!important}
   }
   /* Mahsulotlar jadvali: #, img, Product, Qty, Price, Total */
   .ptbl:not(.ptbl-svc) th:nth-child(1),.ptbl:not(.ptbl-svc) td:nth-child(1){width:4%!important}
@@ -1375,7 +1382,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <!-- XIZMATLAR BO'LIMI -->
     <div class="svc-wrap">
       <div class="svc-hd">
-        <div class="svc-ht">🔧 <span data-i18n="h_svc">O'rnatish va Xizmatlar</span></div>
+        <div class="svc-ht">🔧 ${LANG==='ru'?'\u041C\u043E\u043D\u0442\u0430\u0436 \u0438 \u0423\u0441\u043B\u0443\u0433\u0438':LANG==='en'?'Installation & Services':"O'rnatish va Xizmatlar"}</div>
         <button class="svc-add" onclick="addSvcRow()">+ <span data-i18n="btn_add_svc">Xizmat qo'shish</span></button>
       </div>
       <div class="svc-body">
@@ -3714,7 +3721,7 @@ function buildPreview(){
       <td>${i+1}</td>
       <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product.em}</span>`}</div></td>
       <td><strong>${item.product.name}</strong><br><span style="font-size:11px;color:#777">${item.product.brand} · ${item.product.cat}</span></td>
-      <td>${item.qty} ${item.unit||'dona'}</td>
+      <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${pr?fmtP(pr):'—'}</td>
       <td class="nr" style="font-weight:700">${lt?fmtP(lt):'—'}</td>
     </tr>`;
@@ -3728,7 +3735,7 @@ function buildPreview(){
   const gbDay=res*cams*24*mode*codec;
   const tbMonth=(gbDay*30/1024);
   const tbTotal=(gbDay*days/1024);
-  const hddSec=cams>0?`<div class="phdd"><div class="phddt">💾 HDD Tavsiyasi</div><div class="phddg"><div class="phddi"><div class="phddil">Kameralar</div><div class="phddiv">${cams} ta</div></div><div class="phddi"><div class="phddil">Oyiga kerak</div><div class="phddiv">${tbMonth.toFixed(1)} TB</div></div><div class="phddi"><div class="phddil">${days} kun arxiv</div><div class="phddiv">${tbTotal.toFixed(1)} TB</div></div></div></div>`:'';
+  const hddSec=cams>0?`<div class="phdd"><div class="phddt">${LANG==='ru'?'💾 Рекомендация HDD':LANG==='en'?'💾 HDD Recommendation':'💾 HDD Tavsiyasi'}</div><div class="phddg"><div class="phddi"><div class="phddil">Kameralar</div><div class="phddiv">${cams} ${LANG==='ru'?'шт':LANG==='en'?'pcs':'ta'}</div></div><div class="phddi"><div class="phddil">Oyiga kerak</div><div class="phddiv">${tbMonth.toFixed(1)} TB</div></div><div class="phddi"><div class="phddil">${days} kun arxiv</div><div class="phddiv">${tbTotal.toFixed(1)} TB</div></div></div></div>`:'';
 
   // Services
   const svcRows=(services||[]).filter(s=>s.name&&(parseFloat(s.price)||0)>0);
@@ -3736,7 +3743,7 @@ function buildPreview(){
   const svcHtml=svcRows.length?`
   <div style="margin-top:18px">
     <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
-      <span style="background:#f0f9f4;border-radius:5px;padding:2px 8px;color:#15803d;border:1px solid #bbf7d0">🔧 O'rnatish va Xizmatlar</span>
+      <span style="background:#f0f9f4;border-radius:5px;padding:2px 8px;color:#15803d;border:1px solid #bbf7d0">🔧 ${LANG==='ru'?'Монтаж и Услуги':LANG==='en'?'Installation & Services':"O'rnatish va Xizmatlar"}</span>
     </div>
     <table class="ptbl ptbl-svc">
       <thead><tr><th style="width:5%">#</th><th style="width:55%">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th style="width:12%">${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
@@ -3754,9 +3761,9 @@ function buildPreview(){
       <span style="background:#fff8e1;border-radius:5px;padding:2px 8px;color:#b45309;border:1px solid #fde68a">📦 Qo'shimcha Mahsulotlar</span>
     </div>
     <table class="ptbl">
-      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('uz')+' so\'m'):fmtP(p);return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong></td><td>${q} ${m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">QO'SHIMCHA JAMI</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
+      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('uz')+' so\'m'):fmtP(p);return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong></td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
 
@@ -3792,7 +3799,7 @@ function buildPreview(){
   </div>
   <div class="pmt">
     <div><div class="pml">${LANG==='ru'?'Кому':LANG==='en'?'To':'Kimga'}</div><div class="pmv"><strong>${clN}</strong>${clA?'<br>'+clA:''}${clP?'<br>'+clP:''}</div></div>
-    <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+(LANG==="ru"?' сум':LANG==="en"?' UZS':' so\'m'):LANG==="ru"?"Узбекский сум (UZS)":LANG==="en"?"Uzbek som (UZS)":"O\'zbek so\'mi (UZS)"}</div></div>
+    <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+(LANG==="ru"?' сум':LANG==="en"?' UZS':LANG==="ru"?' сум':' so\'m'):LANG==="ru"?"Узбекский сум (UZS)":LANG==="en"?"Uzbek som (UZS)":"O\'zbek so\'mi (UZS)"}</div></div>
   </div>
   ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">${LANG==='ru'?'Эквивалент в сумах':LANG==='en'?'Equivalent in UZS':"So'mga ekvivalent"}</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">'+(LANG==="ru"?"Товары не добавлены":LANG==="en"?"No products added":"Mahsulot qo\'shilmagan")+"</div>"}
   ${mqHtml}
@@ -4809,11 +4816,11 @@ const I18N = {
     hdd_mode_label:'Yozuv rejimi', hdd_days_label:'Saqlash muddati (kun)',
     hdd_codec_label:'Siqish algoritmi', hdd_result:'NATIJA',
     hdd_daily:'Kunlik', hdd_weekly:'Haftalik', hdd_monthly:'Oylik (30 kun)',
-    hdd_cams_result:'Kameralar', hdd_archive_result:'Arxiv muddati',
+    hdd_cams_result:(LANG==='ru'?'Камеры':LANG==='en'?'Cameras':'Kameralar'), hdd_archive_result:'Arxiv muddati',
     lbl_company_name:'Kompaniya nomi', lbl_address:'Manzil',
     lbl_phone:'Telefon', lbl_email_field:'Email',
     lbl_client:"Mijoz / Tashkilot", lbl_obj:"Manzil / Ob'ekt", lbl_date:'Sana',
-    col_model:'MODEL', col_cat:'KAT.', col_qty:'MIQDOR', col_price:'NARX', col_total:'JAMI',
+    col_model:'MODEL', col_cat:'KAT.', col_qty:(LANG==='ru'?'КОЛ-ВО':LANG==='en'?'QTY':'MIQDOR'), col_price:'NARX', col_total:'JAMI',
     sync_connected:'● Ulangan', sync_saving:'● Saqlanmoqda...', sync_error:'● Xato',
     q_title:'Tijorat Taklifi', btn_clear_q:'Tozalash',
     btn_view_print:"Ko'rish & Chop", btn_order:'Buyurtma berish',
