@@ -1178,7 +1178,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <span class="ai-search-icon" id="aiSrchIcon" aria-hidden="true">🔍</span>
       <input class="ai-search-inp" type="text" id="srch"
         aria-label="Mahsulot qidirish"
-        placeholder="4MP rangli ko'cha kamera..."
+        id="aiSearchInput" placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
       <button class="ai-search-clear" id="aiSrchClear" onclick="clearAiSearch()" aria-label="Qidiruvni tozalash">✕</button>
@@ -1276,7 +1276,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           </div>
           <div class="mf-full">
             <div class="mf-label" id="lbl_np_desc">Tavsif</div>
-            <input class="mf-inp" id="np_desc" id="np_desc_ph" placeholder="Qisqacha tavsif...">
+            <input class="mf-inp" id="np_desc" placeholder="Qisqacha tavsif...">
           </div>
           <div class="mf-full">
             <div class="mf-label" id="lbl_np_spec">Texnik xususiyatlar <span style="color:var(--text3)" id="lbl_np_spec_opt">(ixtiyoriy)</span></div>
@@ -3485,7 +3485,7 @@ function renderSvcRows(){
   cont.innerHTML=services.map((s,i)=>`
     <div class="svc-row" id="svcRow_${i}">
       <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
-      <input class="svc-inp" type="number" min="0" placeholder="Narx ($)" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
+      <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
       <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
       <button class="svc-del" onclick="delSvc(${i})">✕</button>
     </div>`).join('');
@@ -3899,6 +3899,16 @@ function fmtP(usd){
 function fmtUZS(uzs){return uzs.toLocaleString('uz')+' so\'m'}
 // ── ADD PRODUCT MODAL ───────────────────────────────────────────────────────
 function openAddProdModal(){
+  // Til bo'yicha placeholder larni yangilash
+  const _isRu2=LANG==='ru',_isEn2=LANG==='en';
+  const npDesc=document.getElementById('np_desc');
+  if(npDesc) npDesc.placeholder=_isRu2?'Краткое описание...':_isEn2?'Brief description...':'Qisqacha tavsif...';
+  const npSpec=document.getElementById('np_spec');
+  if(npSpec) npSpec.placeholder=_isRu2?'4МП, ИК 30м, H.265+, PoE...':_isEn2?'4MP, IR 30m, H.265+, PoE...':'4MP, IR 30m, H.265+, PoE...';
+  const npHint=document.getElementById('np_spec_hint');
+  if(npHint) npHint.textContent=_isRu2?'Разделяйте запятой: например "4МП, ИК 30м, IP67, PoE"':
+    _isEn2?'Separate by comma: e.g. "4MP, IR 30m, IP67, PoE"':
+    'Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"';
   document.getElementById('addProdModal').style.display='flex';
   setTimeout(()=>(document.getElementById('np_name')||{focus:()=>{}}).focus(),100);
 }
@@ -5482,7 +5492,7 @@ function setLang(lang) {
 
   // ── Placeholder va hint tarjimalari ────────────────────────────────────
   const _setPh=(id,txt)=>{const e=document.getElementById(id);if(e)e.placeholder=txt;};
-  _setPh('np_desc_ph',
+  _setPh('np_desc',
     _isRu?'Краткое описание...':_isEn?'Brief description...':'Qisqacha tavsif...');
   _setPh('np_spec',
     _isRu?'4МП, ИК 30м, H.265+, PoE...':_isEn?'4MP, IR 30m, H.265+, PoE...':'4MP, IR 30m, H.265+, PoE...');
@@ -5498,6 +5508,29 @@ function setLang(lang) {
   }
   const _avChBtn=document.querySelector('[onclick*="avatarFileInp"]');
   if(_avChBtn) _avChBtn.textContent=_isRu?'📷 Изменить':_isEn?'📷 Change':"📷 O'zgartirish";
+
+  // ── Qolgan barcha placeholder tarjimalari ──────────────────────────────
+  _setPh('aiSearchInput',
+    _isRu?'4МП цветная уличная камера...':_isEn?'4MP color outdoor camera...':"4MP rangli ko'cha kamera...");
+  _setPh('chatInputPh',
+    _isRu?'Напишите вопрос...':_isEn?'Type your question...':'Savolingizni yozing...');
+  _setPh('authCompanyPh',
+    _isRu?'Название компании (необязательно)':_isEn?'Company name (optional)':'Kompaniya nomi (ixtiyoriy)');
+  _setPh('authPassPh',
+    _isRu?'Минимум 8 символов':_isEn?'At least 8 characters':'Kamida 8 ta belgi');
+  _setPh('profNamePh',
+    _isRu?'Ваше полное имя':_isEn?'Your full name':"To'liq ismingiz");
+  _setPh('profWarrantyPh',
+    _isRu?'12 месяцев (1 год)':_isEn?'12 months (1 year)':'12 oy (1 yil)');
+  _setPh('profQuoteValidityPh',
+    _isRu?'30 дней':_isEn?'30 days':'30 kun');
+  _setPh('profTermsPh',
+    _isRu?'Условия оплаты, монтажные работы и другие условия...':
+    _isEn?'Payment terms, installation service and other conditions...':
+    "To'lov shartlari, montaj xizmati va boshqa muhim shartlar...");
+  // mobSrch placeholder
+  _setPh('mobSrch',
+    _isRu?'Модель или описание...':_isEn?'Model or description...':'Model yoki tavsif...');
 
   // Supplier input placeholder
   const supInp=document.getElementById('supplierNameInput');
@@ -5860,7 +5893,7 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
   <div class="ai-chat-msgs" id="aiChatMsgs"></div>
   <div class="ai-chat-inp-wrap">
     <textarea class="ai-chat-inp" id="aiChatInp" rows="1"
-      placeholder="Savolingizni yozing..."
+      id="chatInputPh" placeholder="Savolingizni yozing..."
       onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAiChat()}"
       oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
     <button class="ai-chat-send" id="aiChatSendBtn" onclick="sendAiChat()">➤</button>
@@ -6326,11 +6359,11 @@ function deleteCmCat(cat){
       <div class="auth-sub">Bepul boshlang — kredit karta shart emas</div>
       <div class="auth-group">
         <label class="auth-label">ISM FAMILIYA</label>
-        <input class="auth-input" type="text" id="authName" placeholder="To'liq ismingiz" autocomplete="name">
+        <input class="auth-input" type="text" id="authName" id="profNamePh" placeholder="To'liq ismingiz" autocomplete="name">
       </div>
       <div class="auth-group">
         <label class="auth-label">KOMPANIYA</label>
-        <input class="auth-input" type="text" id="authCompany" placeholder="Kompaniya nomi (ixtiyoriy)" autocomplete="organization">
+        <input class="auth-input" type="text" id="authCompany" id="authCompanyPh" placeholder="Kompaniya nomi (ixtiyoriy)" autocomplete="organization">
       </div>
       <div class="auth-group">
         <label class="auth-label">EMAIL</label>
@@ -6338,7 +6371,7 @@ function deleteCmCat(cat){
       </div>
       <div class="auth-group">
         <label class="auth-label">PAROL</label>
-        <input class="auth-input" type="password" id="authRegPass" placeholder="Kamida 8 ta belgi"
+        <input class="auth-input" type="password" id="authRegPass" id="authPassPh" placeholder="Kamida 8 ta belgi"
           autocomplete="new-password" onkeydown="if(event.key==='Enter')doAuthRegister()">
       </div>
       <button class="auth-btn" id="registerBtn" onclick="doAuthRegister()">Ro'yxatdan o'tish</button>
@@ -7666,7 +7699,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         <div class="prof-section-title">👤 Shaxsiy ma'lumotlar</div>
         <div class="prof-field">
           <div class="prof-label">ISM FAMILIYA</div>
-          <input class="prof-input" type="text" id="profName" placeholder="To'liq ismingiz">
+          <input class="prof-input" type="text" id="profName" id="profNamePh" placeholder="To'liq ismingiz">
         </div>
         <div class="prof-field">
           <div class="prof-label">TELEFON</div>
@@ -7700,15 +7733,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
         <div class="prof-section-title">🛡 Kafolat va shartlar</div>
         <div class="prof-field">
           <div class="prof-label">KAFOLAT MUDDATI</div>
-          <input class="prof-input" type="text" id="profWarranty" placeholder="12 oy (1 yil)">
+          <input class="prof-input" type="text" id="profWarranty" id="profWarrantyPh" placeholder="12 oy (1 yil)">
         </div>
         <div class="prof-field">
           <div class="prof-label">TAKLIF AMAL QILISH MUDDATI</div>
-          <input class="prof-input" type="text" id="profQuoteValidity" placeholder="30 kun">
+          <input class="prof-input" type="text" id="profQuoteValidity" id="profQuoteValidityPh" placeholder="30 kun">
         </div>
         <div class="prof-field">
           <div class="prof-label">QO'SHIMCHA SHARTLAR</div>
-          <textarea class="prof-input" id="profTerms" rows="3" placeholder="To'lov shartlari, montaj xizmati va boshqa muhim shartlar..." style="resize:vertical;line-height:1.5"></textarea>
+          <textarea class="prof-input" id="profTerms" rows="3" id="profTermsPh" placeholder="To'lov shartlari, montaj xizmati va boshqa muhim shartlar..." style="resize:vertical;line-height:1.5"></textarea>
         </div>
       </div>
 
