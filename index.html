@@ -1131,7 +1131,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <span class="mob-nav-lbl" data-i18n="tab_quote">Taklif</span>
     <span class="mob-nav-badge" id="mobQBdg"></span>
   </button>
-  <button class="mob-nav-item" id="mnImport" onclick="mobNav('import')">
+  <button class="mob-nav-item" id="mnImport" onclick="mobNav('guide')">
     <span class="mob-nav-ic">📥</span>
     <span class="mob-nav-lbl" id="mobNavImport">Import</span>
   </button>
@@ -3471,30 +3471,25 @@ function showProd(id){
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
-  // Desktop: det panel ko'rinsin
-  if(!isMobile()){
-    // main-cat-bar ni kichraytirish — det ko'rinsin uchun
+  // Mobil: bottom sheet, Desktop: scroll tepaga
+  if(isMobile()){
+    setTimeout(()=>showMobProdSheet(p),10);
+  } else {
+    // main-cat-bar kichraytirish
     const mrow=document.getElementById('mainProdRow');
-    if(mrow && mrow.offsetHeight > 200){
+    if(mrow && mrow.offsetHeight>200){
       mrow.style.maxHeight='180px';
       try{localStorage.setItem('prodRowH','180')}catch(e){}
     }
     setTimeout(()=>{
       const ms=document.querySelector('.main-scroll');
       if(ms) ms.scrollTop=0;
-    },50);
-  } else {
-    // Mobil: bottom sheet
-    setTimeout(()=>showMobProdSheet(p),10);
+    },30);
   }
-  // renderList — selP hilighting uchun (det ni tozalamasdan)
-  const _el=document.getElementById('mainProdList');
-  if(_el){
-    _el.querySelectorAll('.main-prod-item').forEach(item=>{
-      const isSelected = item.getAttribute('onclick')?.includes(p.id);
-      item.classList.toggle('sel', !!isSelected);
-    });
-  }
+  // Highlight
+  document.querySelectorAll('.main-prod-item').forEach(item=>{
+    item.classList.toggle('sel', item.getAttribute('onclick')?.includes("'"+p.id+"'"));
+  });
 }
 
 // ── Mobil mahsulot bottom sheet ──────────────────────────────────────────
@@ -4051,9 +4046,15 @@ document.addEventListener('click',function(e){
 });
 function switchTab(name){
   closeMobSidebar();
+  // alias mapping — ko'plab nom variantlari
+  const _alias={import:'guide',imports:'guide','pg-guide':'guide'};
+  name = _alias[name]||name;
+
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.getElementById('pg-'+name).classList.add('active');
+  const pgEl=document.getElementById('pg-'+name);
+  if(!pgEl){ console.warn('switchTab: pg-'+name+' topilmadi'); return; }
+  pgEl.classList.add('active');
   const m={catalog:0,quote:1,hdd:2,guide:3,preview:4};
   document.querySelectorAll('.tab')[m[name]]?.classList.add('active');
   if(name==='preview')buildPreview();
@@ -4983,7 +4984,7 @@ function updateMobBadge(){
 // Mob nav active state — switchTab dan KEYIN chaqiriladi
 function updateMobNav(name){
   if(!isMobile()) return;
-  const navMap={catalog:'mnCatalog',quote:'mnQuote',preview:'mnPreview',guide:'mnImport',import:'mnImport',hdd:'mnMore',profile:'mnProfile',cats:'mnCats'};
+  const navMap={catalog:'mnCatalog',quote:'mnQuote',preview:'mnPreview',guide:'mnImport',import:'mnImport',hdd:'mnMore',hdd_kalk:'mnMore',profile:'mnProfile',cats:'mnCats'};
   document.querySelectorAll('.mob-nav-item').forEach(b=>b.classList.remove('active'));
   const a=navMap[name];
   if(a) document.getElementById(a)?.classList.add('active');
@@ -6623,15 +6624,19 @@ let sealDataUrl = localStorage.getItem('okvSeal') || sessionStorage.getItem('okv
 let avatarDataUrl = localStorage.getItem('okvAvatar') || null;
 
 function openProfileModal(){
+  // User Menu yopish
+  document.getElementById('userMenu')?.classList.remove('show');
+  document.querySelector('.user-menu')?.classList.remove('show');
+
+  const modal = document.getElementById('profileModal');
+  if(!modal){ console.error('profileModal topilmadi!'); return; }
+
   // Auto-lock active tugmani belgilash
   setTimeout(()=>{
     document.querySelectorAll('.al-btn').forEach(b=>{
       b.classList.toggle('active', parseInt(b.dataset.min)===autoLockMinutes);
     });
   }, 50);
-  document.getElementById('userMenu')?.classList.remove('show');
-  const modal = document.getElementById('profileModal');
-  if(!modal) return;
 
   // Ma'lumotlarni to'ldirish
   const p = currentProfile || {};
