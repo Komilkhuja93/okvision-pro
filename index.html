@@ -6966,28 +6966,110 @@ function closeQuoteHistory(){
 // Taklifni chop etish va tarixga saqlash
 async function printAndSaveQuote(){
   const _L = LANG||'uz';
-  if(!quote.length && !mqItems?.length && !services?.length){
-    showToast(_L==='ru'?'❌ Таклиф пуст':_L==='en'?'❌ Proposal is empty':"❌ Taklif bo'sh");
+
+  // 1. Avval barcha modalarni yopish
+  closeQuoteHistory();
+  document.body.style.overflow = '';
+
+  if(!quote.length && !mqItems?.length && !svcRows?.length){
+    showToast(_L==='ru'?'❌ Предложение пустое':_L==='en'?'❌ Proposal is empty':"❌ Taklif bo'sh");
     return;
   }
-  // Nom so'rash
+
+  // 2. Preview tabiga o'tish va buildPreview chaqirish
+  switchTab('preview');
+  if(typeof buildPreview==='function') buildPreview();
+
+  // 3. Nom kiritish uchun modal (prompt emas — custom dialog)
   const g = id => document.getElementById(id)?.value?.trim()||'';
   const oCo = g('oCo'), clN = g('clN');
   const dt = new Date().toLocaleDateString(_L==='ru'?'ru-RU':_L==='en'?'en-US':'uz-UZ');
-  const defaultName = `${oCo||'Kompaniya'} → ${clN||'Mijoz'} · ${dt}`;
-  const _promptMsg = _L==='ru'?'Название предложения (для истории)':_L==='en'?'Proposal name (for history)':'Taklif nomi (tarix uchun)';
-  const quoteName = prompt(_promptMsg, defaultName);
-  if(quoteName === null) return; // Cancel bosildi
+  const defaultName = `${oCo||'Kompaniya'} → ${clN||(_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz')} · ${dt}`;
 
-  // 1. Tarixga saqlash (fon rejimda)
-  if(currentUser){
-    saveQuoteToCloud(quoteName||defaultName).then(saved => {
-      if(saved) showToast(_L==='ru'?'✅ Сохранено в историю':_L==='en'?'✅ Saved to history':'✅ Tarixga saqlandi');
-    });
-  }
+  // Custom nom kiritish dialogi
+  const _title = _L==='ru'?'Сохранить предложение':_L==='en'?'Save Proposal':"Taklifni saqlash";
+  const _label = _L==='ru'?'Название предложения:':_L==='en'?'Proposal name:':'Taklif nomi:';
+  const _printBtn = _L==='ru'?'💾 Сохранить & Печать':_L==='en'?'💾 Save & Print':"💾 Saqlash & Chop";
+  const _skipBtn = _L==='ru'?'🖨 Только печать':_L==='en'?'🖨 Print only':'🖨 Faqat chop';
+  const _cancelBtn = _L==='ru'?'Отмена':_L==='en'?'Cancel':'Bekor qilish';
 
-  // 2. Chop etish
-  window.print();
+  // Eski dialogni o'chirish
+  document.getElementById('saveQuoteDialog')?.remove();
+
+  const dialog = document.createElement('div');
+  dialog.id = 'saveQuoteDialog';
+  dialog.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;
+    display:flex;align-items:center;justify-content:center;padding:16px`;
+  dialog.innerHTML = `
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+      padding:24px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
+      <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:16px;
+        display:flex;align-items:center;gap:8px">
+        💾 ${_title}
+      </div>
+      <label style="font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px">
+        ${_label}
+      </label>
+      <input id="saveQuoteName" type="text" value="${defaultName}"
+        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);
+        border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;
+        font-family:var(--fb);outline:none;box-sizing:border-box;margin-bottom:16px"
+        onfocus="this.style.borderColor='var(--accent)'"
+        onblur="this.style.borderColor='var(--border)'"
+        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('saveQuotePrintBtn').click()}
+                   if(event.key==='Escape'){document.getElementById('saveQuoteCancelBtn').click()}">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button id="saveQuotePrintBtn"
+          style="flex:1;padding:11px 16px;border-radius:10px;background:var(--accent);
+          color:#0a0c10;border:none;font-size:13px;font-weight:700;cursor:pointer;
+          white-space:nowrap">
+          ${_printBtn}
+        </button>
+        <button id="saveQuoteSkipBtn"
+          style="flex:1;padding:11px 16px;border-radius:10px;background:var(--surface2);
+          color:var(--text2);border:1px solid var(--border);font-size:13px;cursor:pointer;
+          white-space:nowrap">
+          ${_skipBtn}
+        </button>
+        <button id="saveQuoteCancelBtn"
+          style="padding:11px 16px;border-radius:10px;background:transparent;
+          color:var(--text3);border:1px solid var(--border2);font-size:13px;cursor:pointer">
+          ${_cancelBtn}
+        </button>
+      </div>
+    </div>`;
+  document.body.appendChild(dialog);
+
+  // Focus
+  setTimeout(()=>{
+    const inp = document.getElementById('saveQuoteName');
+    if(inp){ inp.focus(); inp.select(); }
+  }, 50);
+
+  // Tugmalar
+  document.getElementById('saveQuotePrintBtn').onclick = async () => {
+    const name = document.getElementById('saveQuoteName')?.value?.trim() || defaultName;
+    dialog.remove();
+    // Saqlash
+    if(currentUser){
+      saveQuoteToCloud(name).then(saved => {
+        if(saved) showToast(_L==='ru'?'✅ Сохранено в историю':_L==='en'?'✅ Saved to history':'✅ Tarixga saqlandi');
+      });
+    }
+    // Print — kichik delay bilan (preview render uchun)
+    await new Promise(r=>setTimeout(r,300));
+    window.print();
+  };
+
+  document.getElementById('saveQuoteSkipBtn').onclick = async () => {
+    dialog.remove();
+    await new Promise(r=>setTimeout(r,300));
+    window.print();
+  };
+
+  document.getElementById('saveQuoteCancelBtn').onclick = () => {
+    dialog.remove();
+  };
 }
 
 // Taklifni bulutdan yuklash va redaktorga ochish
