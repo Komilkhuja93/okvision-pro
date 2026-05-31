@@ -322,11 +322,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     overflow:hidden!important;
     font-size:11px!important;
   }
-  /* Telefon uchun kichikroq shrift */
+  /* Telefon uchun optimizatsiya */
   @media (max-width:600px){
+    .pin{font-size:10px!important}
     .ptbl{font-size:9px!important}
     .ptbl th,.ptbl td{padding:4px 5px!important}
     .ptbl-svc th:nth-child(2),.ptbl-svc td:nth-child(2){width:50%!important}
+    /* Telefonda rasm ustunini yashirish — joy tejash */
+    .ptbl:not(.ptbl-svc) th:nth-child(2),
+    .ptbl:not(.ptbl-svc) td:nth-child(2){display:none!important}
+    .ptbl:not(.ptbl-svc) th:nth-child(3),
+    .ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
+    .pt2{flex-direction:column!important;gap:6px!important}
+    .pmt{grid-template-columns:1fr!important}
+    .phddg{grid-template-columns:repeat(3,1fr)!important}
   }
   /* Mahsulotlar jadvali: #, img, Product, Qty, Price, Total */
   .ptbl:not(.ptbl-svc) th:nth-child(1),.ptbl:not(.ptbl-svc) td:nth-child(1){width:4%!important}
@@ -447,10 +456,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .main-cat-chips::-webkit-scrollbar{display:none}
   .main-cat-chip{font-size:10px;padding:3px 8px;white-space:nowrap}
   .main-prod-row{max-height:none;border-top:none;padding-top:4px}
-  .main-prod-list{grid-template-columns:1fr 1fr;gap:6px}
-  .main-prod-item{padding:8px 9px;border-radius:10px}
-  .main-prod-name{font-size:11px}
-  .main-prod-item:hover .main-prod-name{white-space:nowrap;overflow:hidden}
+  .main-prod-list{grid-template-columns:1fr;gap:5px}
+  .main-prod-item{padding:10px 12px;border-radius:10px;gap:10px}
+  .main-prod-name{font-size:13px;line-height:1.4;white-space:normal!important}
+  .main-prod-sup{font-size:10px}
+  .main-prod-pr{font-size:12px;font-weight:700}
+  .main-prod-item .pt{width:36px;height:36px;font-size:18px;flex-shrink:0}
   .prod-row-handle{display:none}
 
   /* Product detail */
@@ -469,8 +480,17 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   /* HDD */
   .hb{grid-template-columns:1fr!important}
 
-  /* Preview */
+  /* Preview mobilda ham to'liq ko'rinsin */
   .pt2{flex-direction:column!important;gap:8px}
+  .pw{padding:10px 8px!important;font-size:12px!important}
+  .pin{padding:0!important}
+  .ptbl{font-size:10px!important}
+  .ptbl th,.ptbl td{padding:5px 6px!important}
+  .ptbl th:nth-child(2){display:none!important}
+  .ptbl td:nth-child(2){display:none!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
+  .phdd{padding:10px 12px!important}
+  .phddg{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
 
   /* Form */
   .fg{grid-template-columns:1fr!important}
@@ -1192,8 +1212,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <div class="ai-search-wrap">
       <span class="ai-search-icon" id="aiSrchIcon" aria-hidden="true">🔍</span>
       <input class="ai-search-inp" type="text" id="srch"
-        aria-label="Mahsulot qidirish"
-        id="aiSearchInput" placeholder="4MP rangli ko'cha kamera..."
+        aria-label="Mahsulot qidirish" placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
       <button class="ai-search-clear" id="aiSrchClear" onclick="clearAiSearch()" aria-label="Qidiruvni tozalash">✕</button>
@@ -1725,72 +1744,71 @@ let RATE=12700;
 
 // ══ TAKLIF ULASHISH FUNKSIYALARI ══════════════════════════════════════════
 function getQuoteSummary(){
-  // Taklif matnini tayyorlash
-  const clientName = document.getElementById('clN')?.value || '';
-  const clientAddr = document.getElementById('clA')?.value || '';
-  const offerNum   = document.getElementById('qDt')?.value || '';
+  const L = typeof LANG!=='undefined'?LANG:'uz';
+  const clientName = document.getElementById('clN')?.value||'';
+  const clientAddr = document.getElementById('clA')?.value||'';
+  const clientPhone= document.getElementById('clP')?.value||'';
+  const oCo        = document.getElementById('oCo')?.value||'OKVISION Pro';
+  const dt         = document.getElementById('qDt')?.value||new Date().toISOString().slice(0,10);
 
-  let total = 0;
-  quote.forEach(item => {
-    const pr = getPrice(item.product);
-    if(pr) total += pr * item.qty;
+  let prodTotal=0, svcTotal=0, mqTotal=0;
+
+  // 1. Mahsulotlar
+  const prodLines = quote.map((item,i)=>{
+    const pr=getPrice(item.product); const lt=pr?pr*item.qty:null;
+    if(lt) prodTotal+=lt;
+    return `${i+1}. ${item.product.name} × ${item.qty} — ${lt?fmtP(lt):'—'}`;
   });
 
-  const lines = quote.map((item, i) => {
-    const pr = getPrice(item.product);
-    const lt = pr ? pr * item.qty : null;
-    return `${i+1}. ${item.product.name} × ${item.qty} = ${lt ? fmtP(lt) : '—'}`;
+  // 2. Xizmatlar
+  const svcList=(services||[]).filter(s=>s.name&&parseFloat(s.price)>0);
+  const svcLines = svcList.map((s,i)=>{
+    const lt=parseFloat(s.price)*(parseInt(s.qty)||1);
+    svcTotal+=lt;
+    const qLabel=L==='ru'?s.qty+' шт':L==='en'?s.qty+' pcs':s.qty+' ta';
+    return `  • ${s.name} × ${qLabel} — ${fmtP(lt)}`;
   });
 
-  const lang = typeof LANG !== 'undefined' ? LANG : 'uz';
+  // 3. Qo'lda qo'shilgan mahsulotlar
+  const mqList=(mqItems||[]).filter(m=>m.name&&parseFloat(m.price)>0);
+  const mqLines = mqList.map((m,i)=>{
+    const lt=parseFloat(m.price)*(parseInt(m.qty)||1);
+    mqTotal+=lt;
+    return `  • ${m.name} × ${m.qty} ${m.unit||''} — ${fmtP(lt)}`;
+  });
 
-  if(lang === 'ru'){
-    return {
-      subject: `Коммерческое предложение${clientName ? ' для ' + clientName : ''}`,
-      body: [
-        `Уважаемый клиент${clientName ? ' ' + clientName : ''},`,
-        '',
-        'Предлагаем следующее:',
-        ...lines,
-        '',
-        `Итого: ${fmtP(total)}`,
-        clientAddr ? `Адрес: ${clientAddr}` : '',
-        '',
-        '— OKVISION Pro'
-      ].filter(l => l !== null).join('\n')
-    };
-  }
-  if(lang === 'en'){
-    return {
-      subject: `Commercial Proposal${clientName ? ' for ' + clientName : ''}`,
-      body: [
-        `Dear${clientName ? ' ' + clientName : ' Client'},`,
-        '',
-        'Please find our proposal below:',
-        ...lines,
-        '',
-        `Total: ${fmtP(total)}`,
-        clientAddr ? `Address: ${clientAddr}` : '',
-        '',
-        '— OKVISION Pro'
-      ].filter(l => l !== null).join('\n')
-    };
-  }
-  // O'zbek default
-  return {
-    subject: `Tijorat taklifi${clientName ? ' — ' + clientName : ''}`,
-    body: [
-      `Hurmatli${clientName ? ' ' + clientName : ' mijoz'},`,
-      '',
-      "Quyidagi tijorat taklifimizni e'tiboringizga havola etamiz:",
-      ...lines,
-      '',
-      `${LANG==='ru'?'Итого':LANG==='en'?'Total':'Jami'}: ${fmtP(total)}`,
-      clientAddr ? `Manzil: ${clientAddr}` : '',
-      '',
-      '— OKVISION Pro platformasi orqali tayyorlandi'
-    ].filter(l => l !== null).join('\n')
-  };
+  const grandTotal = prodTotal+svcTotal+mqTotal;
+
+  const _prod  = L==='ru'?'ТОВАРЫ':L==='en'?'PRODUCTS':'MAHSULOTLAR';
+  const _svc   = L==='ru'?'МОНТАЖ И УСЛУГИ':L==='en'?'SERVICES':'XIZMATLAR';
+  const _extra = L==='ru'?'ДОПОЛНИТЕЛЬНО':L==='en'?'ADDITIONAL':"QO'SHIMCHA";
+  const _total = L==='ru'?'ИТОГО':L==='en'?'TOTAL':'JAMI';
+  const _dear  = L==='ru'?`Уважаемый${clientName?' '+clientName:' клиент'},`
+               : L==='en'?`Dear${clientName?' '+clientName:' Client'},`
+               : `Hurmatli${clientName?' '+clientName:' mijoz'},`;
+  const _intro = L==='ru'?'Предлагаем следующее коммерческое предложение:'
+               : L==='en'?'Please find our proposal below:'
+               : "Tijorat taklifimizni e'tiboringizga havola etamiz:";
+  const _from  = L==='ru'?`— ${oCo}`:L==='en'?`— ${oCo}`:
+               `— ${oCo} · OKVISION Pro platformasi`;
+
+  const bodyLines = [
+    _dear, '', _intro, '',
+    ...(prodLines.length?[`📦 ${_prod}:`,...prodLines,'']:[]),
+    ...(svcLines.length?[`🔧 ${_svc}:`,...svcLines,'']:[]),
+    ...(mqLines.length?[`📝 ${_extra}:`,...mqLines,'']:[]),
+    `💰 ${_total}: ${fmtP(grandTotal)}`,
+    clientAddr?`📍 ${clientAddr}`:'',
+    clientPhone?`📞 ${clientPhone}`:'',
+    `📅 ${dt}`,
+    '', _from
+  ].filter(l=>l!==null&&l!==undefined);
+
+  const subject = L==='ru'?`Коммерческое предложение${clientName?' для '+clientName:''}`
+                : L==='en'?`Commercial Proposal${clientName?' for '+clientName:''}`
+                : `Tijorat taklifi${clientName?' — '+clientName:''}`;
+
+  return { subject, body: bodyLines.join('\n') };
 }
 
 function shareViaEmail(){
@@ -5533,16 +5551,19 @@ function setLang(lang) {
     _isRu?'Название компании (необязательно)':_isEn?'Company name (optional)':'Kompaniya nomi (ixtiyoriy)');
   _setPh('authPassPh',
     _isRu?'Минимум 8 символов':_isEn?'At least 8 characters':'Kamida 8 ta belgi');
-  _setPh('profNamePh',
+  _setPh('profName',
     _isRu?'Ваше полное имя':_isEn?'Your full name':"To'liq ismingiz");
-  _setPh('profWarrantyPh',
+  _setPh('profWarranty',
     _isRu?'12 месяцев (1 год)':_isEn?'12 months (1 year)':'12 oy (1 yil)');
-  _setPh('profQuoteValidityPh',
+  _setPh('profQuoteValidity',
     _isRu?'30 дней':_isEn?'30 days':'30 kun');
-  _setPh('profTermsPh',
+  _setPh('profTerms',
     _isRu?'Условия оплаты, монтажные работы и другие условия...':
     _isEn?'Payment terms, installation service and other conditions...':
     "To'lov shartlari, montaj xizmati va boshqa muhim shartlar...");
+  // Auth placeholder
+  _setPh('authName',
+    _isRu?'Ваше полное имя':_isEn?'Your full name':"To'liq ismingiz");
   // mobSrch placeholder
   _setPh('mobSrch',
     _isRu?'Модель или описание...':_isEn?'Model or description...':'Model yoki tavsif...');
@@ -6374,7 +6395,7 @@ function deleteCmCat(cat){
       <div class="auth-sub">Bepul boshlang — kredit karta shart emas</div>
       <div class="auth-group">
         <label class="auth-label">ISM FAMILIYA</label>
-        <input class="auth-input" type="text" id="authName" id="profNamePh" placeholder="To'liq ismingiz" autocomplete="name">
+        <input class="auth-input" type="text" id="authName" placeholder="To'liq ismingiz" autocomplete="name">
       </div>
       <div class="auth-group">
         <label class="auth-label">KOMPANIYA</label>
@@ -7300,18 +7321,33 @@ async function doForgotPassword(){
 async function doSignOut(){
   const sb = getSB(); if(!sb) return;
   toggleUserMenu();
-  await sb.auth.signOut();
-  currentUser = null; currentProfile = null;
-  document.getElementById('userPill').style.display = 'none';
-  showToast('👋 Chiqildi');
-  // Mahalliy ma'lumotlarni tozalash
-  ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2','cqSvc2','cqCustom2','cqMQ2','okvUserId'].forEach(k=>{
+  const _L=LANG||'uz';
+
+  // Mahsulotlar LocalStorage da saqlanib qolsin — keyingi logindan keyin ham ko'rinsin
+  // Faqat taklif ma'lumotlarini tozalash (mahsulotlar va userId saqlanadi)
+  ['cqQ2'].forEach(k=>{
     try{localStorage.removeItem(k)}catch(e){}
   });
-  PRODS.splice(0,PRODS.length);
-  window.supplierPrices={};prices={};images={};quote=[];
-  renderCats();renderList();renderQ();
-  setTimeout(()=>showAuthOverlay(), 500);
+
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null;
+  avatarDataUrl = null;
+
+  // UI tozalash
+  quote=[];
+  renderQ();
+  updBdg();
+
+  const _msg=_L==='ru'?'👋 Выход выполнен':_L==='en'?'👋 Signed out':'👋 Chiqildi';
+  showToast(_msg);
+
+  const pill=document.getElementById('userPill');
+  if(pill) pill.style.display='none';
+
+  // Auto-lock timerni to'xtatish
+  if(autoLockTimer){ clearTimeout(autoLockTimer); autoLockTimer=null; }
+
+  setTimeout(()=>showAuthOverlay(), 400);
 }
 
 // ── Foydalanuvchi login qilgandan keyin ───────────────────────────────────
@@ -7939,7 +7975,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
         <div class="prof-section-title">👤 Shaxsiy ma'lumotlar</div>
         <div class="prof-field">
           <div class="prof-label">ISM FAMILIYA</div>
-          <input class="prof-input" type="text" id="profName" id="profNamePh" placeholder="To'liq ismingiz">
+          <input class="prof-input" type="text" id="profName" placeholder="To'liq ismingiz">
         </div>
         <div class="prof-field">
           <div class="prof-label">TELEFON</div>
@@ -7973,15 +8009,15 @@ document.addEventListener('DOMContentLoaded', ()=>{
         <div class="prof-section-title">🛡 Kafolat va shartlar</div>
         <div class="prof-field">
           <div class="prof-label">KAFOLAT MUDDATI</div>
-          <input class="prof-input" type="text" id="profWarranty" id="profWarrantyPh" placeholder="12 oy (1 yil)">
+          <input class="prof-input" type="text" id="profWarranty" placeholder="12 oy (1 yil)">
         </div>
         <div class="prof-field">
           <div class="prof-label">TAKLIF AMAL QILISH MUDDATI</div>
-          <input class="prof-input" type="text" id="profQuoteValidity" id="profQuoteValidityPh" placeholder="30 kun">
+          <input class="prof-input" type="text" id="profQuoteValidity" placeholder="30 kun">
         </div>
         <div class="prof-field">
           <div class="prof-label">QO'SHIMCHA SHARTLAR</div>
-          <textarea class="prof-input" id="profTerms" rows="3" id="profTermsPh" placeholder="To'lov shartlari, montaj xizmati va boshqa muhim shartlar..." style="resize:vertical;line-height:1.5"></textarea>
+          <textarea class="prof-input" id="profTerms" rows="3" placeholder="To'lov shartlari, montaj xizmati va boshqa muhim shartlar..." style="resize:vertical;line-height:1.5"></textarea>
         </div>
       </div>
 
