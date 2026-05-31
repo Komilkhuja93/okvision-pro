@@ -1276,12 +1276,12 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
           </div>
           <div class="mf-full">
             <div class="mf-label" id="lbl_np_desc">Tavsif</div>
-            <input class="mf-inp" id="np_desc" placeholder="Qisqacha tavsif...">
+            <input class="mf-inp" id="np_desc" id="np_desc_ph" placeholder="Qisqacha tavsif...">
           </div>
           <div class="mf-full">
             <div class="mf-label" id="lbl_np_spec">Texnik xususiyatlar <span style="color:var(--text3)" id="lbl_np_spec_opt">(ixtiyoriy)</span></div>
             <input class="mf-inp" id="np_spec" placeholder="4MP, IR 30m, H.265+, PoE...">
-            <div class="mf-hint">Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"</div>
+            <div class="mf-hint" id="np_spec_hint">Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"</div>
           </div>
         </div>
         <div style="background:var(--surface2);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:7px">
@@ -3297,7 +3297,7 @@ function renderList(list){
       </div>
     </div>`;
   });
-  if(items.length>LIMIT) rows.push(`<div style="grid-column:1/-1;font-size:10px;color:var(--text3);padding:4px 0">+${items.length-LIMIT} ta ko'proq — kategoriya yoki qidiruv bilan toraytiring</div>`);
+  if(items.length>LIMIT) rows.push(`<div style="grid-column:1/-1;font-size:10px;color:var(--text3);padding:4px 0">+${items.length-LIMIT} +(LANG==='ru'?'ещё — фильтруйте по категории или поиску':LANG==='en'?'more — filter by category or search':'ta ko\'proq — kategoriya yoki qidiruv bilan toraytiring')</div>`);
   el.innerHTML=rows.join('');
 }
 // filterP defined below in AI search section
@@ -5426,7 +5426,7 @@ function setLang(lang) {
   const mobRateSom = document.getElementById('mobRateSomLabel');
   if(mobRateSom) mobRateSom.textContent = lang==='ru'?'сум':lang==='en'?'UZS':"so'm";
   const btnSaveMob = document.querySelector('[data-i18n="btn_save_mob"]');
-  if(btnSaveMob) btnSaveMob.textContent = lang==='ru'?'Сохранить':lang==='en'?'Save':'Saqlash';
+  if(btnSaveMob) btnSaveMob.textContent = lang==='ru'?'Сохранить':lang==='en'?'Save':lang==='ru'?'Сохранить':'Saqlash';
   // Mob bottom nav
   const mobNavLabels = {
     mnCatalog: {uz:'Katalog', ru:'Каталог', en:'Catalog'},
@@ -5479,6 +5479,25 @@ function setLang(lang) {
     const curVal=npCat.value;
     npCat.innerHTML=catOpts.map(([val,em,lbl])=>`<option value="${val}"${curVal===val?' selected':''}>${em} ${lbl}</option>`).join('');
   }
+
+  // ── Placeholder va hint tarjimalari ────────────────────────────────────
+  const _setPh=(id,txt)=>{const e=document.getElementById(id);if(e)e.placeholder=txt;};
+  _setPh('np_desc_ph',
+    _isRu?'Краткое описание...':_isEn?'Brief description...':'Qisqacha tavsif...');
+  _setPh('np_spec',
+    _isRu?'4МП, ИК 30м, H.265+, PoE...':_isEn?'4MP, IR 30m, H.265+, PoE...':'4MP, IR 30m, H.265+, PoE...');
+  _setEl('np_spec_hint',
+    _isRu?'Разделяйте запятой: например "4МП, ИК 30м, IP67, PoE"':
+    _isEn?'Separate by comma: e.g. "4MP, IR 30m, IP67, PoE"':
+    'Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"');
+
+  // Avatar tugmalari
+  const _avBtn2=document.getElementById('avatarDeleteBtn2');
+  if(_avBtn2&&_avBtn2.style.display!=='none'){
+    _avBtn2.textContent=_isRu?'🗑 Удалить':_isEn?'🗑 Remove':"🗑 O'chirish";
+  }
+  const _avChBtn=document.querySelector('[onclick*="avatarFileInp"]');
+  if(_avChBtn) _avChBtn.textContent=_isRu?'📷 Изменить':_isEn?'📷 Change':"📷 O'zgartirish";
 
   // Supplier input placeholder
   const supInp=document.getElementById('supplierNameInput');
@@ -5665,6 +5684,8 @@ function setLang(lang) {
   if(typeof renderList==='function') renderList();
   if(typeof renderQ==='function') renderQ();
   if(typeof updateDataStatus==='function') updateDataStatus();
+  // Detail panel ochiq bo'lsa — til o'zgarganda qayta render
+  if(typeof selP!=='undefined' && selP && typeof showProd==='function') showProd(selP.id);
   // HDD kalkulyator labellarni qayta render
   if(typeof calcHDD==='function') calcHDD();
   // Preview sahifasi ochiq bo'lsa — qayta render
@@ -7547,8 +7568,25 @@ function resetAutoLockTimer(){
   if(autoLockTimer) clearTimeout(autoLockTimer);
   if(autoLockMinutes > 0 && currentUser){
     autoLockTimer = setTimeout(()=>{
-      showToast('🔒 Vaqt tugadi — avtomatik chiqildi');
-      doSignOut();
+      const _m = LANG==='ru'?'🔒 Время вышло — выполнен автовыход':
+                 LANG==='en'?'🔒 Session expired — logged out automatically':
+                 '🔒 Vaqt tugadi — avtomatik chiqildi';
+      showToast(_m);
+      // toggleUserMenu chaqirmasdan chiqish
+      const sb=getSB(); if(!sb) return;
+      sb.auth.signOut().then(()=>{
+        currentUser=null; currentProfile=null;
+        if(autoLockTimer) clearTimeout(autoLockTimer);
+        autoLockTimer=null;
+        ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2',
+         'cqSvc2','cqCustom2','cqMQ2','okvUserId'].forEach(k=>{
+          try{localStorage.removeItem(k)}catch(e){}
+        });
+        PRODS.splice(0,PRODS.length);
+        window.supplierPrices={};prices={};images={};quote=[];
+        renderCats();renderList();renderQ();
+        showAuthOverlay();
+      });
     }, autoLockMinutes * 60 * 1000);
   }
 }
@@ -7557,8 +7595,13 @@ function setAutoLock(minutes){
   autoLockMinutes = minutes;
   localStorage.setItem('okvAutoLock', String(minutes));
   resetAutoLockTimer();
-  const labels = {0:"O'chiq",5:'5 daqiqa',10:'10 daqiqa',30:'30 daqiqa',60:'1 soat'};
-  showToast('🔒 Auto-lock: '+(labels[minutes]||minutes+' daqiqa'));
+  const labels = LANG==='ru'
+    ? {0:'Выкл',5:'5 минут',10:'10 минут',30:'30 минут',60:'1 час'}
+    : LANG==='en'
+    ? {0:'Off',5:'5 min',10:'10 min',30:'30 min',60:'1 hour'}
+    : {0:"O'chiq",5:'5 daqiqa',10:'10 daqiqa',30:'30 daqiqa',60:'1 soat'};
+  const _alMsg = LANG==='ru'?'🔒 Автовыход: ':LANG==='en'?'🔒 Auto-lock: ':'🔒 Auto-lock: ';
+  showToast(_alMsg+(labels[minutes]||minutes+(LANG==='ru'?' мин':LANG==='en'?' min':' daqiqa')));
   document.querySelectorAll('.al-btn').forEach(b=>{
     b.classList.toggle('active', parseInt(b.dataset.min)===minutes);
   });
