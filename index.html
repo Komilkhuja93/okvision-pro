@@ -264,7 +264,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .main-cat-bar,.ai-search-wrap,.ai-answer,.ai-result-chips,
   #cmpResults,.sb-add-btn,.ai-fab,.ai-chat-panel,
   #aiThinking,#aiChips,.mob-nav-badge,
-  #mobRateModal,#catManagerOverlay{display:none!important;visibility:hidden!important}
+  #mobRateModal,#catManagerOverlay,
+  #shareContactBar,.pv-toolbar,.pv-actions,.pw-toolbar{display:none!important;visibility:hidden!important}
   /* Faqat preview body ni ko'rsat */
   body>*:not(.app){display:none!important}
   .app>*:not(.main){display:none!important}
@@ -320,13 +321,20 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     word-break:break-word!important;
     overflow:hidden!important;
   }
-  /* Column widths for the 6 columns: #, img, Product, Qty, Price, Total */
-  .ptbl th:nth-child(1),.ptbl td:nth-child(1){width:4%!important}
-  .ptbl th:nth-child(2),.ptbl td:nth-child(2){width:7%!important}
-  .ptbl th:nth-child(3),.ptbl td:nth-child(3){width:47%!important}
-  .ptbl th:nth-child(4),.ptbl td:nth-child(4){width:10%!important}
-  .ptbl th:nth-child(5),.ptbl td:nth-child(5){width:16%!important;text-align:right!important}
-  .ptbl th:nth-child(6),.ptbl td:nth-child(6){width:16%!important;text-align:right!important}
+  /* Mahsulotlar jadvali: #, img, Product, Qty, Price, Total */
+  .ptbl:not(.ptbl-svc) th:nth-child(1),.ptbl:not(.ptbl-svc) td:nth-child(1){width:4%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(2),.ptbl:not(.ptbl-svc) td:nth-child(2){width:7%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:47%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(4),.ptbl:not(.ptbl-svc) td:nth-child(4){width:10%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(5),.ptbl:not(.ptbl-svc) td:nth-child(5){width:16%!important;text-align:right!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(6),.ptbl:not(.ptbl-svc) td:nth-child(6){width:16%!important;text-align:right!important}
+  /* Xizmatlar jadvali: #, Xizmat nomi, Soni, Narx, Jami */
+  .ptbl-svc{table-layout:fixed!important}
+  .ptbl-svc th:nth-child(1),.ptbl-svc td:nth-child(1){width:5%!important}
+  .ptbl-svc th:nth-child(2),.ptbl-svc td:nth-child(2){width:55%!important;white-space:normal!important;word-break:break-word!important}
+  .ptbl-svc th:nth-child(3),.ptbl-svc td:nth-child(3){width:12%!important;text-align:center!important}
+  .ptbl-svc th:nth-child(4),.ptbl-svc td:nth-child(4){width:14%!important;text-align:right!important}
+  .ptbl-svc th:nth-child(5),.ptbl-svc td:nth-child(5){width:14%!important;text-align:right!important}
   .ptr td{padding:8px!important;font-size:13px!important;background:#0a0c10!important;color:#fff!important}
   .phdd{page-break-inside:avoid!important;margin-top:12px!important}
   .phddg{display:grid!important;grid-template-columns:repeat(3,1fr)!important;gap:7px!important}
@@ -3730,10 +3738,10 @@ function buildPreview(){
     <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
       <span style="background:#f0f9f4;border-radius:5px;padding:2px 8px;color:#15803d;border:1px solid #bbf7d0">🔧 O'rnatish va Xizmatlar</span>
     </div>
-    <table class="ptbl">
-      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;return`<tr><td>${i+1}</td><td colspan="2"><strong>${s.name}</strong></td><td>${q} ta</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr style="background:#f0f9f4"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#15803d">XIZMATLAR JAMI</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
+    <table class="ptbl ptbl-svc">
+      <thead><tr><th style="width:5%">#</th><th style="width:55%">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th style="width:12%">${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
+      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';return`<tr><td>${i+1}</td><td><strong>${s.name}</strong></td><td>${qLabel}</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tfoot><tr style="background:#f0f9f4"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#15803d">${LANG==='ru'?'ИТОГО УСЛУГИ':LANG==='en'?'SERVICES TOTAL':'XIZMATLAR JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
 
