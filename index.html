@@ -1118,13 +1118,13 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <span class="mob-nav-lbl" data-i18n="tab_quote">Taklif</span>
     <span class="mob-nav-badge" id="mobQBdg"></span>
   </button>
-  <button class="mob-nav-item" id="mnPreview" onclick="mobNav('preview');setTimeout(()=>{if(typeof buildPreview==='function')buildPreview()},100)">
-    <span class="mob-nav-ic">🖨</span>
-    <span class="mob-nav-lbl">PDF</span>
+  <button class="mob-nav-item" id="mnCats" onclick="openCatManager()">
+    <span class="mob-nav-ic">🗂</span>
+    <span class="mob-nav-lbl" data-i18n="tab_cats">Kategoriya</span>
   </button>
-  <button class="mob-nav-item" id="mnImport" onclick="mobNav('import')">
-    <span class="mob-nav-ic">📥</span>
-    <span class="mob-nav-lbl" data-i18n="tab_import">Import</span>
+  <button class="mob-nav-item" id="mnMore" onclick="mobNav('hdd')">
+    <span class="mob-nav-ic">💾</span>
+    <span class="mob-nav-lbl" data-i18n="tab_hdd">HDD</span>
   </button>
   <button class="mob-nav-item" id="mnProfile" onclick="openProfileModal()">
     <span class="mob-nav-ic">👤</span>
