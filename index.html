@@ -1355,11 +1355,21 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div class="phx"><span data-i18n="ph_hint">Chap paneldan model qidiring — to'liq ma'lumot, narx va rasm bilan ko'rinadi</span></div>
       <button class="btn bp" onclick="openAddProdModal()" style="margin-top:16px">➕ <span data-i18n="btn_addprod">Yangi mahsulot qo'shish</span></button>
     </div>
-    <div class="cat-add-banner" onclick="openAddProdModal()" id="catAddBanner" style="display:none">
-      <div style="font-size:36px;opacity:.5">➕</div>
-      <div>
-        <div style="font-family:var(--fh);font-size:15px;font-weight:700;color:var(--text)"><span data-i18n="btn_addprod">Yangi mahsulot qo'shish</span></div>
-        <div style="font-size:12px;color:var(--text3);margin-top:2px">Katalogda topilmadimi? Qo'lda qo'shing — bazaga saqlanadi</div>
+    <!-- Foydali maslahatlar banneri -->
+    <div id="catAddBanner" style="display:none">
+      <div id="catTipsBanner" style="background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(124,58,237,.06));
+        border:1px solid rgba(0,212,255,.15);border-radius:14px;padding:16px 18px;margin-top:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:13px;font-weight:700;color:var(--accent)">
+            💡 <span id="tipTitle">Maslahat</span>
+          </div>
+          <button onclick="openAddProdModal()" style="font-size:11px;padding:4px 12px;
+            border-radius:7px;background:rgba(0,212,255,.12);color:var(--accent);
+            border:1px solid rgba(0,212,255,.25);cursor:pointer;font-weight:600">
+            ➕ <span id="tipAddBtn">Qo'shish</span>
+          </button>
+        </div>
+        <div id="tipsList" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
     </div>
   </div>
@@ -1967,35 +1977,64 @@ function shareViaEmail(){
 }
 
 function shareViaTelegram(){
+  const _L=LANG||'uz';
   if(!quote.length){
-    showToast(LANG==="ru"?"❌ Предложение пусто":LANG==="en"?"❌ Proposal is empty":"❌ Taklif bo'sh");
+    showToast(_L==="ru"?"❌ Предложение пусто":_L==="en"?"❌ Proposal is empty":"❌ Taklif bo'sh");
     return;
   }
-  const {subject, body} = getQuoteSummary();
-  // Telegram uchun qisqaroq matn (4096 belgi limit)
-  const fullText = subject + '\n\n' + body;
-  const text = fullText.length > 3800 ? fullText.slice(0,3800)+'...' : fullText;
 
-  const phone = (document.getElementById('clP')?.value ||
-                 document.getElementById('sharePhone')?.value || '').trim();
+  // Qisqa va aniq matn yaratish (Telegram 4096 limit)
+  const g=id=>document.getElementById(id)?.value?.trim()||'';
+  const oCo=g('oCo')||'OKVISION', clN=g('clN'), dt=new Date().toLocaleDateString();
+  const cur=document.querySelector('.cb.active')?.textContent?.trim()||'USD';
 
-  if(phone){
-    // Telefon raqamiga to'g'ridan Telegram
-    const cleaned = phone.replace(/[^0-9]/g,'');
-    const tgUrl = `https://t.me/+${cleaned}`;
-    // Clipboard ga matn ko'chirish
-    try{ navigator.clipboard.writeText(text); showToast("📋 Matn clipboard ga ko'chirildi"); }catch(e){}
-    setTimeout(()=>window.open(tgUrl,'_blank'), 500);
-  } else {
-    // Telegram Share — matn to'g'ridan
-    const url = 'https://t.me/share/url?url=&text=' + encodeURIComponent(text);
-    window.open(url, '_blank');
+  let total=0;
+  const lines=[];
+  quote.forEach((item,i)=>{
+    const pr=getPrice(item.product)||0;
+    const lt=pr*item.qty; total+=lt;
+    lines.push(`${i+1}. ${item.product?.name||''} × ${item.qty} — ${fmtP(lt)}`);
+  });
+  (services||[]).forEach(s=>{
+    const p=parseFloat(s.price)||0,q=parseInt(s.qty)||1;
+    if(s.name&&p>0){ total+=p*q; lines.push(`🔧 ${s.name} × ${q} — ${fmtP(p*q)}`); }
+  });
+  (mqItems||[]).forEach(m=>{
+    const p=parseFloat(m.price)||0,q=parseInt(m.qty)||1;
+    if(m.name&&p>0){ total+=p*q; lines.push(`+ ${m.name} × ${q} — ${fmtP(p*q)}`); }
+  });
+
+  // Qisqa sarlavha
+  const nl='\n';
+  const _h1=_L==='ru'?'📋 *Коммерческое предложение*':_L==='en'?'📋 *Commercial Proposal*':'📋 *Tijorat Taklifi*';
+  const _sup=`🏢 ${oCo}${clN?' → '+clN:''}`;
+  const header = _h1+nl+_sup+nl+'📅 '+dt;
+  const totalLine = nl+'💰 *'+(_L==='ru'?'ИТОГО':_L==='en'?'TOTAL':'JAMI')+': '+fmtP(total)+'*';
+  const rateNote = nl+'≈ '+Math.round(total*RATE).toLocaleString()+" so'm";
+
+  let text = header+nl+nl+lines.join(nl)+totalLine+rateNote;
+  if(text.length>4000){
+    const shortLines=lines.slice(0,10).join(nl);
+    const more=lines.length>10?nl+'... va '+(lines.length-10)+' ta boshqa':'';
+    text=header+nl+nl+shortLines+more+totalLine+rateNote;
   }
 
-  // Agar telefon yo'q bo'lsa — bar ko'rsat
-  if(!phone){
-    const bar = document.getElementById('shareContactBar');
-    if(bar){ bar.style.display='flex'; document.getElementById('sharePhone')?.focus(); }
+  const phone=(g('clP')||g('sharePhone')).replace(/[^0-9+]/g,'');
+
+  if(phone){
+    // Aniq raqamga yuborish — clipboard + Telegram ochish
+    navigator.clipboard?.writeText(text).catch(()=>{});
+    const cleaned=phone.replace(/[^0-9]/g,'');
+    showToast(_L==='ru'?"📋 Текст скопирован — отправьте в Telegram":_L==='en'?"📋 Copied — paste in Telegram":"📋 Matn ko'chirildi — Telegramga yuboring");
+    setTimeout(()=>window.open(`https://t.me/+${cleaned}`,'_blank'),600);
+  } else {
+    // Telegram share — faqat text parametri (url yo'q)
+    // Bu Telegram Web / Desktop da "ulashish" sahifasini ochadi
+    window.open('https://t.me/share/url?url=https://okvision-pro.vercel.app&text='+encodeURIComponent(text),'_blank');
+
+    // Telefon raqam inputini ko'rsatish
+    const bar=document.getElementById('shareContactBar');
+    if(bar) bar.style.display='flex';
   }
 }
 
@@ -2024,48 +2063,49 @@ function shareViaWhatsApp(){
 
 function savePRODS(){
   try{
-    // Eski rasm kalitlarini tozalash (localStorage bo'shatish)
-    try{
-      const toRemove=[];
-      for(let i=0;i<localStorage.length;i++){
-        const k=localStorage.key(i);
-        if(k && k.startsWith('img_')) toRemove.push(k);
-      }
-      toRemove.forEach(k=>localStorage.removeItem(k));
-    }catch(e){}
     const imported=PRODS.filter(p=>p._imported);
-    // Har bir mahsulotdan faqat kerakli fieldlar saqlansin (hajm kamaytirish)
+    // Minimal fields — hajmni kamaytirish
     const slim=imported.map(p=>({
-      id:p.id, name:p.name, cat:p.cat, em:p.em,
-      _usd:p._usd||p.price||0,
+      id:p.id,
+      name:p.name,
+      cat:p.cat||'',
+      em:p.em||'📦',
+      _usd:p._usd||0,
       _vat:p._vat||0,
       _supplier:p._supplier||'',
+      _parentSupplier:p._parentSupplier||'',
       _sheet:p._sheet||'',
       _imported:true,
-      ...(p._imgUrl?{_imgUrl:p._imgUrl}:{})
+      ...(p._imgUrl&&p._imgUrl.startsWith('http')?{_imgUrl:p._imgUrl}:{})
     }));
-    // Base64 rasmlarni localStorage ga SAQLAMAYMIZ — Storage URL yetarli
-    // (1000+ mahsulotda localStorage 5MB limitiga uriladi)
-    const prodsJson=JSON.stringify(slim);
+
+    // supplierPrices ni saqlash
     const supJson=JSON.stringify(window.supplierPrices||{});
-    // Hajm tekshiruvi (localStorage ~5MB)
-    if((prodsJson.length+supJson.length)>4500000){
-      // Katta bo'lsa supplierPrices ni qisqartirish
-      console.warn('localStorage hajm chegarasiga yaqin:',Math.round((prodsJson.length+supJson.length)/1024),'KB');
-    }
-    // Auth tokenni himoya qilish — avval mahsulotlarni saqlab ko'ramiz
-    try{
-      localStorage.setItem('cqPRODS2', prodsJson);
-      localStorage.setItem('cqSuppliers2', supJson);
-      console.log('💾 localStorage:',slim.length,'mahsulot,',Math.round((prodsJson.length+supJson.length)/1024),'KB');
-    }catch(quotaErr){
-      // localStorage to'ldi — mahsulotlarni localStorage ga saqlamaymiz
-      // Ular Supabase da bor, sahifa yangilanganda cloud dan yuklanadi
-      console.warn('⚠️ localStorage to\'ldi — mahsulotlar faqat Supabase da saqlanadi');
-      try{ localStorage.removeItem('cqPRODS2'); localStorage.removeItem('cqSuppliers2'); }catch(e){}
-    }
+    try{ localStorage.setItem('cqSuppliers2',supJson); }catch(e){}
+
+    // localStorage ga bo'lib saqlash — 5MB limitdan chiqmaslik uchun
+    // Har bir chunk ~800KB
+    const CHUNK=800;
+    const chunks=[];
+    for(let i=0;i<slim.length;i+=CHUNK) chunks.push(slim.slice(i,i+CHUNK));
+
+    // Eski chunk larni tozalash
+    for(let i=0;i<20;i++) try{localStorage.removeItem('cqPRODS_'+i);}catch(e){}
+    try{localStorage.removeItem('cqPRODS2');}catch(e){}
+
+    let saved=0;
+    chunks.forEach((chunk,i)=>{
+      try{
+        localStorage.setItem('cqPRODS_'+i, JSON.stringify(chunk));
+        saved+=chunk.length;
+      }catch(e){
+        console.warn('localStorage chunk',i,'saqlanmadi (limit):',e.message);
+      }
+    });
+    localStorage.setItem('cqPRODS_count', String(chunks.length));
+    console.log('💾 localStorage:',saved+'/'+slim.length,'mahsulot,',chunks.length,'chunk');
   }catch(e){
-    console.warn('PRODS saqlashda xato (Supabase da saqlanadi):',e.message);
+    console.warn('savePRODS xato:',e.message);
   }
   if(typeof updateDataStatus==='function') updateDataStatus();
 }
@@ -2096,33 +2136,47 @@ function loadPRODS(){
         });
       });
     }
-    const saved=localStorage.getItem('cqPRODS2');
-    if(!saved) return;
-    const imported=JSON.parse(saved);
+    // Chunked yoki eski format
+    const chunkCount=parseInt(localStorage.getItem('cqPRODS_count')||'0');
+    let allImported=[];
+
+    if(chunkCount>0){
+      // Yangi chunked format
+      for(let i=0;i<chunkCount;i++){
+        try{
+          const chunk=localStorage.getItem('cqPRODS_'+i);
+          if(chunk) allImported=allImported.concat(JSON.parse(chunk));
+        }catch(e){}
+      }
+    } else {
+      // Eski format (cqPRODS2)
+      const saved=localStorage.getItem('cqPRODS2');
+      if(!saved) return;
+      try{ allImported=JSON.parse(saved); }catch(e){ return; }
+    }
+
+    if(!allImported.length) return;
+
     const existingIds=new Set(PRODS.map(p=>p.id));
     let count=0;
-    imported.forEach(p=>{
+    allImported.forEach(p=>{
       if(!existingIds.has(p.id)){
-        // Email bo'lsa supplier nomini tozalash
-        if(p._supplier&&p._supplier.includes('@')){
+        // Email tozalash
+        if(p._supplier?.includes('@')){
           const parts=p._supplier.split(/\s*›\s*/);
           p._supplier=parts.filter(x=>!x.includes('@')).join(' › ').trim()||p._supplier;
         }
-        if(p._parentSupplier&&p._parentSupplier.includes('@')){
+        if(p._parentSupplier?.includes('@')){
           const parts=p._parentSupplier.split(/\s*›\s*/);
           p._parentSupplier=parts.filter(x=>!x.includes('@')).join(' › ').trim()||p._parentSupplier;
         }
-        // Rasm URL — Storage dan
-        if(p._imgUrl && p._imgUrl.startsWith('http')){
-          images[p.id] = p._imgUrl;
-        }
+        if(p._imgUrl?.startsWith('http')) images[p.id]=p._imgUrl;
         PRODS.push(p);
         existingIds.add(p.id);
         count++;
       }
     });
-    if(count>0) console.log('✅ '+count+' ta mahsulot tiklandi, jami PRODS:',PRODS.length);
-    else console.log("loadPRODS: yangi mahsulot yoq, jami:",PRODS.length);
+    console.log('✅ loadPRODS:',count,'ta yangi,',PRODS.length,'jami ('+chunkCount+' chunk)');
   }catch(e){console.error('PRODS yuklashda xato:',e);}
 }
 function updateRate(v){
@@ -4263,9 +4317,8 @@ function saveNewProduct(addToQuote){
   // Save custom products
   saveCustomProds();
   updPC();renderCats();renderList();filterP();
-  // Show banner
-  const banner=document.getElementById('catAddBanner');
-  if(banner)banner.style.display='flex';
+  // Banner ko'rsatish
+  showCatTipsBanner();
   const _savedMsg=LANG==='ru'?'добавлен в каталог':LANG==='en'?'added to catalog':"katalogga qo'shildi";
   showToast('✅ "'+name+'" '+_savedMsg);
   closeAddProdModal();
@@ -8726,9 +8779,11 @@ async function loadFromCloud(){
       if(!window.supplierPrices[sup]) window.supplierPrices[sup]={};
       window.supplierPrices[sup][nm]=p._usd;
     });
+    // Chunked saqlash — barcha mahsulotlar
     savePRODS();
     renderCats(); renderList(); filterP();
-    console.log(`☁️ ${allData.length} ta mahsulot bulutdan yuklandi (local: ${localOnlyProds.length} ta saqlab qolindi)`);
+    console.log(`☁️ ${allData.length} ta mahsulot bulutdan yuklandi → ${PRODS.length} ta PRODS`);
+    showToast(`✅ ${allData.length} ta mahsulot yuklandi`, 2000);
   }catch(e){ console.warn('Cloud load xato:', e); }
 }
 
@@ -9037,6 +9092,105 @@ function setAutoLock(minutes){
     if(autoLockMinutes>0) resetAutoLockTimer();
   }, {passive:true});
 });
+
+// ── Foydali maslahatlar banneri ──────────────────────────────────────────
+function showCatTipsBanner(){
+  const banner=document.getElementById('catAddBanner');
+  if(!banner) return;
+  banner.style.display='block';
+  updateCatTips();
+}
+
+function updateCatTips(){
+  const _L=LANG||'uz';
+  const tipsEl=document.getElementById('tipsList');
+  const titleEl=document.getElementById('tipTitle');
+  const addBtnEl=document.getElementById('tipAddBtn');
+  if(!tipsEl) return;
+
+  if(titleEl) titleEl.textContent=_L==='ru'?'Советы':_L==='en'?'Tips':'Maslahatlar';
+  if(addBtnEl) addBtnEl.textContent=_L==='ru'?'Добавить':_L==='en'?'Add':"Qo'shish";
+
+  // Qidiruv so'ziga qarab maslahat
+  const q=(document.getElementById('srch')?.value||'').trim();
+  const prodCount=PRODS.length;
+  const suppCount=Object.keys(window.supplierPrices||{}).length;
+
+  const tips=[];
+
+  // 1. Qidiruv bo'yicha maslahat
+  if(q){
+    tips.push({
+      icon:'🔍',
+      text:_L==='ru'?`"${q}" не найден в каталоге — добавьте вручную или импортируйте прайс-лист`
+           :_L==='en'?`"${q}" not found — add it manually or import a price list`
+           :`"${q}" katalogda yo'q — qo'lda qo'shing yoki prays-list yuklang`
+    });
+  }
+
+  // 2. Import tavsiyasi
+  if(prodCount<100){
+    tips.push({
+      icon:'📥',
+      text:_L==='ru'?'Импортируйте прайс-лист Excel — автоматически добавит все товары'
+           :_L==='en'?'Import Excel price list — all products added automatically'
+           :"Excel prays-listni yuklang — barcha mahsulotlar avtomatik qo'shiladi",
+      action:()=>switchTab('guide'),
+      btnText:_L==='ru'?'Импорт':_L==='en'?'Import':'Import'
+    });
+  }
+
+  // 3. AI qidiruv
+  if(q&&PRODS.length>0){
+    tips.push({
+      icon:'🤖',
+      text:_L==='ru'?`Попробуйте AI поиск — найдёт похожие модели`
+           :_L==='en'?`Try AI search — finds similar models`
+           :`AI qidiruv orqali o'xshash modellarni toping`,
+      action:()=>{if(!aiChatOpen)toggleAiChat();document.getElementById('aiChatInp')?.focus();}
+      ,btnText:'AI'
+    });
+  }
+
+  // 4. Distributor qo'shish
+  if(suppCount<3){
+    tips.push({
+      icon:'🏢',
+      text:_L==='ru'?'Добавьте больше поставщиков — сравнивайте цены автоматически'
+           :_L==='en'?'Add more suppliers — compare prices automatically'
+           :"Ko'proq distributor qo'shing — narxlarni avtomatik solishtiring",
+      action:()=>switchTab('guide'),
+      btnText:_L==='ru'?'Импорт':_L==='en'?'Import':'Import'
+    });
+  }
+
+  // 5. Taklif berish
+  if(quote.length>0){
+    tips.push({
+      icon:'📋',
+      text:_L==='ru'?`В КП уже ${quote.length} позиций — создайте PDF`
+           :_L==='en'?`${quote.length} items in proposal — create PDF`
+           :`Taklifda ${quote.length} ta mahsulot — PDF yarating`,
+      action:()=>{switchTab('preview');setTimeout(()=>buildPreview&&buildPreview(),80);}
+      ,btnText:'PDF'
+    });
+  }
+
+  // Chiqarish
+  tipsEl.innerHTML=tips.slice(0,3).map(tip=>`
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;
+      background:var(--surface2);border-radius:9px;border:1px solid var(--border)">
+      <span style="font-size:16px;flex-shrink:0">${tip.icon}</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;color:var(--text2);line-height:1.4">${tip.text}</div>
+      </div>
+      ${tip.action?`<button onclick="(${tip.action.toString()})()" style="font-size:10px;padding:3px 8px;
+        border-radius:6px;background:var(--surface);border:1px solid var(--border2);
+        color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">
+        ${tip.btnText||'→'}
+      </button>`:''}
+    </div>`).join('');
+}
 
 // ── ESC tugmasi — barcha modallarni yopish ───────────────────────────────
 document.addEventListener('keydown', e => {
