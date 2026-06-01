@@ -1223,6 +1223,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <button class="cb active" onclick="setCur('USD')">$ USD</button>
     <button class="cb" onclick="setCur('UZS')">so'm</button>
   </div>
+  <!-- Chat icon — faqat login bo'lganda ko'rinadi -->
+  <button id="topChatBtn" onclick="openChat()" style="display:none;position:relative;
+    width:34px;height:34px;border-radius:10px;background:var(--surface2);
+    border:1px solid var(--border);color:var(--text2);cursor:pointer;font-size:17px;
+    align-items:center;justify-content:center;transition:.15s;flex-shrink:0"
+    onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
+    onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
+    💬
+    <span id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;
+      min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;
+      font-size:9px;font-weight:700;line-height:16px;text-align:center;padding:0 3px">!</span>
+  </button>
   <!-- User profil pill -->
   <div id="userPill" class="user-pill" onclick="toggleUserMenu()" style="display:none">
     <div class="user-avatar" id="userAvatar">U</div>
@@ -1434,6 +1446,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       </button>
       <button onclick="switchTab('hdd')" style="flex:1;min-width:80px;padding:9px 12px;border-radius:10px;background:rgba(124,58,237,.12);color:#a78bfa;border:1px solid rgba(124,58,237,.3);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
         💾 HDD
+      </button>
+      <button onclick="exportQuoteToExcel()" style="flex:1;min-width:80px;padding:9px 12px;border-radius:10px;background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.25);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
+        📊 Excel
       </button>
       <button onclick="mobNav('preview');setTimeout(()=>{if(typeof buildPreview==='function')buildPreview()},100)" style="flex:1;min-width:80px;padding:9px 12px;border-radius:10px;background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.3);font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">
         🖨 PDF
@@ -1808,6 +1823,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <button class="btn bv" onclick="shareViaWhatsApp()" title="WhatsApp yuborish" style="display:flex;align-items:center;gap:6px;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366">
           💬 <span data-i18n="btn_send_wa">WhatsApp</span>
         </button>
+        <button class="btn" onclick="exportQuoteToExcel()"
+          style="display:flex;align-items:center;gap:6px;background:rgba(34,197,94,.1);
+          color:#4ade80;border:1px solid rgba(34,197,94,.25)">
+          📊 <span id="lblExcel">Excel</span>
+        </button>
         <button class="btn" onclick="quickSaveQuote()" id="btnQuickSave"
           style="display:flex;align-items:center;gap:6px;background:rgba(0,230,118,.12);
           color:var(--green);border:1px solid rgba(0,230,118,.3)">
@@ -1939,27 +1959,29 @@ function shareViaEmail(){
 
 function shareViaTelegram(){
   if(!quote.length){
-    showToast(LANG==="ru"?"❌ Таклиф бош!":LANG==="en"?"❌ Proposal is empty!":"❌ Taklif boʼsh!");
+    showToast(LANG==="ru"?"❌ Предложение пусто":LANG==="en"?"❌ Proposal is empty":"❌ Taklif bo'sh");
     return;
   }
   const {subject, body} = getQuoteSummary();
-  // Telegram share link — matnni ulashadi
-  const text = subject + '\n\n' + body;
-  // Telefon raqami kiritilgan bo'lsa — to'g'ridan yuborish
-  const phone = document.getElementById('clP')?.value ||
-                document.getElementById('sharePhone')?.value || '';
+  // Telegram uchun qisqaroq matn (4096 belgi limit)
+  const fullText = subject + '\n\n' + body;
+  const text = fullText.length > 3800 ? fullText.slice(0,3800)+'...' : fullText;
 
-  let url;
+  const phone = (document.getElementById('clP')?.value ||
+                 document.getElementById('sharePhone')?.value || '').trim();
+
   if(phone){
-    // Telefon raqamdan + va bo'shliqlarni olib tashlash
-    const cleaned = phone.replace(/[^0-9]/g, '');
-    url = `https://t.me/+${cleaned}`;
+    // Telefon raqamiga to'g'ridan Telegram
+    const cleaned = phone.replace(/[^0-9]/g,'');
+    const tgUrl = `https://t.me/+${cleaned}`;
+    // Clipboard ga matn ko'chirish
+    try{ navigator.clipboard.writeText(text); showToast("📋 Matn clipboard ga ko'chirildi"); }catch(e){}
+    setTimeout(()=>window.open(tgUrl,'_blank'), 500);
   } else {
-    // Umumiy Telegram share
-    url = `https://t.me/share/url?url=${encodeURIComponent('https://okvision.pro')}&text=${encodeURIComponent(text)}`;
+    // Telegram Share — matn to'g'ridan
+    const url = 'https://t.me/share/url?url=&text=' + encodeURIComponent(text);
+    window.open(url, '_blank');
   }
-
-  window.open(url, '_blank');
 
   // Agar telefon yo'q bo'lsa — bar ko'rsat
   if(!phone){
@@ -3439,7 +3461,7 @@ function renderList(list){
       </div>
     </div>`;
   });
-  if(items.length>LIMIT) rows.push(`<div style="grid-column:1/-1;font-size:10px;color:var(--text3);padding:4px 0">+${items.length-LIMIT} +(LANG==='ru'?'ещё — фильтруйте по категории или поиску':LANG==='en'?'more — filter by category or search':'ta ko\'proq — kategoriya yoki qidiruv bilan toraytiring')</div>`);
+  if(items.length>LIMIT) rows.push(`<div style="grid-column:1/-1;font-size:10px;color:var(--text3);padding:4px 0">+${items.length-LIMIT} ${LANG==='ru'?'ещё — фильтруйте по категории или поиску':LANG==='en'?'more — filter by category or search':"ta ko'proq — kategoriya yoki qidiruv bilan toraytiring"}</div>`);
   el.innerHTML=rows.join('');
 }
 // filterP defined below in AI search section
@@ -5833,6 +5855,8 @@ function setLang(lang) {
   _setEl('btn_addprod_cancel', _isRu?'Отмена':_isEn?'Cancel':'Bekor qilish');
   // Quick save tugmasi
   const _qs=document.getElementById('lblQuickSave');
+  const _xlEl=document.getElementById('lblExcel');
+  if(_xlEl) _xlEl.textContent='📊 Excel';
   if(_qs&&!_qs.textContent.includes('✅')&&!_qs.textContent.includes('...')){
     _qs.textContent=_isRu?'💾 Сохранить':_isEn?'💾 Save':'💾 Taklifni saqlash';
   }
@@ -7215,22 +7239,30 @@ async function saveQuoteToCloud(customName){
 
   // Supabase ga saqlash
   const quoteTitle = customName || `${oCo} → ${clN||'Mijoz'} (${dt})`;
-  const { data: quoteData, error: qErr } = await sb.from('quotes').insert({
+  // Minimal ma'lumotlar — faqat asosiy ustunlar
+  const quotePayload = {
     user_id: currentUser.id,
     title: quoteTitle,
-    client_name: clN,
-    client_company: clN,
-    client_address: clA,
-    client_phone: clP,
+    client_name: clN||'',
     total_usd: Math.round(totalUsd*100)/100,
-    total_uzs: Math.round(totalUsd * RATE),
-    rate: RATE,
-    currency: cur,
     status: 'draft',
     note: qNo,
-  }).select().single();
+  };
+  // Ixtiyoriy ustunlar — jadvalda bo'lsa qo'shamiz
+  try{ quotePayload.client_address=clA||''; }catch(e){}
+  try{ quotePayload.client_phone=clP||''; }catch(e){}
+  try{ quotePayload.currency=cur||'USD'; }catch(e){}
+  try{ quotePayload.total_uzs=Math.round(totalUsd*RATE); }catch(e){}
+  try{ quotePayload.rate=RATE; }catch(e){}
 
-  if(qErr){ console.error('Quote save error:', qErr); return null; }
+  const { data: quoteData, error: qErr } = await sb.from('quotes')
+    .insert(quotePayload).select().single();
+
+  if(qErr){
+    console.error('Quote save error:', qErr.message, qErr.details);
+    showToast('❌ Saqlash xatosi: '+qErr.message.slice(0,60));
+    return null;
+  }
 
   // Quote items saqlash
   const items = [];
@@ -7407,6 +7439,37 @@ async function openQuoteHistory(){
 function closeQuoteHistory(){
   document.getElementById('quoteHistoryModal')?.classList.remove('show');
   document.body.style.overflow = '';
+}
+
+// ── Unread xabarlarni tekshirish ─────────────────────────────────────────
+async function checkUnreadMessages(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  try{
+    const {count}=await sb.from('messages')
+      .select('*',{count:'exact',head:true})
+      .eq('receiver_id',currentUser.id)
+      .eq('read',false);
+    const badge=document.getElementById('chatUnreadBadge');
+    if(badge){
+      if(count>0){ badge.textContent=count>9?'9+':count; badge.style.display='block'; }
+      else badge.style.display='none';
+    }
+  }catch(e){}
+}
+let _unreadSub=null;
+function subscribeToUnread(){
+  const sb=getSB(); if(!sb||!currentUser||_unreadSub) return;
+  _unreadSub=sb.channel('unread:'+currentUser.id)
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
+      filter:`receiver_id=eq.${currentUser.id}`},
+      ()=>checkUnreadMessages())
+    .subscribe();
+}
+async function markMessagesRead(roomId){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  await sb.from('messages').update({read:true})
+    .eq('receiver_id',currentUser.id).eq('room_id',roomId).eq('read',false);
+  checkUnreadMessages();
 }
 
 // ── Status yangilash ──────────────────────────────────────────────────────
@@ -7610,6 +7673,8 @@ async function loadChatMessages(){
   data.forEach(m=>appendChatMsg(m,false));
   msgEl.scrollTop=msgEl.scrollHeight;
   document.getElementById('chatStatus').textContent=`${data.length} ${LANG==='ru'?'сообщений':LANG==='en'?'messages':'xabar'}`;
+  // Xabarlarni o'qilgan deb belgilash
+  markMessagesRead(_chatRoom);
 }
 
 function appendChatMsg(msg, scroll=true){
@@ -7638,10 +7703,15 @@ async function sendChatMsg(){
   const sb=getSB(); if(!sb||!currentUser) return;
   inp.value='';
   const senderName=currentProfile?.full_name||currentUser.email?.split('@')[0]||'User';
+  // receiver_id — global chat bo'lmasa, room_id dan topamiz
+  let receiverId=null;
+  if(_chatRoom!=='global'){
+    const ids=_chatRoom.split('-').filter(id=>id!==currentUser.id&&id.length>8);
+    receiverId=ids[0]||null;
+  }
   const {error}=await sb.from('messages').insert({
     sender_id:currentUser.id, sender_name:senderName,
-    room_id:_chatRoom, content,
-    receiver_id:_chatRoom==='global'?null:_chatRoom.replace(currentUser.id,'').replace('-','')
+    room_id:_chatRoom, content, receiver_id:receiverId
   });
   if(error) console.error('Chat send error:',error.message);
 }
@@ -7796,6 +7866,97 @@ function refreshUserMenuItems(){
 }
 
 // ── Taklifni tez saqlash (dialog chiqarmasdan) ───────────────────────────
+// ── Taklifni Excel ga eksport ────────────────────────────────────────────
+function exportQuoteToExcel(){
+  const _L=LANG||'uz';
+  if(!quote.length&&!mqItems?.length&&!services?.length){
+    showToast(_L==='ru'?'❌ Предложение пустое':_L==='en'?'❌ Proposal empty':"❌ Taklif bo'sh");
+    return;
+  }
+  const g=id=>document.getElementById(id)?.value?.trim()||'';
+  const oCo=g('oCo')||'OKVISION', clN=g('clN')||'Mijoz', dt=g('qDt')||new Date().toISOString().slice(0,10);
+  const qNo='TT-'+Math.floor(100000+Math.random()*900000);
+
+  // XLSX ma'lumotlari
+  const rows=[];
+  // Header
+  rows.push([
+    _L==='ru'?'№':_L==='en'?'#':'#',
+    _L==='ru'?'Наименование':_L==='en'?'Product':'Mahsulot nomi',
+    _L==='ru'?'Поставщик':_L==='en'?'Supplier':'Yetkazuvchi',
+    _L==='ru'?'Категория':_L==='en'?'Category':'Kategoriya',
+    _L==='ru'?'Кол-во':_L==='en'?'Qty':'Miqdor',
+    _L==='ru'?'Ед.':_L==='en'?'Unit':'Birlik',
+    _L==='ru'?'Цена ($)':_L==='en'?'Price ($)':'Narx ($)',
+    _L==='ru'?'Сумма ($)':_L==='en'?'Total ($)':'Jami ($)',
+    _L==='ru'?"Сумма (so'm)":_L==='en'?'Total (UZS)':"Jami (so'm)",
+  ]);
+
+  let totalUsd=0, n=1;
+  // Mahsulotlar
+  quote.forEach(item=>{
+    const pr=getPrice(item.product)||0;
+    const lt=pr*item.qty;
+    totalUsd+=lt;
+    rows.push([
+      n++, item.product?.name||'',
+      (item.product?._parentSupplier||item.product?._supplier||'').replace(/@[^>]+/g,'').trim(),
+      item.product?.cat||'',
+      item.qty,
+      _L==='ru'?'шт':_L==='en'?'pcs':'dona',
+      pr, lt, Math.round(lt*RATE),
+    ]);
+  });
+  // Xizmatlar
+  (services||[]).forEach(s=>{
+    const p=parseFloat(s.price)||0, q=parseInt(s.qty)||1;
+    if(!s.name||!p) return;
+    const lt=p*q; totalUsd+=lt;
+    rows.push([n++, s.name,'','',q,
+      _L==='ru'?'шт':_L==='en'?'pcs':'ta',
+      p, lt, Math.round(lt*RATE)]);
+  });
+  // Qo'lda qo'shilganlar
+  (mqItems||[]).forEach(m=>{
+    const p=parseFloat(m.price)||0, q=parseInt(m.qty)||1;
+    if(!m.name||!p) return;
+    const lt=p*q; totalUsd+=lt;
+    rows.push([n++, m.name,'','',q, m.unit||'dona',p,lt,Math.round(lt*RATE)]);
+  });
+  // Jami
+  rows.push([]);
+  rows.push(['','','','',
+    _L==='ru'?'ИТОГО:':_L==='en'?'TOTAL:':'JAMI:',
+    '','',totalUsd, Math.round(totalUsd*RATE)]);
+
+  // XLSX yaratish
+  if(typeof XLSX==='undefined'){
+    showToast('❌ XLSX kutubxonasi yuklanmagan');
+    return;
+  }
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  // Ustun kengligi
+  ws['!cols']=[{wch:4},{wch:35},{wch:20},{wch:15},{wch:8},{wch:8},{wch:10},{wch:12},{wch:15}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Taklif');
+
+  // Meta sheet
+  const meta=[
+    [_L==='ru'?'Компания':_L==='en'?'Company':'Kompaniya', oCo],
+    [_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz', clN],
+    [_L==='ru'?'Дата':_L==='en'?'Date':'Sana', dt],
+    [_L==='ru'?'№ КП':_L==='en'?'Proposal #':'Taklif №', qNo],
+    [_L==='ru'?'Кurs':_L==='en'?'Rate':'Kurs', RATE+" so'm/$"],
+  ];
+  const ws2=XLSX.utils.aoa_to_sheet(meta);
+  ws2['!cols']=[{wch:15},{wch:30}];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Info');
+
+  const fileName=`Taklif_${clN}_${dt}.xlsx`.replace(/[/\\:*?"<>|]/g,'_');
+  XLSX.writeFile(wb, fileName);
+  showToast('✅ Excel yuklab olindi: '+fileName);
+}
+
 // ── Taklifni tez saqlash (dialog chiqarmasdan) ───────────────────────────
 async function quickSaveQuote(){
   const _L = LANG||'uz';
@@ -8255,6 +8416,12 @@ function updateUserUI(){
   document.getElementById('menuUserEmail').textContent = currentUser.email;
   document.getElementById('menuUserPlan').textContent = (currentProfile?.plan||'FREE').toUpperCase();
   document.getElementById('userPill').style.display = 'flex';
+  // Chat icon ko'rsatish
+  const _chatBtn=document.getElementById('topChatBtn');
+  if(_chatBtn) _chatBtn.style.display='flex';
+  // Unread xabarlar
+  if(typeof checkUnreadMessages==='function') checkUnreadMessages();
+  if(typeof subscribeToUnread==='function') subscribeToUnread();
 }
 
 // ── User menu ─────────────────────────────────────────────────────────────
