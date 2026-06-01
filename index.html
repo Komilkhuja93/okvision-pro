@@ -1755,6 +1755,11 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <button class="btn bv" onclick="shareViaWhatsApp()" title="WhatsApp yuborish" style="display:flex;align-items:center;gap:6px;background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:#25d366">
           💬 <span data-i18n="btn_send_wa">WhatsApp</span>
         </button>
+        <button class="btn" onclick="quickSaveQuote()" id="btnQuickSave"
+          style="display:flex;align-items:center;gap:6px;background:rgba(0,230,118,.12);
+          color:var(--green);border:1px solid rgba(0,230,118,.3)">
+          💾 <span id="lblQuickSave">Taklifni saqlash</span>
+        </button>
         <button class="btn bp" onclick="printAndSaveQuote()" style="display:flex;align-items:center;gap:6px">
           🖨 <span data-i18n="btn_print">Chop etish / PDF</span>
         </button>
@@ -5697,6 +5702,11 @@ function setLang(lang) {
     _isEn?'Product saved to catalog. Can be added to proposal immediately.':
     "Mahsulot katalogga saqlanadi. Taklifga darhol qo'shish ham mumkin.");
   _setEl('btn_addprod_cancel', _isRu?'Отмена':_isEn?'Cancel':'Bekor qilish');
+  // Quick save tugmasi
+  const _qs=document.getElementById('lblQuickSave');
+  if(_qs&&!_qs.textContent.includes('✅')&&!_qs.textContent.includes('...')){
+    _qs.textContent=_isRu?'💾 Сохранить':_isEn?'💾 Save':'💾 Taklifni saqlash';
+  }
   _setEl('btn_addprod_save', _isRu?'💾 Сохранить':_isEn?'💾 Save':'💾 Saqlash');
   _setEl('btn_addprod_saveq', _isRu?'➕ Сохранить & добавить в КП':_isEn?'➕ Save & add to proposal':"➕ Saqlash & Taklifga qo'sh");
   // Modal select kategoriya options
@@ -7218,6 +7228,52 @@ function closeQuoteHistory(){
   document.body.style.overflow = '';
 }
 
+// ── Taklifni tez saqlash (dialog chiqarmasdan) ───────────────────────────
+async function quickSaveQuote(){
+  const _L = LANG||'uz';
+  const btn = document.getElementById('btnQuickSave');
+  const lbl = document.getElementById('lblQuickSave');
+
+  if(!currentUser){
+    showToast(_L==='ru'?'❌ Войдите в систему':_L==='en'?'❌ Please sign in':"❌ Avval tizimga kiring");
+    return;
+  }
+  if(!quote.length && !mqItems?.length && !services?.length){
+    showToast(_L==='ru'?'❌ Предложение пустое':_L==='en'?'❌ Proposal is empty':"❌ Taklif bo'sh");
+    return;
+  }
+
+  // Nom — avtomatik
+  const g = id => document.getElementById(id)?.value?.trim()||'';
+  const oCo = g('oCo'), clN = g('clN');
+  const dt = new Date().toLocaleDateString(_L==='ru'?'ru-RU':_L==='en'?'en-US':'uz-UZ');
+  const quoteName = `${oCo||'OKVISION'} → ${clN||(_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz')} · ${dt}`;
+
+  // Tugma holati
+  if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+  if(lbl) lbl.textContent = _L==='ru'?'Сохранение...':_L==='en'?'Saving...':'Saqlanmoqda...';
+
+  try{
+    const saved = await saveQuoteToCloud(quoteName);
+    if(saved){
+      if(lbl) lbl.textContent = _L==='ru'?'✅ Сохранено!':_L==='en'?'✅ Saved!':"✅ Saqlandi!";
+      showToast(_L==='ru'?`✅ "${quoteName}" сохранено`:_L==='en'?`✅ "${quoteName}" saved`:`✅ "${quoteName}" saqlandi`);
+      setTimeout(()=>{
+        if(lbl) lbl.textContent = _L==='ru'?'💾 Сохранить':_L==='en'?'💾 Save':'💾 Taklifni saqlash';
+        if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+      }, 2500);
+    } else {
+      if(lbl) lbl.textContent = _L==='ru'?'💾 Сохранить':_L==='en'?'💾 Save':'💾 Taklifni saqlash';
+      if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+      showToast(_L==='ru'?'⚠️ Не удалось сохранить':_L==='en'?'⚠️ Could not save':"⚠️ Saqlanmadi");
+    }
+  } catch(e){
+    if(lbl) lbl.textContent = _L==='ru'?'💾 Сохранить':_L==='en'?'💾 Save':'💾 Taklifni saqlash';
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+    showToast('❌ '+e.message);
+  }
+}
+
 // Taklifni chop etish va tarixga saqlash
 async function printAndSaveQuote(){
   const _L = LANG||'uz';
@@ -7318,6 +7374,10 @@ async function printAndSaveQuote(){
 
   document.getElementById('saveQuoteSkipBtn').onclick = async () => {
     dialog.remove();
+    // Faqat chop bo'lsa ham tarixga saqlash (avtomatik nom bilan)
+    if(currentUser){
+      saveQuoteToCloud(defaultName).catch(()=>{});
+    }
     await new Promise(r=>setTimeout(r,300));
     window.print();
   };
