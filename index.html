@@ -30,7 +30,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"></noscript>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -2527,10 +2527,14 @@ function showImportResult(known, resolved, supplierName, fileName){
 // xl/worksheets/sheet*.xml da drawingId bilan bog'lanadi.
 
 async function extractExcelImages(arrayBuffer) {
-  // JSZip yuklanganmi tekshirish
+  // JSZip yuklanganmi tekshirish — agar yo'q bo'lsa biroz kutish
   if(typeof JSZip === 'undefined'){
-    console.warn('JSZip yuklanmagan — rasmlar chiqarilmaydi');
-    return {};
+    console.warn('JSZip hali yuklanmagan — 2 soniya kutamiz...');
+    await new Promise(r=>setTimeout(r,2000));
+    if(typeof JSZip === 'undefined'){
+      console.warn("JSZip yuklanmadi — rasmlar o'tkazib yuborildi");
+      return {};
+    }
   }
   const result = {}; // { sheetName: { rowIndex: base64DataUrl } }
   try {
@@ -6922,15 +6926,23 @@ function base64ToBlob(base64, mimeType='image/jpeg'){
 async function uploadImageToStorage(prodId, base64Data){
   const sb = getSB();
   if(!sb || !currentUser) return null;
+  if(!base64Data || !base64Data.startsWith('data:')) return null;
   try{
     const blob = base64ToBlob(base64Data);
+    if(!blob || blob.size < 100) return null; // bo'sh blob
     const ext = blob.type.includes('png') ? 'png' : 'jpg';
     const path = `${currentUser.id}/${prodId}.${ext}`;
     const { data, error } = await sb.storage
       .from(STORAGE_BUCKET)
       .upload(path, blob, { upsert: true, contentType: blob.type });
-    if(error){ console.warn('Storage upload error:', error.message); return null; }
-    // Public URL
+    if(error){
+      console.warn('Storage upload error:', error.message, '| bucket:', STORAGE_BUCKET, '| path:', path);
+      // Bucket yo'q bo'lsa foydalanuvchiga xabar
+      if(error.message.includes('not found') || error.message.includes('Bucket')){
+        console.error('⚠️ Bucket "'+STORAGE_BUCKET+'" topilmadi. Supabase da yarating!');
+      }
+      return null;
+    }
     const { data: urlData } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
     return urlData?.publicUrl || null;
   }catch(e){ console.warn('Upload error:', e); return null; }
