@@ -6624,58 +6624,69 @@ let sealDataUrl = localStorage.getItem('okvSeal') || sessionStorage.getItem('okv
 let avatarDataUrl = localStorage.getItem('okvAvatar') || null;
 
 function openProfileModal(){
-  // User Menu yopish
-  document.getElementById('userMenu')?.classList.remove('show');
-  document.querySelector('.user-menu')?.classList.remove('show');
+  try{
+    // User Menu yopish
+    document.getElementById('userMenu')?.classList.remove('show');
 
-  const modal = document.getElementById('profileModal');
-  if(!modal){ console.error('profileModal topilmadi!'); return; }
+    const modal = document.getElementById('profileModal');
+    if(!modal){ alert('Profil modali topilmadi. Sahifani yangilang.'); return; }
 
-  // Auto-lock active tugmani belgilash
-  setTimeout(()=>{
-    document.querySelectorAll('.al-btn').forEach(b=>{
-      b.classList.toggle('active', parseInt(b.dataset.min)===autoLockMinutes);
-    });
-  }, 50);
+    // Ma'lumotlarni to'ldirish — xavfsiz
+    const p = currentProfile || {};
+    const setV=(id,v)=>{ const e=document.getElementById(id); if(e) e.value=v||''; };
+    const setT=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v||''; };
 
-  // Ma'lumotlarni to'ldirish
-  const p = currentProfile || {};
-  document.getElementById('profName').value      = p.full_name || '';
-  document.getElementById('profPhone').value     = p.phone || '';
-  document.getElementById('profCompany').value   = p.company_name || '';
-  document.getElementById('profAddress').value   = p.company_address || '';
-  document.getElementById('profEmail').value     = p.company_email || '';
-  document.getElementById('profWebsite').value   = p.website || '';
-  document.getElementById('profWarranty').value  = p.warranty || '12 oy (1 yil)';
-  document.getElementById('profQuoteValidity').value = p.quote_validity || (LANG==='ru'?'30 дней':LANG==='en'?'30 days':'30 kun');
-  document.getElementById('profTerms').value     = p.terms || '';
-  document.getElementById('profAvatarName').textContent  = p.full_name || currentUser?.email?.split('@')[0] || '—';
-  document.getElementById('profAvatarEmail').textContent = currentUser?.email || '—';
-  document.getElementById('profAvatarPlan').textContent  = (p.plan||'FREE').toUpperCase();
-  const initials = (p.full_name||'U').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  document.getElementById('profAvatarInitials').textContent = initials;
+    setV('profName',       p.full_name);
+    setV('profPhone',      p.phone);
+    setV('profCompany',    p.company_name);
+    setV('profAddress',    p.company_address);
+    setV('profEmail',      p.company_email);
+    setV('profWebsite',    p.website);
+    setV('profWarranty',   p.warranty || (LANG==='ru'?'12 месяцев (1 год)':LANG==='en'?'12 months (1 year)':'12 oy (1 yil)'));
+    setV('profQuoteValidity', p.quote_validity || (LANG==='ru'?'30 дней':LANG==='en'?'30 days':'30 kun'));
+    setV('profTerms',      p.terms);
 
-  // Avatar
-  const _b1 = document.getElementById('avatarDeleteBtn');
-  const _b2 = document.getElementById('avatarDeleteBtn2');
-  if(avatarDataUrl){
-    document.getElementById('profAvatarBig').innerHTML = `<img src="${avatarDataUrl}" alt="avatar">`;
-    if(_b1) _b1.style.display = '';
-    if(_b2) _b2.style.display = '';
-  } else {
-    if(_b1) _b1.style.display = 'none';
-    if(_b2) _b2.style.display = 'none';
+    setT('profAvatarName',  p.full_name || currentUser?.email?.split('@')[0] || '—');
+    setT('profAvatarEmail', currentUser?.email || '—');
+    setT('profAvatarPlan',  (p.plan||'FREE').toUpperCase());
+
+    const initials = (p.full_name||'U').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'U';
+    const bigEl = document.getElementById('profAvatarBig');
+    if(bigEl){
+      const avSrc = avatarDataUrl || (currentProfile?.avatar_url) || null;
+      if(avSrc){
+        bigEl.innerHTML=`<img src="${avSrc}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+      } else {
+        bigEl.innerHTML=`<span id="profAvatarInitials">${initials}</span>`;
+      }
+      const b1=document.getElementById('avatarDeleteBtn');
+      const b2=document.getElementById('avatarDeleteBtn2');
+      if(b1) b1.style.display=avSrc?'':'none';
+      if(b2) b2.style.display=avSrc?'':'none';
+    }
+
+    // Auto-lock
+    setTimeout(()=>{
+      document.querySelectorAll('.al-btn').forEach(b=>{
+        b.classList.toggle('active', parseInt(b.dataset.min)===autoLockMinutes);
+      });
+    },50);
+
+    // Seal
+    try{ updateSealPreview(); }catch(e){}
+
+    modal.classList.add('show');
+    document.body.style.overflow='hidden';
+    setTimeout(()=>{
+      const pb=modal.querySelector('.prof-body');
+      if(pb) pb.scrollTop=0;
+    },80);
+  } catch(err){
+    console.error('openProfileModal xato:', err);
+    // Xato bo'lsa ham modal ochilsin
+    const modal=document.getElementById('profileModal');
+    if(modal){ modal.classList.add('show'); document.body.style.overflow='hidden'; }
   }
-  // Seal
-  try{ updateSealPreview(); }catch(e){}
-
-  modal.classList.add('show');
-  document.body.style.overflow = 'hidden';
-  // Mobilda scroll to top
-  setTimeout(()=>{
-    const pb=modal.querySelector('.prof-body');
-    if(pb) pb.scrollTop=0;
-  },50);
 }
 
 function closeProfileModal(){
@@ -7573,15 +7584,15 @@ async function onUserLogin(user){
   if(savedUserId && savedUserId !== user.id){
     // Boshqa foydalanuvchi — localStorage ni tozalash
     console.log('Yangi foydalanuvchi — localStorage tozalanmoqda');
-    ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2','cqSvc2','cqCustom2','cqMQ2'].forEach(k=>{
+    ['cqPRODS2','cqSuppliers2','cqP2','cqIM2','cqF2','cqSvc2','cqCustom2','cqMQ2'].forEach(k=>{
       try{localStorage.removeItem(k)}catch(e){}
     });
     PRODS.splice(0, PRODS.length);
     window.supplierPrices = {};
     prices = {}; images = {}; quote = [];
     renderCats(); renderList(); renderQ();
-  } else if(savedUserId === user.id) {
-    // Bir xil foydalanuvchi — localStorage dan yuklash (cloud yuklanishini kutmasdan)
+  } else {
+    // Bir xil foydalanuvchi YOKI yangi qurilma — localStorage dan tez yuklash
     loadPRODS();
   }
 
@@ -7777,8 +7788,13 @@ async function loadFromCloud(){
       from += pageSize;
       if(from > 200000) break; // xavfsizlik
     }
-    if(!allData.length){ console.log("Cloud: mahsulot yo'q"); return; }
-    console.log(`☁️ Cloud dan ${allData.length} ta mahsulot olindi`);
+    if(!allData.length){
+      console.log("Cloud: mahsulot yo'q. user_id:", currentUser.id);
+      showToast('⚠️ Cloud da mahsulot topilmadi — import qilish kerak', 3000);
+      return;
+    }
+    console.log(`☁️ Cloud dan ${allData.length} ta mahsulot olindi. user_id:`, currentUser.id);
+    showToast(`☁️ ${allData.length} ta mahsulot yuklanmoqda...`, 2000);
 
     // Cloud USTUNLIK qiladi — barcha cloud mahsulotlarini yuklaymiz
     // Agar cloud da ko'proq mahsulot bo'lsa — localdan tozalab, cloud dan yuklaymiz
