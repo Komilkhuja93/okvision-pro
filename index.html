@@ -1182,6 +1182,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <span class="mob-nav-lbl" data-i18n="tab_quote">Taklif</span>
     <span class="mob-nav-badge" id="mobQBdg"></span>
   </button>
+  <button class="mob-nav-item" id="mnChat" onclick="openChat()" style="display:none">
+    <span class="mob-nav-ic" style="position:relative">
+      💬
+      <span id="mobChatBadge" style="display:none;position:absolute;top:-4px;right:-6px;
+        min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;
+        font-size:9px;font-weight:800;line-height:16px;text-align:center;padding:0 3px">0</span>
+    </span>
+    <span class="mob-nav-lbl" id="mobNavChat">Chat</span>
+  </button>
   <button class="mob-nav-item" id="mnImport" onclick="mobNav('guide')">
     <span class="mob-nav-ic">📥</span>
     <span class="mob-nav-lbl" id="mobNavImport">Import</span>
@@ -7456,20 +7465,122 @@ async function checkUnreadMessages(){
     }
   }catch(e){}
 }
-let _unreadSub=null;
+// ── Telegram uslubi xabar tovushi ────────────────────────────────────────
+function playMsgSound(type='incoming'){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    if(type==='incoming'){
+      // Telegram "ding" — ikki nota
+      [[880,0,0.08],[1046,0.09,0.12]].forEach(([freq,start,end])=>{
+        const osc=ctx.createOscillator(), gain=ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value=freq; osc.type='sine';
+        gain.gain.setValueAtTime(0,ctx.currentTime+start);
+        gain.gain.linearRampToValueAtTime(0.3,ctx.currentTime+start+0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+end);
+        osc.start(ctx.currentTime+start);
+        osc.stop(ctx.currentTime+end+0.05);
+      });
+    } else {
+      // Yuborilgan — past "pop"
+      const osc=ctx.createOscillator(), gain=ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value=440; osc.type='sine';
+      gain.gain.setValueAtTime(0.2,ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
+      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.2);
+    }
+  }catch(e){}
+}
+
+// ── Unread badge yangilash ────────────────────────────────────────────────
+function updateUnreadBadge(count){
+  const badge=document.getElementById('chatUnreadBadge');
+  const mobBadge=document.getElementById('mobChatBadge');
+  if(badge){
+    if(count>0){
+      badge.textContent=count>99?'99+':count;
+      badge.style.display='block';
+    } else {
+      badge.style.display='none';
+    }
+  }
+  if(mobBadge){
+    if(count>0){
+      mobBadge.textContent=count>99?'99+':count;
+      mobBadge.style.display='block';
+    } else {
+      mobBadge.style.display='none';
+    }
+  }
+}
+
+let _unreadSub=null, _unreadCount=0;
+
 function subscribeToUnread(){
   const sb=getSB(); if(!sb||!currentUser||_unreadSub) return;
+  // 1. Shaxsiy xabarlar
   _unreadSub=sb.channel('unread:'+currentUser.id)
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
       filter:`receiver_id=eq.${currentUser.id}`},
-      ()=>checkUnreadMessages())
+      payload=>{
+        const msg=payload.new;
+        // Chat ochiq va shu roomda bo'lsa — track qilmaymiz
+        const chatPanel=document.getElementById('chatPanel');
+        const isCurrentRoom=chatPanel&&_chatRoom===msg.room_id;
+        if(!isCurrentRoom){
+          _unreadCount++;
+          updateUnreadBadge(_unreadCount);
+          playMsgSound('incoming');
+          const senderName=msg?.sender_name||'User';
+          const preview=(msg?.content||'').slice(0,60);
+          showToast(`💬 ${senderName}: ${preview}`, 4000);
+        }
+      })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED') checkUnreadMessages();
+    });
+
+  // 2. Global chat — yangi xabar ko'rinishi uchun (lekin sound emas)
+  sb.channel('global-chat-watch')
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
+      filter:`room_id=eq.global`},
+      payload=>{
+        const msg=payload.new;
+        if(msg.sender_id===currentUser.id) return; // o'z xabarini skip
+        const chatPanel=document.getElementById('chatPanel');
+        const isGlobalOpen=chatPanel&&_chatRoom==='global';
+        if(!isGlobalOpen){
+          playMsgSound('incoming');
+          const senderName=msg?.sender_name||'User';
+          showToast(`💬 ${senderName} (chat): ${(msg?.content||'').slice(0,50)}`, 3000);
+        }
+      })
     .subscribe();
 }
+
+async function checkUnreadMessages(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  try{
+    const {count}=await sb.from('messages')
+      .select('*',{count:'exact',head:true})
+      .eq('receiver_id',currentUser.id)
+      .eq('read',false);
+    _unreadCount=count||0;
+    updateUnreadBadge(_unreadCount);
+  }catch(e){}
+}
+
 async function markMessagesRead(roomId){
   const sb=getSB(); if(!sb||!currentUser) return;
-  await sb.from('messages').update({read:true})
-    .eq('receiver_id',currentUser.id).eq('room_id',roomId).eq('read',false);
-  checkUnreadMessages();
+  try{
+    await sb.from('messages').update({read:true})
+      .eq('receiver_id',currentUser.id)
+      .eq('room_id',roomId)
+      .eq('read',false);
+    _unreadCount=Math.max(0,_unreadCount-1);
+    checkUnreadMessages(); // aniq son uchun
+  }catch(e){}
 }
 
 // ── Status yangilash ──────────────────────────────────────────────────────
@@ -7647,10 +7758,33 @@ async function openChat(targetUserId=null, targetName=''){
 
   // Realtime subscription
   if(_chatSub) sb.removeChannel(_chatSub);
+  if(_chatSub){ try{sb.removeChannel(_chatSub);}catch(e){} }
   _chatSub = sb.channel('chat:'+_chatRoom)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',filter:`room_id=eq.${_chatRoom}`},
-      payload => appendChatMsg(payload.new))
-    .subscribe();
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
+      filter:`room_id=eq.${_chatRoom}`},
+      payload => {
+        const msg=payload.new;
+        appendChatMsg(msg);
+        // Boshqa odam yozgan bo'lsa tovush
+        if(msg.sender_id !== currentUser?.id){
+          playMsgSound('incoming');
+        }
+        // O'qilgan deb belgilash (chat ochiq bo'lsa)
+        const chatEl=document.getElementById('chatPanel');
+        if(chatEl && msg.receiver_id===currentUser?.id){
+          markMessagesRead(_chatRoom);
+        }
+      })
+    .subscribe(status=>{
+      const statusEl=document.getElementById('chatStatus');
+      if(statusEl){
+        const _L=LANG||'uz';
+        statusEl.textContent=status==='SUBSCRIBED'
+          ?(_L==='ru'?'● Онлайн':_L==='en'?'● Online':'● Onlayn')
+          :(_L==='ru'?'Подключение...':_L==='en'?'Connecting...':'Ulanmoqda...');
+        statusEl.style.color=status==='SUBSCRIBED'?'var(--green)':'var(--amber)';
+      }
+    });
 }
 
 async function loadChatMessages(){
@@ -7713,7 +7847,13 @@ async function sendChatMsg(){
     sender_id:currentUser.id, sender_name:senderName,
     room_id:_chatRoom, content, receiver_id:receiverId
   });
-  if(error) console.error('Chat send error:',error.message);
+  if(error){
+    console.error('Chat send error:',error.message);
+    showToast('❌ '+error.message.slice(0,50));
+  } else {
+    // Yuborilgan tovush
+    playMsgSound('sent');
+  }
 }
 
 async function openUserList(){
@@ -8416,9 +8556,12 @@ function updateUserUI(){
   document.getElementById('menuUserEmail').textContent = currentUser.email;
   document.getElementById('menuUserPlan').textContent = (currentProfile?.plan||'FREE').toUpperCase();
   document.getElementById('userPill').style.display = 'flex';
-  // Chat icon ko'rsatish
+  // Chat icon ko'rsatish (desktop)
   const _chatBtn=document.getElementById('topChatBtn');
   if(_chatBtn) _chatBtn.style.display='flex';
+  // Chat mobil tab ko'rsatish
+  const _mobChatBtn=document.getElementById('mnChat');
+  if(_mobChatBtn) _mobChatBtn.style.display='flex';
   // Unread xabarlar
   if(typeof checkUnreadMessages==='function') checkUnreadMessages();
   if(typeof subscribeToUnread==='function') subscribeToUnread();
