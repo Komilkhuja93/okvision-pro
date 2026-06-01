@@ -7218,7 +7218,7 @@ async function openQuoteHistory(){
     const totalFmt = q.currency==='UZS'
       ? (Math.round(q.total_uzs||0)).toLocaleString()+" so'm"
       : '$'+(q.total_usd||0).toLocaleString();
-    const _loadLbl = _Lr==='ru'?'Загрузить':'Load';
+    const _loadLbl = _Lr==='ru'?'Загрузить':_Lr==='en'?'Load':'Yuklash';
     const _delLbl  = _Lr==='ru'?'Удалить':'Delete';
     return `
     <div class="qh-item" id="qhi-${q.id}">
@@ -7230,7 +7230,7 @@ async function openQuoteHistory(){
       <div class="qh-actions" style="display:flex;gap:5px;flex-shrink:0">
         <button class="qh-btn" onclick="loadQuoteFromCloud('${q.id}')" title="${_Lr==='ru'?'Загрузить в редактор':_Lr==='en'?'Load into editor':'Redaktorga yuklash'}"
           style="background:rgba(0,212,255,.12);color:var(--accent);border:1px solid rgba(0,212,255,.3);padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;white-space:nowrap">
-          📂 ${_Lr==='ru'?'Yuklash':'Load'}
+          📂 ${_Lr==='ru'?'Загрузить':_Lr==='en'?'Load':'Yuklash'}
         </button>
         ${hasPdf?`<a href="${q.note}" target="_blank" class="qh-btn qh-btn-dl" title="${_Lr==='ru'?'Скачать PDF':_Lr==='en'?'Download PDF':'PDF yuklash'}"
           style="background:rgba(0,230,118,.1);color:var(--green);border:1px solid rgba(0,230,118,.3);padding:5px 10px;border-radius:7px;font-size:11px;text-decoration:none;display:flex;align-items:center">
@@ -7414,7 +7414,7 @@ async function loadQuoteFromCloud(quoteId){
     console.error('loadQuoteFromCloud error:', e);
     showToast('❌ Xato: '+e.message);
   }finally{
-    if(loadBtn){ loadBtn.textContent='📂 '+(LANG==='ru'?'Yuklash':'Load'); loadBtn.disabled=false; }
+    if(loadBtn){ loadBtn.textContent='📂 '+(LANG==='ru'?'Загрузить':LANG==='en'?'Load':'Yuklash'); loadBtn.disabled=false; }
   }
 }
 
@@ -8177,6 +8177,33 @@ function setAutoLock(minutes){
   document.addEventListener(evt, ()=>{
     if(autoLockMinutes>0) resetAutoLockTimer();
   }, {passive:true});
+});
+
+// ── ESC tugmasi — barcha modallarni yopish ───────────────────────────────
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Escape') return;
+  // Taklif tarixi
+  const qhModal = document.getElementById('quoteHistoryModal');
+  if(qhModal?.classList.contains('show')){ closeQuoteHistory(); return; }
+  // Profil modal
+  const profModal = document.getElementById('profileModal');
+  if(profModal?.classList.contains('show')){ closeProfileModal(); return; }
+  // Kategoriya modal
+  const catModal = document.getElementById('catManagerOverlay');
+  if(catModal && catModal.style.display !== 'none' && catModal.style.display !== ''){
+    if(typeof closeCatManager==='function') closeCatManager();
+    else { catModal.style.display='none'; document.body.style.overflow=''; }
+    return;
+  }
+  // Save quote dialog
+  const sqDialog = document.getElementById('saveQuoteDialog');
+  if(sqDialog){ sqDialog.remove(); return; }
+  // Add product modal
+  const apModal = document.getElementById('addProdModal');
+  if(apModal?.classList.contains('show')){ closeAddProdModal(); return; }
+  // Mob prod sheet
+  const mobSheet = document.getElementById('mobProdSheet');
+  if(mobSheet){ closeMobProdSheet(); return; }
 });
 
 // ── DOMContentLoaded da auth ishga tushirish ─────────────────────────────
