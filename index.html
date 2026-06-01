@@ -3662,7 +3662,7 @@ function renderQ(){
           ${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span>${item.product.em}</span>`}
         </div>
       </td>
-      <td><div style="font-weight:500;font-size:13px">${item.product.name}</div><div style="font-size:11px;color:var(--text3)">${item.product.brand}</div></td>
+      <td><div style="font-weight:500;font-size:13px">${item.product.name||''}</div><div style="font-size:11px;color:var(--text3)">${item.product.brand||''}</div></td>
       <td><span style="font-size:11px;background:var(--surface3);border-radius:5px;padding:2px 7px;color:var(--text2)">${item.product.cat}</span></td>
       <td><input class="qi" type="number" min="0" step="any" value="${item.qty}" oninput="updQty('${item.product.id}',this.value)" onchange="updQty('${item.product.id}',this.value)"></td>
       <td style="text-align:right;color:${pr?'var(--text)':'var(--text3)'}">${pr?fmtP(pr):'—'}</td>
@@ -3932,8 +3932,8 @@ function buildPreview(){
     const img=getImg(item.product);
     return`<tr>
       <td>${i+1}</td>
-      <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product.em}</span>`}</div></td>
-      <td><strong>${item.product.name}</strong><br><span style="font-size:11px;color:#777">${item.product.brand} · ${item.product.cat}</span></td>
+      <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
+      <td><strong>${item.product?.name||''}</strong><br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${pr?fmtP(pr):'—'}</td>
       <td class="nr" style="font-weight:700">${lt?fmtP(lt):'—'}</td>
@@ -7072,9 +7072,12 @@ async function saveQuoteToCloud(customName){
 
   // Jami hisoblash
   let totalUsd = 0;
-  quote.forEach(q => { totalUsd += (q._usd||0)*(q.qty||1); });
-  mqRows.forEach(m => { if(m.name&&m.price>0) totalUsd += m.price*(m.qty||1); });
-  svcRows.forEach(s => { if(s.name&&s.price>0) totalUsd += s.price*(s.qty||1); });
+  quote.forEach(q => {
+    const pr = q.product?._usd || getPrice(q.product) || 0;
+    totalUsd += pr*(q.qty||1);
+  });
+  (mqItems||[]).forEach(m => { if(m.name&&parseFloat(m.price)>0) totalUsd += parseFloat(m.price)*(m.qty||1); });
+  (services||[]).forEach(s => { if(s.name&&parseFloat(s.price)>0) totalUsd += parseFloat(s.price)*(parseInt(s.qty)||1); });
 
   // Taklif raqami
   const qNo = 'TT-' + Math.floor(100000+Math.random()*900000);
@@ -7101,28 +7104,44 @@ async function saveQuoteToCloud(customName){
   // Quote items saqlash
   const items = [];
   quote.forEach((q,i) => {
+    const pr = q.product?._usd || getPrice(q.product) || 0;
     items.push({
       quote_id: quoteData.id,
-      product_id: q.id||null,
-      product_name: q.name,
-      supplier: q._supplier||'',
-      category: q.cat||'',
+      product_id: q.product?.id||null,
+      product_name: q.product?.name||'',
+      supplier: q.product?._supplier||q.product?._parentSupplier||'',
+      category: q.product?.cat||'',
       qty: q.qty||1,
       unit: 'dona',
-      price_usd: q._usd||0,
-      total_usd: (q._usd||0)*(q.qty||1),
+      price_usd: pr,
+      total_usd: pr*(q.qty||1),
       sort_order: i,
     });
   });
-  mqRows.forEach((m,i) => {
-    if(m.name&&m.price>0) items.push({
+  // Qo'lda qo'shilgan mahsulotlar (mqItems)
+  (mqItems||[]).forEach((m,i) => {
+    const p=parseFloat(m.price)||0;
+    if(m.name&&p>0) items.push({
       quote_id: quoteData.id,
       product_name: m.name,
-      qty: m.qty||1,
+      qty: parseInt(m.qty)||1,
       unit: m.unit||'dona',
-      price_usd: m.price,
-      total_usd: m.price*(m.qty||1),
+      price_usd: p,
+      total_usd: p*(parseInt(m.qty)||1),
       sort_order: quote.length+i,
+    });
+  });
+  // Xizmatlar (services)
+  (services||[]).forEach((s,i) => {
+    const p=parseFloat(s.price)||0;
+    if(s.name&&p>0) items.push({
+      quote_id: quoteData.id,
+      product_name: s.name,
+      qty: parseInt(s.qty)||1,
+      unit: 'xizmat',
+      price_usd: p,
+      total_usd: p*(parseInt(s.qty)||1),
+      sort_order: quote.length+(mqItems?.length||0)+i,
     });
   });
 
@@ -7278,113 +7297,35 @@ async function quickSaveQuote(){
 async function printAndSaveQuote(){
   const _L = LANG||'uz';
 
-  // 1. Avval barcha modalarni yopish
+  // Barcha modalarni yopish
   closeQuoteHistory();
-  document.body.style.overflow = '';
+  document.body.style.overflow='';
 
-  if(!quote.length && !mqItems?.length && !svcRows?.length){
+  if(!quote.length && !mqItems?.length && !services?.length){
     showToast(_L==='ru'?'❌ Предложение пустое':_L==='en'?'❌ Proposal is empty':"❌ Taklif bo'sh");
     return;
   }
 
-  // 2. Preview tabiga o'tish va buildPreview chaqirish
+  // Preview tabiga o'tish
   switchTab('preview');
   if(typeof buildPreview==='function') buildPreview();
 
-  // 3. Nom kiritish uchun modal (prompt emas — custom dialog)
-  const g = id => document.getElementById(id)?.value?.trim()||'';
-  const oCo = g('oCo'), clN = g('clN');
-  const dt = new Date().toLocaleDateString(_L==='ru'?'ru-RU':_L==='en'?'en-US':'uz-UZ');
-  const defaultName = `${oCo||'Kompaniya'} → ${clN||(_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz')} · ${dt}`;
+  // Avtomatik saqlash + print (dialog yo'q)
+  const g = id=>document.getElementById(id)?.value?.trim()||'';
+  const oCo=g('oCo'), clN=g('clN');
+  const dt=new Date().toLocaleDateString(_L==='ru'?'ru-RU':_L==='en'?'en-US':'uz-UZ');
+  const autoName=`${oCo||'OKVISION'} → ${clN||(_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz')} · ${dt}`;
 
-  // Custom nom kiritish dialogi
-  const _title = _L==='ru'?'Сохранить предложение':_L==='en'?'Save Proposal':"Taklifni saqlash";
-  const _label = _L==='ru'?'Название предложения:':_L==='en'?'Proposal name:':'Taklif nomi:';
-  const _printBtn = _L==='ru'?'💾 Сохранить & Печать':_L==='en'?'💾 Save & Print':"💾 Saqlash & Chop";
-  const _skipBtn = _L==='ru'?'🖨 Только печать':_L==='en'?'🖨 Print only':'🖨 Faqat chop';
-  const _cancelBtn = _L==='ru'?'Отмена':_L==='en'?'Cancel':'Bekor qilish';
+  // Tarixga saqlash
+  if(currentUser){
+    saveQuoteToCloud(autoName).then(saved=>{
+      if(saved) showToast(_L==='ru'?'✅ Сохранено в историю':_L==='en'?'✅ Saved to history':'✅ Tarixga saqlandi');
+    });
+  }
 
-  // Eski dialogni o'chirish
-  document.getElementById('saveQuoteDialog')?.remove();
-
-  const dialog = document.createElement('div');
-  dialog.id = 'saveQuoteDialog';
-  dialog.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;
-    display:flex;align-items:center;justify-content:center;padding:16px`;
-  dialog.innerHTML = `
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;
-      padding:24px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.5)">
-      <div style="font-family:var(--fh);font-size:16px;font-weight:700;margin-bottom:16px;
-        display:flex;align-items:center;gap:8px">
-        💾 ${_title}
-      </div>
-      <label style="font-size:12px;color:var(--text2);font-weight:500;display:block;margin-bottom:6px">
-        ${_label}
-      </label>
-      <input id="saveQuoteName" type="text" value="${defaultName}"
-        style="width:100%;background:var(--surface2);border:1.5px solid var(--border);
-        border-radius:10px;padding:10px 12px;color:var(--text);font-size:14px;
-        font-family:var(--fb);outline:none;box-sizing:border-box;margin-bottom:16px"
-        onfocus="this.style.borderColor='var(--accent)'"
-        onblur="this.style.borderColor='var(--border)'"
-        onkeydown="if(event.key==='Enter'){event.preventDefault();document.getElementById('saveQuotePrintBtn').click()}
-                   if(event.key==='Escape'){document.getElementById('saveQuoteCancelBtn').click()}">
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button id="saveQuotePrintBtn"
-          style="flex:1;padding:11px 16px;border-radius:10px;background:var(--accent);
-          color:#0a0c10;border:none;font-size:13px;font-weight:700;cursor:pointer;
-          white-space:nowrap">
-          ${_printBtn}
-        </button>
-        <button id="saveQuoteSkipBtn"
-          style="flex:1;padding:11px 16px;border-radius:10px;background:var(--surface2);
-          color:var(--text2);border:1px solid var(--border);font-size:13px;cursor:pointer;
-          white-space:nowrap">
-          ${_skipBtn}
-        </button>
-        <button id="saveQuoteCancelBtn"
-          style="padding:11px 16px;border-radius:10px;background:transparent;
-          color:var(--text3);border:1px solid var(--border2);font-size:13px;cursor:pointer">
-          ${_cancelBtn}
-        </button>
-      </div>
-    </div>`;
-  document.body.appendChild(dialog);
-
-  // Focus
-  setTimeout(()=>{
-    const inp = document.getElementById('saveQuoteName');
-    if(inp){ inp.focus(); inp.select(); }
-  }, 50);
-
-  // Tugmalar
-  document.getElementById('saveQuotePrintBtn').onclick = async () => {
-    const name = document.getElementById('saveQuoteName')?.value?.trim() || defaultName;
-    dialog.remove();
-    // Saqlash
-    if(currentUser){
-      saveQuoteToCloud(name).then(saved => {
-        if(saved) showToast(_L==='ru'?'✅ Сохранено в историю':_L==='en'?'✅ Saved to history':'✅ Tarixga saqlandi');
-      });
-    }
-    // Print — kichik delay bilan (preview render uchun)
-    await new Promise(r=>setTimeout(r,300));
-    window.print();
-  };
-
-  document.getElementById('saveQuoteSkipBtn').onclick = async () => {
-    dialog.remove();
-    // Faqat chop bo'lsa ham tarixga saqlash (avtomatik nom bilan)
-    if(currentUser){
-      saveQuoteToCloud(defaultName).catch(()=>{});
-    }
-    await new Promise(r=>setTimeout(r,300));
-    window.print();
-  };
-
-  document.getElementById('saveQuoteCancelBtn').onclick = () => {
-    dialog.remove();
-  };
+  // Print
+  await new Promise(r=>setTimeout(r,350));
+  window.print();
 }
 
 // Taklifni bulutdan yuklash va redaktorga ochish
