@@ -606,6 +606,15 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .main-prod-price{font-size:11px;color:var(--green);font-weight:600;white-space:nowrap}
 .main-prod-count{font-size:10px;color:var(--accent);font-weight:700;white-space:nowrap;flex-shrink:0;padding:0 4px}
 .main-scroll{flex:1;overflow-y:auto;padding:22px}
+/* ── CHAT BADGE PULSATSIYA ───────────────────────────────────────────────── */
+@keyframes badgePulse{
+  0%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,71,87,.7)}
+  50%{transform:scale(1.15);box-shadow:0 0 0 5px rgba(255,71,87,0)}
+  100%{transform:scale(1);box-shadow:0 0 0 0 rgba(255,71,87,0)}
+}
+.chat-badge-pulse{
+  animation:badgePulse 1.5s ease infinite!important;
+}
 /* ── TAKLIF TARIXI TUGMALARI ─────────────────────────────────────────────── */
 .qh-icon-btn{
   position:relative;
@@ -1185,9 +1194,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   <button class="mob-nav-item" id="mnChat" onclick="openChat()" style="display:none">
     <span class="mob-nav-ic" style="position:relative">
       💬
-      <span id="mobChatBadge" style="display:none;position:absolute;top:-4px;right:-6px;
-        min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;
-        font-size:9px;font-weight:800;line-height:16px;text-align:center;padding:0 3px">0</span>
+      <span id="mobChatBadge" style="display:none;position:absolute;top:-5px;right:-7px;
+        min-width:18px;height:18px;border-radius:9px;background:#ff4757;color:#fff;
+        font-size:10px;font-weight:800;line-height:18px;text-align:center;padding:0 4px;
+        border:2px solid var(--surface);box-shadow:0 2px 6px rgba(255,71,87,.5)">0</span>
     </span>
     <span class="mob-nav-lbl" id="mobNavChat">Chat</span>
   </button>
@@ -1240,9 +1250,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'"
     onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--text2)'">
     💬
-    <span id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-4px;
-      min-width:16px;height:16px;border-radius:8px;background:var(--red);color:#fff;
-      font-size:9px;font-weight:700;line-height:16px;text-align:center;padding:0 3px">!</span>
+    <span id="chatUnreadBadge" style="display:none;position:absolute;top:-5px;right:-5px;
+      min-width:18px;height:18px;border-radius:9px;background:#ff4757;color:#fff;
+      font-size:10px;font-weight:800;line-height:18px;text-align:center;padding:0 4px;
+      border:2px solid var(--surface);box-shadow:0 2px 6px rgba(255,71,87,.5)">0</span>
   </button>
   <!-- User profil pill -->
   <div id="userPill" class="user-pill" onclick="toggleUserMenu()" style="display:none">
@@ -2701,8 +2712,12 @@ async function extractExcelImages(arrayBuffer) {
         );
       }
     });
-    await Promise.all(mediaPromises);
+    // 20 tadan parallel yuklash (xotira tejash uchun)
+    for(let i=0; i<mediaPromises.length; i+=20){
+      await Promise.all(mediaPromises.slice(i,i+20));
+    }
     if(Object.keys(mediaFiles).length === 0) return result;
+    console.log('📷 Excel dan', Object.keys(mediaFiles).length, 'rasm chiqarildi');
 
     // 2. Workbook relationships — sheet nomlarini aniqlash
     const wbRelsFile = zip.file('xl/_rels/workbook.xml.rels');
@@ -7159,14 +7174,19 @@ async function uploadImageToStorage(prodId, base64Data){
     if(!blob || blob.size < 100) return null; // bo'sh blob
     const ext = blob.type.includes('png') ? 'png' : 'jpg';
     const path = `${currentUser.id}/${prodId}.${ext}`;
-    const { data, error } = await sb.storage
+    let { data, error } = await sb.storage
       .from(STORAGE_BUCKET)
       .upload(path, blob, { upsert: true, contentType: blob.type });
     if(error){
-      console.warn('Storage upload error:', error.message, '| bucket:', STORAGE_BUCKET, '| path:', path);
-      // Bucket yo'q bo'lsa foydalanuvchiga xabar
-      if(error.message.includes('not found') || error.message.includes('Bucket')){
-        console.error('⚠️ Bucket "'+STORAGE_BUCKET+'" topilmadi. Supabase da yarating!');
+      // Bucket topilmasa — foydalanuvchiga bir marta xabar
+      if(error.message.includes('not found')||error.message.includes('Bucket')||error.message.includes('bucket')){
+        if(!window._bucketWarnShown){
+          window._bucketWarnShown=true;
+          showToast("⚠️ Storage bucket yo'q! Supabase → setup_product_images.sql ni ishga tushiring", 6000);
+        }
+        console.error('❌ Bucket "'+STORAGE_BUCKET+'" topilmadi!');
+      } else {
+        console.warn('Storage upload error:', error.message);
       }
       return null;
     }
@@ -7236,25 +7256,32 @@ async function autoSyncImages(newProds){
   }
   console.log(`🔄 ${withImgs.length} ta rasm Storage ga yuklanmoqda...`);
   let uploaded = 0, errors = 0;
-  for(const prod of withImgs){
-    try{
-      const url = await uploadImageToStorage(prod.id, prod._imgData);
-      if(url){
-        prod._imgUrl = url;
-        images[prod.id] = url;
-        delete prod._imgData;
-        // Storage ga yuklandi — IndexedDB dan o'chirish (URL yetarli)
-        try{ idbSetImg(prod.id, url); }catch(e){} // URL ni saqlab qo'yamiz
-        uploaded++;
-      } else {
-        // Storage xato — IndexedDB da base64 qoladi (zaxira)
-        if(prod._imgData) try{ idbSetImg(prod.id, prod._imgData); }catch(e){}
+  // 5 ta parallel yuklash — tezroq
+  const BATCH = 5;
+  for(let i=0; i<withImgs.length; i+=BATCH){
+    const batch = withImgs.slice(i, i+BATCH);
+    await Promise.all(batch.map(async prod => {
+      try{
+        const url = await uploadImageToStorage(prod.id, prod._imgData);
+        if(url){
+          prod._imgUrl = url;
+          images[prod.id] = url;
+          delete prod._imgData;
+          try{ idbSetImg(prod.id, url); }catch(e){}
+          uploaded++;
+        } else {
+          if(prod._imgData) try{ idbSetImg(prod.id, prod._imgData); }catch(e){}
+          errors++;
+        }
+      }catch(e){
         errors++;
-        console.warn('Upload failed for:', prod.id);
+        console.warn('Upload error:', e.message);
       }
-    }catch(e){
-      errors++;
-      console.warn('Upload error:', e.message);
+    }));
+    // Progress
+    if((i+BATCH) % 20 === 0){
+      const pct = Math.round((i+BATCH)/withImgs.length*100);
+      showToast(`🔄 Rasmlar: ${i+BATCH}/${withImgs.length} (${pct}%)`, 1500);
     }
   }
   console.log(`☁️ ${uploaded} rasm yuklandi, ${errors} xato`);
@@ -7519,97 +7546,220 @@ async function checkUnreadMessages(){
   }catch(e){}
 }
 // ── Telegram uslubi xabar tovushi ────────────────────────────────────────
+// ── Audio Context — bir marta yaratib qayta ishlatamiz ─────────────────
+let _audioCtx = null;
+function _getAudioCtx(){
+  if(!_audioCtx || _audioCtx.state==='closed'){
+    _audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  }
+  // Suspended bo'lsa — resume
+  if(_audioCtx.state==='suspended') _audioCtx.resume();
+  return _audioCtx;
+}
+
+// Foydalanuvchi birinchi click da AudioContext unlock qilish
+let _audioUnlocked = false;
+function _unlockAudio(){
+  if(_audioUnlocked) return;
+  try{
+    const ctx = _getAudioCtx();
+    // Bo'sh buffer chalish — unlock uchun
+    const buf = ctx.createBuffer(1,1,22050);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    src.connect(ctx.destination);
+    src.start(0);
+    _audioUnlocked = true;
+  }catch(e){}
+}
+// Har bir user interaction da unlock
+['click','touchstart','keydown'].forEach(evt=>{
+  document.addEventListener(evt, _unlockAudio, {once:false, passive:true});
+});
+
 function playMsgSound(type='incoming'){
   try{
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const ctx = _getAudioCtx();
+    const now = ctx.currentTime;
+
     if(type==='incoming'){
-      // Telegram "ding" — ikki nota
-      [[880,0,0.08],[1046,0.09,0.12]].forEach(([freq,start,end])=>{
-        const osc=ctx.createOscillator(), gain=ctx.createGain();
+      // Telegram uslubi — yumshoq ding-dong
+      const notes = [
+        {freq:1318, start:0,    dur:0.12, vol:0.28},
+        {freq:1047, start:0.13, dur:0.18, vol:0.22},
+      ];
+      notes.forEach(({freq,start,dur,vol})=>{
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.connect(gain); gain.connect(ctx.destination);
-        osc.frequency.value=freq; osc.type='sine';
-        gain.gain.setValueAtTime(0,ctx.currentTime+start);
-        gain.gain.linearRampToValueAtTime(0.3,ctx.currentTime+start+0.01);
-        gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+end);
-        osc.start(ctx.currentTime+start);
-        osc.stop(ctx.currentTime+end+0.05);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0, now+start);
+        gain.gain.linearRampToValueAtTime(vol, now+start+0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, now+start+dur);
+        osc.start(now+start);
+        osc.stop(now+start+dur+0.05);
       });
-    } else {
-      // Yuborilgan — past "pop"
-      const osc=ctx.createOscillator(), gain=ctx.createGain();
+    } else if(type==='sent'){
+      // Yuborilgan — yengil "tick"
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
       osc.connect(gain); gain.connect(ctx.destination);
-      osc.frequency.value=440; osc.type='sine';
-      gain.gain.setValueAtTime(0.2,ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.15);
-      osc.start(ctx.currentTime); osc.stop(ctx.currentTime+0.2);
+      osc.type = 'sine';
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.15, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now+0.08);
+      osc.start(now); osc.stop(now+0.1);
+    } else if(type==='notify'){
+      // Bildirishnoma — 3 ta qisqa bip
+      [0, 0.12, 0.24].forEach((start,i)=>{
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = 880 + i*110;
+        gain.gain.setValueAtTime(0.2, now+start);
+        gain.gain.exponentialRampToValueAtTime(0.001, now+start+0.08);
+        osc.start(now+start); osc.stop(now+start+0.1);
+      });
     }
-  }catch(e){}
+  }catch(e){ console.warn('Audio error:', e.message); }
 }
 
 // ── Unread badge yangilash ────────────────────────────────────────────────
 function updateUnreadBadge(count){
   const badge=document.getElementById('chatUnreadBadge');
   const mobBadge=document.getElementById('mobChatBadge');
-  if(badge){
+  [badge, mobBadge].forEach(b=>{
+    if(!b) return;
     if(count>0){
-      badge.textContent=count>99?'99+':count;
-      badge.style.display='block';
+      b.textContent=count>99?'99+':String(count);
+      b.style.display='block';
+      b.classList.add('chat-badge-pulse');
+      // Title da ham ko'rsatish
+      document.title = count>0 ? `(${count}) OKVISION Pro` : 'OKVISION Pro';
     } else {
-      badge.style.display='none';
+      b.style.display='none';
+      b.classList.remove('chat-badge-pulse');
+      document.title = 'OKVISION Pro';
     }
-  }
-  if(mobBadge){
-    if(count>0){
-      mobBadge.textContent=count>99?'99+':count;
-      mobBadge.style.display='block';
-    } else {
-      mobBadge.style.display='none';
-    }
-  }
+  });
+  // Favicon badge (tab icon)
+  _updateFaviconBadge(count);
 }
 
-let _unreadSub=null, _unreadCount=0;
+function _updateFaviconBadge(count){
+  try{
+    const link = document.querySelector("link[rel*='icon']") || document.createElement('link');
+    link.type = 'image/x-icon';
+    link.rel = 'shortcut icon';
+    if(count>0){
+      // Canvas bilan favicon ustiga raqam chizish
+      const canvas=document.createElement('canvas');
+      canvas.width=32; canvas.height=32;
+      const ctx=canvas.getContext('2d');
+      // Asosiy icon (📷 emoji)
+      ctx.font='22px serif';
+      ctx.fillText('📷',2,24);
+      // Qizil badge
+      ctx.fillStyle='#ff4757';
+      ctx.beginPath();
+      ctx.arc(24,8,9,0,Math.PI*2);
+      ctx.fill();
+      // Raqam
+      ctx.fillStyle='#fff';
+      ctx.font='bold 11px Arial';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillText(count>9?'9+':count,24,8);
+      link.href=canvas.toDataURL();
+    } else {
+      link.href='/favicon.ico';
+    }
+    document.head.appendChild(link);
+  }catch(e){}
+}
+
+let _unreadSub=null, _unreadCount=0, _pollInterval=null;
 
 function subscribeToUnread(){
-  const sb=getSB(); if(!sb||!currentUser||_unreadSub) return;
-  // 1. Shaxsiy xabarlar
-  _unreadSub=sb.channel('unread:'+currentUser.id)
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
-      filter:`receiver_id=eq.${currentUser.id}`},
-      payload=>{
-        const msg=payload.new;
-        // Chat ochiq va shu roomda bo'lsa — track qilmaymiz
-        const chatPanel=document.getElementById('chatPanel');
-        const isCurrentRoom=chatPanel&&_chatRoom===msg.room_id;
-        if(!isCurrentRoom){
-          _unreadCount++;
-          updateUnreadBadge(_unreadCount);
-          playMsgSound('incoming');
-          const senderName=msg?.sender_name||'User';
-          const preview=(msg?.content||'').slice(0,60);
-          showToast(`💬 ${senderName}: ${preview}`, 4000);
-        }
-      })
+  const sb=getSB(); if(!sb||!currentUser) return;
+  if(_unreadSub) try{sb.removeChannel(_unreadSub);}catch(e){}
+
+  // ── Realtime subscription ──────────────────────────────────────────────
+  _unreadSub = sb.channel('chat_notifications:'+currentUser.id)
+    .on('postgres_changes',{
+      event:'INSERT', schema:'public', table:'messages',
+      filter:`receiver_id=eq.${currentUser.id}`
+    }, payload=>{
+      const msg=payload.new;
+      const chatPanel=document.getElementById('chatPanel');
+      const isCurrentRoom=chatPanel&&_chatRoom===msg.room_id;
+      if(!isCurrentRoom){
+        _unreadCount++;
+        updateUnreadBadge(_unreadCount);
+        playMsgSound('incoming');
+        const name=msg?.sender_name||'User';
+        const prev=(msg?.content||'').slice(0,55);
+        showToast(`💬 ${name}: ${prev}`, 4000);
+      }
+    })
+    .on('postgres_changes',{
+      event:'INSERT', schema:'public', table:'messages',
+      filter:`room_id=eq.global`
+    }, payload=>{
+      const msg=payload.new;
+      if(msg.sender_id===currentUser.id) return;
+      const chatPanel=document.getElementById('chatPanel');
+      if(!(chatPanel&&_chatRoom==='global')){
+        playMsgSound('incoming');
+        const name=msg?.sender_name||'User';
+        showToast(`💬 ${name}: ${(msg?.content||'').slice(0,55)}`, 3500);
+      }
+    })
     .subscribe(status=>{
-      if(status==='SUBSCRIBED') checkUnreadMessages();
+      console.log('Chat Realtime:', status);
+      if(status==='SUBSCRIBED'){
+        checkUnreadMessages();
+        // Polling ni to'xtatish — Realtime ishlayapti
+        if(_pollInterval){ clearInterval(_pollInterval); _pollInterval=null; }
+      } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+        // Realtime ishlamasa — 10 soniyada bir polling
+        console.warn("Realtime ishlamadi, polling rejimiga o'tildi");
+        _startPolling();
+      }
     });
 
-  // 2. Global chat — yangi xabar ko'rinishi uchun (lekin sound emas)
-  sb.channel('global-chat-watch')
-    .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
-      filter:`room_id=eq.global`},
-      payload=>{
-        const msg=payload.new;
-        if(msg.sender_id===currentUser.id) return; // o'z xabarini skip
-        const chatPanel=document.getElementById('chatPanel');
-        const isGlobalOpen=chatPanel&&_chatRoom==='global';
-        if(!isGlobalOpen){
-          playMsgSound('incoming');
-          const senderName=msg?.sender_name||'User';
-          showToast(`💬 ${senderName} (chat): ${(msg?.content||'').slice(0,50)}`, 3000);
-        }
-      })
-    .subscribe();
+  // Boshlang'ich yuklash
+  checkUnreadMessages();
+}
+
+function _startPolling(){
+  if(_pollInterval) return;
+  _pollInterval = setInterval(()=>{
+    if(!currentUser) return;
+    checkUnreadMessages();
+    // Chat ochiq bo'lsa yangi xabarlarni ham yuklash
+    const chatPanel=document.getElementById('chatPanel');
+    if(chatPanel) _pollChatMessages();
+  }, 8000); // 8 soniyada bir
+}
+
+let _lastMsgId=null;
+async function _pollChatMessages(){
+  const sb=getSB(); if(!sb||!currentUser||!_chatRoom) return;
+  try{
+    const q=sb.from('messages').select('*').eq('room_id',_chatRoom)
+      .order('created_at',{ascending:false}).limit(5);
+    const {data}=await q;
+    if(!data?.length) return;
+    const latest=data[0];
+    if(_lastMsgId && latest.id!==_lastMsgId && latest.sender_id!==currentUser.id){
+      appendChatMsg(latest);
+      playMsgSound('incoming');
+    }
+    _lastMsgId=latest.id;
+  }catch(e){}
 }
 
 async function checkUnreadMessages(){
@@ -7808,6 +7958,9 @@ async function openChat(targetUserId=null, targetName=''){
 
   // Xabarlarni yuklash
   await loadChatMessages();
+  _lastMsgId = null; // Reset polling
+  // Polling ham boshlash (Realtime zaxirasi)
+  if(!_pollInterval) _startPolling();
 
   // Realtime subscription
   if(_chatSub) sb.removeChannel(_chatSub);
