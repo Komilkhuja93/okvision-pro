@@ -2277,6 +2277,13 @@ function processImportFile(f){
     const fn=f.name.toLowerCase();
     if(fn.includes('okvision')) supplierHint='OKVISION';
     else if(fn.includes('kss')) supplierHint='KSS';
+    else if(fn.includes('vigi')||fn.includes('tp-link')||fn.includes('tplink')) supplierHint='TP-Link';
+    else if(fn.includes('ubiquiti')||fn.includes('unifi')) supplierHint='Ubiquiti';
+    else if(fn.includes('mikrotik')) supplierHint='MikroTik';
+    else if(fn.includes('cisco')) supplierHint='Cisco';
+    else if(fn.includes('snr')) supplierHint='SNR';
+    else if(fn.includes('bdcom')) supplierHint='BDcom';
+    else if(fn.includes('mercusys')) supplierHint='Mercusys';
     else if(fn.includes('darian')) supplierHint='DARIAN';
     else if(fn.includes('hikvision')) supplierHint='HIKVISION';
     else if(fn.includes('hilook')) supplierHint='HILOOK';
@@ -2450,7 +2457,25 @@ function smartCatGlobal(name, spec){
   if(/\b(bullet|turret|dome|fisheye)\b/i.test(t)&&!/\b(2ce|hdtvi|ahd|cvi)\b/i.test(t)) return 'IP Kamera';
   if(/^i?ds-tcm|^i?ds-tcg/i.test(n)) return 'IP Kamera';
   if(/\b(zk|face.?id|fingerprint|access.?ctrl|door|reader|terminal|attendance|domofon|palgate)/i.test(t)) return 'Kirish nazorati';
-  if(/\b(switch|router|\bap\b|poe.?switch|sfp|unifi|mikrotik|ubiquiti|witek|mercusys|tp.?link)/i.test(t)) return 'Tarmoq qurilmasi';
+  // TP-Link VIGI
+  if(/^vigi\s?[cnrstc]/i.test(n)) return 'IP Kamera';
+  if(/^vigi\s?nvr/i.test(n)) return 'NVR / DVR';
+  // UniFi kameralar
+  if(/^g[34]\s|^uvc-|^unifi.?cam/i.test(n)) return 'IP Kamera';
+  // UniFi access
+  if(/^ua-|^unifi.?access|^udm-/i.test(n)) return 'Kirish nazorati';
+  // Mikrotik
+  if(/^rb|^ccr|^chr|^hap|^hex|^ltap|^cap|^wap|^crs|^css|^mum/i.test(n)) return 'Tarmoq qurilmasi';
+  // Cisco
+  if(/^ws-c|^c9[0-9]{3}|^sg[0-9]|^sf[0-9]|^cisco/i.test(n)) return 'Tarmoq qurilmasi';
+  if(/^ip camera.*cisco|cisco.*camera/i.test(n)) return 'IP Kamera';
+  // SNR
+  if(/^snr-s|^snr-cpe|^snr-er|^snr-olt/i.test(n)) return 'Tarmoq qurilmasi';
+  // BDcom
+  if(/^s[0-9]{4}|^p[0-9]{4}|^ms[0-9]{4}|^bdcom/i.test(n)) return 'Tarmoq qurilmasi';
+  // OLT/GPON/EPON
+  if(/\b(olt|onu|gpon|epon|xgspon|sfp\+|sfp.?28)\b/i.test(t)) return 'Tarmoq qurilmasi';
+  if(/\b(switch|router|\bap\b|poe.?switch|sfp|unifi|mikrotik|ubiquiti|witek|mercusys|tp.?link|vigi|tplink)/i.test(t)) return 'Tarmoq qurilmasi';
   if(/\b(hdd|ssd|nas|hard.?disk|seagate|western|ironwolf|\bwd\b)/i.test(t)) return 'HDD / Xotira';
   if(/\b(fire|пожар|smoke|rubezh|bolid|извещ|шкаф)/i.test(t)) return "Yong'in xavfsizligi";
   if(/\b(alarm|gsm|pir|siren|оповещ)/i.test(t)) return 'Ogohlantirish';
@@ -2813,6 +2838,13 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     const fn=(fileName||'').toLowerCase();
     if(fn.includes('okvision')) supplierName='OKVISION';
     else if(fn.includes('kss')) supplierName='KSS';
+    else if(fn.includes('vigi')||fn.includes('tp-link')||fn.includes('tplink')) supplierName='TP-Link';
+    else if(fn.includes('ubiquiti')||fn.includes('unifi')) supplierName='Ubiquiti';
+    else if(fn.includes('mikrotik')) supplierName='MikroTik';
+    else if(fn.includes('cisco')) supplierName='Cisco';
+    else if(fn.includes('snr')) supplierName='SNR';
+    else if(fn.includes('bdcom')) supplierName='BDcom';
+    else if(fn.includes('mercusys')) supplierName='Mercusys';
     else if(fn.includes('darian')) supplierName='DARIAN';
     else if(fn.includes('hikvision')) supplierName='HIKVISION';
     else if(fileName){
@@ -2829,15 +2861,41 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
 
   // Sheet → default category
   const catMap={
+    // ── Hikvision / HiLook ──────────────────────────────────────────────
     'Hikvision':'IP Kamera','HiLook':'IP Kamera','Tapo':'IP Kamera','Новинки':'IP Kamera',
     'HiWatch':'IP Kamera','Канальное оборудование':'NVR / DVR',
     'Проектное оборудование':'IP Kamera',
-    // Hikvision prays-list sheet nomlari
     'IP камеры':'IP Kamera','IP камеры (2)':'IP Kamera',
     'NVR':'NVR / DVR','DVR':'NVR / DVR','Видеорегистраторы':'NVR / DVR',
     'PTZ':'PTZ Kamera','PTZ камеры':'PTZ Kamera','Скоростные камеры':'PTZ Kamera',
     'Домофоны':'Kirish nazorati','СКУД':'Kirish nazorati','Турникеты':'Kirish nazorati',
     'Коммутаторы':'Tarmoq qurilmasi','Свитчи':'Tarmoq qurilmasi',
+    // ── TP-Link / VIGI ───────────────────────────────────────────────────
+    'VIGI камеры':'IP Kamera','VIGI Cameras':'IP Kamera','VIGI Camera':'IP Kamera',
+    'VIGI NVR':'NVR / DVR','VIGI NVRs':'NVR / DVR',
+    'Wi-Fi Router':'Tarmoq qurilmasi','Mesh System':'Tarmoq qurilmasi',
+    'Точка доступа':'Tarmoq qurilmasi','Access Point':'Tarmoq qurilmasi',
+    'POE Коммутаторы':'Tarmoq qurilmasi','PoE Switch':'Tarmoq qurilmasi',
+    'MERCUSYS':'Tarmoq qurilmasi','TpLink':'Tarmoq qurilmasi',
+    'Усилители, адаптеры Wi-Fi':'Tarmoq qurilmasi',
+    // ── Ubiquiti / UniFi ─────────────────────────────────────────────────
+    'UniFi':'Tarmoq qurilmasi','Ubiquiti':'Tarmoq qurilmasi',
+    'Ubiquiti and Mikrotik':'Tarmoq qurilmasi',
+    'UniFi Cameras':'IP Kamera','UniFi Protect':'IP Kamera',
+    'UniFi Access':'Kirish nazorati','UniFi Network':'Tarmoq qurilmasi',
+    // ── Mikrotik ─────────────────────────────────────────────────────────
+    'MikroTik':'Tarmoq qurilmasi','Mikrotik':'Tarmoq qurilmasi',
+    'RouterBoard':'Tarmoq qurilmasi','RouterOS':'Tarmoq qurilmasi',
+    // ── Cisco ─────────────────────────────────────────────────────────────
+    'Cisco':'Tarmoq qurilmasi','Cisco Catalyst':'Tarmoq qurilmasi',
+    'Cisco Meraki':'Tarmoq qurilmasi','Cisco IP Cameras':'IP Kamera',
+    // ── SNR ──────────────────────────────────────────────────────────────
+    'SNR':'Tarmoq qurilmasi','SNR Switch':'Tarmoq qurilmasi',
+    'SNR-S':'Tarmoq qurilmasi','SNR-CPE':'Tarmoq qurilmasi',
+    // ── BDcom ────────────────────────────────────────────────────────────
+    'BDcom':'Tarmoq qurilmasi','BDCOM':'Tarmoq qurilmasi',
+    'BDcom Switch':'Tarmoq qurilmasi','BDcom OLT':'Tarmoq qurilmasi',
+    'EPON':'Tarmoq qurilmasi','GPON':'Tarmoq qurilmasi','OLT':'Tarmoq qurilmasi',
     'HDD':'HDD / Xotira','Жесткие диски':'HDD / Xotira',
     'Звуковое оборудование':'Ogohlantirish','Аудио':'Ogohlantirish',
     'другие устройства':'Aksessuar','Аксессуары':'Aksessuar','прочее':'Aksessuar',
@@ -3048,13 +3106,36 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
 
   // 2. Sheet → default category map
   const catMap={
+    // ── Hikvision ────────────────────────────────────────────────────────
     'Hikvision':'IP Kamera','HiLook':'IP Kamera','Tapo':'IP Kamera','Новинки':'IP Kamera',
+    // ── TP-Link / VIGI ───────────────────────────────────────────────────
     'TpLink':'Tarmoq qurilmasi','Mercusys':'Tarmoq qurilmasi',
+    'VIGI камеры':'IP Kamera','VIGI NVR':'NVR / DVR',
+    'Wi-Fi Router':'Tarmoq qurilmasi','Mesh System':'Tarmoq qurilmasi',
+    'Точка доступа':'Tarmoq qurilmasi','POE Коммутаторы':'Tarmoq qurilmasi',
+    'Усилители, адаптеры Wi-Fi':'Tarmoq qurilmasi',
+    // ── Ubiquiti / UniFi ─────────────────────────────────────────────────
     'WiTek ':'Tarmoq qurilmasi','WiTek':'Tarmoq qurilmasi',
     'Ubiquiti and Mikrotik':'Tarmoq qurilmasi',
+    'UniFi':'Tarmoq qurilmasi','Ubiquiti':'Tarmoq qurilmasi',
+    'UniFi Cameras':'IP Kamera','UniFi Protect':'IP Kamera',
+    // ── Mikrotik ─────────────────────────────────────────────────────────
+    'MikroTik':'Tarmoq qurilmasi','Mikrotik':'Tarmoq qurilmasi',
+    'RouterBoard':'Tarmoq qurilmasi',
+    // ── Cisco ─────────────────────────────────────────────────────────────
+    'Cisco':'Tarmoq qurilmasi','Cisco Catalyst':'Tarmoq qurilmasi',
+    'Cisco IP Cameras':'IP Kamera',
+    // ── SNR ──────────────────────────────────────────────────────────────
+    'SNR':'Tarmoq qurilmasi','SNR Switch':'Tarmoq qurilmasi',
+    // ── BDcom ────────────────────────────────────────────────────────────
+    'BDcom':'Tarmoq qurilmasi','BDCOM':'Tarmoq qurilmasi',
+    'EPON':'Tarmoq qurilmasi','GPON':'Tarmoq qurilmasi','OLT':'Tarmoq qurilmasi',
+    // ── Access Control ───────────────────────────────────────────────────
     'KANIHAD':'Kirish nazorati','ZkTeco':'Kirish nazorati',
+    // ── Storage / Cable ──────────────────────────────────────────────────
     'Жесткие диски':'HDD / Xotira','Оптика':'Optika / Kabel',
     'Кабель':'Optika / Kabel','Аксессуары и прочее':'Aksessuar',
+    // ── Fire / Alarm ──────────────────────────────────────────────────────
     'RUBEZH':"Yong'in xavfsizligi",'Bolid ':"Yong'in xavfsizligi",'Bolid':"Yong'in xavfsizligi",
     'Пожарная безопасность':"Yong'in xavfsizligi",'Оповещение':'Ogohlantirish'
   };
