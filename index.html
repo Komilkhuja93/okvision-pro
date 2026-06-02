@@ -1366,23 +1366,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <div class="phx"><span data-i18n="ph_hint">Chap paneldan model qidiring — to'liq ma'lumot, narx va rasm bilan ko'rinadi</span></div>
       <button class="btn bp" onclick="openAddProdModal()" style="margin-top:16px">➕ <span data-i18n="btn_addprod">Yangi mahsulot qo'shish</span></button>
     </div>
-    <!-- Foydali maslahatlar banneri -->
-    <div id="catAddBanner" style="display:none">
-      <div id="catTipsBanner" style="background:linear-gradient(135deg,rgba(0,212,255,.06),rgba(124,58,237,.06));
-        border:1px solid rgba(0,212,255,.15);border-radius:14px;padding:16px 18px;margin-top:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:13px;font-weight:700;color:var(--accent)">
-            💡 <span id="tipTitle">Maslahat</span>
-          </div>
-          <button onclick="openAddProdModal()" style="font-size:11px;padding:4px 12px;
-            border-radius:7px;background:rgba(0,212,255,.12);color:var(--accent);
-            border:1px solid rgba(0,212,255,.25);cursor:pointer;font-weight:600">
-            ➕ <span id="tipAddBtn">Qo'shish</span>
-          </button>
-        </div>
-        <div id="tipsList" style="display:flex;flex-direction:column;gap:8px"></div>
-      </div>
-    </div>
+
   </div>
 
   <!-- ADD PRODUCT MODAL -->
@@ -4431,8 +4415,7 @@ function saveNewProduct(addToQuote){
   // Save custom products
   saveCustomProds();
   updPC();renderCats();renderList();filterP();
-  // Banner ko'rsatish
-  showCatTipsBanner();
+
   const _savedMsg=LANG==='ru'?'добавлен в каталог':LANG==='en'?'added to catalog':"katalogga qo'shildi";
   showToast('✅ "'+name+'" '+_savedMsg);
   closeAddProdModal();
@@ -4545,10 +4528,7 @@ function updGrandTotal(){
 }
 // Init manual quote items on load
 document.addEventListener('DOMContentLoaded',()=>{renderMqRows();renderSvcRows();
-  // Load custom products banner
-  const custom=PRODS.filter(p=>p._custom);
-  const banner=document.getElementById('catAddBanner');
-  if(banner&&custom.length)banner.style.display='flex';
+
 });
 
 // ══ AI SMART SEARCH ════════════════════════════════════════════════════════
@@ -8105,10 +8085,20 @@ async function openChat(targetUserId=null, targetName=''){
     </div>`;
   document.body.appendChild(panel);
 
+  // Supabase ulanishini tekshirish
+  const _sb=getSB();
+  if(!_sb){ 
+    const _errEl=document.getElementById('chatMessages');
+    if(_errEl) _errEl.innerHTML=`<div style="text-align:center;color:var(--red);padding:20px;font-size:12px">
+      ❌ Supabase ulanmagan
+    </div>`;
+    return;
+  }
   // Xabarlarni yuklash
   await loadChatMessages();
-  _lastMsgId = null; // Reset polling
-  // Polling ham boshlash (Realtime zaxirasi)
+  _lastMsgId = null;
+  _lastMsgTime = null;
+  // Realtime + Polling
   if(!_pollInterval) _startPolling();
 
   // Realtime subscription
@@ -8145,25 +8135,58 @@ async function openChat(targetUserId=null, targetName=''){
 async function loadChatMessages(){
   const sb=getSB(); if(!sb) return;
   const msgEl=document.getElementById('chatMessages');
+  const statusEl=document.getElementById('chatStatus');
+  const _L=LANG||'uz';
   if(!msgEl) return;
 
-  const {data}=await sb.from('messages')
-    .select('*').eq('room_id',_chatRoom)
-    .order('created_at',{ascending:true}).limit(50);
+  // Loading ko'rsatish
+  msgEl.innerHTML=`<div style="text-align:center;color:var(--text3);font-size:12px;padding:30px">
+    ⏳ ${_L==='ru'?'Загрузка...':_L==='en'?'Loading...':'Yuklanmoqda...'}
+  </div>`;
 
-  if(!data?.length){
-    const _L=LANG||'uz';
-    msgEl.innerHTML=`<div style="text-align:center;color:var(--text3);font-size:12px;padding:20px">
-      ${_L==='ru'?'Нет сообщений':_L==='en'?'No messages':"Xabar yo'q"}
-    </div>`;
-    document.getElementById('chatStatus').textContent=_L==='ru'?'Онлайн':_L==='en'?'Online':'Onlayn';
-    return;
+  try{
+    const {data, error}=await sb.from('messages')
+      .select('*')
+      .eq('room_id',_chatRoom)
+      .order('created_at',{ascending:true})
+      .limit(100);
+
+    if(error){
+      console.error('Chat load error:', error.message);
+      // messages jadvali yo'q bo'lishi mumkin
+      if(error.message.includes('relation')||error.message.includes('does not exist')){
+        msgEl.innerHTML=`<div style="text-align:center;color:var(--amber);font-size:12px;padding:20px">
+          ⚠️ ${_L==='ru'?'Таблица messages не создана. Запустите setup_full_schema.sql в Supabase':
+              _L==='en'?'messages table not found. Run setup_full_schema.sql in Supabase':
+              'messages jadvali topilmadi. Supabase da setup_full_schema.sql ni ishga tushiring'}
+        </div>`;
+      } else {
+        msgEl.innerHTML=`<div style="text-align:center;color:var(--red);font-size:12px;padding:20px">
+          ❌ ${error.message}
+        </div>`;
+      }
+      if(statusEl) statusEl.textContent='⚠️ Xato';
+      return;
+    }
+
+    // Xabarlar yuklandi
+    msgEl.innerHTML='';
+    if(!data?.length){
+      msgEl.innerHTML=`<div style="text-align:center;color:var(--text3);font-size:12px;padding:30px">
+        💬 ${_L==='ru'?'Xabar yo\'q':_L==='en'?'No messages yet':"Xabar yo'q. Birinchi yozing!"}
+      </div>`;
+    } else {
+      data.forEach(m=>appendChatMsg(m,false));
+      msgEl.scrollTop=msgEl.scrollHeight;
+      markMessagesRead(_chatRoom);
+    }
+    if(statusEl) statusEl.textContent=
+      _L==='ru'?'● Онлайн':_L==='en'?'● Online':'● Onlayn';
+    if(statusEl) statusEl.style.color='var(--green)';
+  }catch(e){
+    console.error('loadChatMessages exception:', e);
+    msgEl.innerHTML=`<div style="text-align:center;color:var(--red);font-size:12px;padding:20px">❌ ${e.message}</div>`;
   }
-  data.forEach(m=>appendChatMsg(m,false));
-  msgEl.scrollTop=msgEl.scrollHeight;
-  document.getElementById('chatStatus').textContent=`${data.length} ${LANG==='ru'?'сообщений':LANG==='en'?'messages':'xabar'}`;
-  // Xabarlarni o'qilgan deb belgilash
-  markMessagesRead(_chatRoom);
 }
 
 function appendChatMsg(msg, scroll=true){
@@ -8187,10 +8210,15 @@ function appendChatMsg(msg, scroll=true){
 
 async function sendChatMsg(){
   const inp=document.getElementById('chatInput');
-  const content=(inp?.value||'').trim();
-  if(!content) return;
-  const sb=getSB(); if(!sb||!currentUser) return;
+  const msgText=(inp?.value||'').trim();
+  if(!msgText) return;
+  const sb=getSB();
+  if(!sb||!currentUser){
+    showToast('❌ Login kerak');
+    return;
+  }
   inp.value='';
+  inp.disabled=true;
   const senderName=currentProfile?.full_name||currentUser.email?.split('@')[0]||'User';
   // receiver_id — global chat bo'lmasa, room_id dan topamiz
   let receiverId=null;
@@ -8200,15 +8228,21 @@ async function sendChatMsg(){
   }
   const {error}=await sb.from('messages').insert({
     sender_id:currentUser.id, sender_name:senderName,
-    room_id:_chatRoom, content, receiver_id:receiverId
+    room_id:_chatRoom, content:msgText, receiver_id:receiverId
   });
   if(error){
-    console.error('Chat send error:',error.message);
-    showToast('❌ '+error.message.slice(0,50));
+    console.error('Chat send error:', error.message);
+    inp.value=msgText; // Xato bo'lsa matnni qaytarish
+    if(error.message.includes('relation')||error.message.includes('does not exist')){
+      showToast("❌ messages jadvali yo'q — setup_full_schema.sql ishga tushiring", 5000);
+    } else {
+      showToast('❌ '+error.message.slice(0,60));
+    }
   } else {
-    // Yuborilgan tovush
     playMsgSound('sent');
   }
+  inp.disabled=false;
+  inp.focus();
 }
 
 async function openUserList(){
@@ -9402,104 +9436,6 @@ function setAutoLock(minutes){
   }, {passive:true});
 });
 
-// ── Foydali maslahatlar banneri ──────────────────────────────────────────
-function showCatTipsBanner(){
-  const banner=document.getElementById('catAddBanner');
-  if(!banner) return;
-  banner.style.display='block';
-  updateCatTips();
-}
-
-function updateCatTips(){
-  const _L=LANG||'uz';
-  const tipsEl=document.getElementById('tipsList');
-  const titleEl=document.getElementById('tipTitle');
-  const addBtnEl=document.getElementById('tipAddBtn');
-  if(!tipsEl) return;
-
-  if(titleEl) titleEl.textContent=_L==='ru'?'Советы':_L==='en'?'Tips':'Maslahatlar';
-  if(addBtnEl) addBtnEl.textContent=_L==='ru'?'Добавить':_L==='en'?'Add':"Qo'shish";
-
-  // Qidiruv so'ziga qarab maslahat
-  const q=(document.getElementById('srch')?.value||'').trim();
-  const prodCount=PRODS.length;
-  const suppCount=Object.keys(window.supplierPrices||{}).length;
-
-  const tips=[];
-
-  // 1. Qidiruv bo'yicha maslahat
-  if(q){
-    tips.push({
-      icon:'🔍',
-      text:_L==='ru'?`"${q}" не найден в каталоге — добавьте вручную или импортируйте прайс-лист`
-           :_L==='en'?`"${q}" not found — add it manually or import a price list`
-           :`"${q}" katalogda yo'q — qo'lda qo'shing yoki prays-list yuklang`
-    });
-  }
-
-  // 2. Import tavsiyasi
-  if(prodCount<100){
-    tips.push({
-      icon:'📥',
-      text:_L==='ru'?'Импортируйте прайс-лист Excel — автоматически добавит все товары'
-           :_L==='en'?'Import Excel price list — all products added automatically'
-           :"Excel prays-listni yuklang — barcha mahsulotlar avtomatik qo'shiladi",
-      action:()=>switchTab('guide'),
-      btnText:_L==='ru'?'Импорт':_L==='en'?'Import':'Import'
-    });
-  }
-
-  // 3. AI qidiruv
-  if(q&&PRODS.length>0){
-    tips.push({
-      icon:'🤖',
-      text:_L==='ru'?`Попробуйте AI поиск — найдёт похожие модели`
-           :_L==='en'?`Try AI search — finds similar models`
-           :`AI qidiruv orqali o'xshash modellarni toping`,
-      action:()=>{if(!aiChatOpen)toggleAiChat();document.getElementById('aiChatInp')?.focus();}
-      ,btnText:'AI'
-    });
-  }
-
-  // 4. Distributor qo'shish
-  if(suppCount<3){
-    tips.push({
-      icon:'🏢',
-      text:_L==='ru'?'Добавьте больше поставщиков — сравнивайте цены автоматически'
-           :_L==='en'?'Add more suppliers — compare prices automatically'
-           :"Ko'proq distributor qo'shing — narxlarni avtomatik solishtiring",
-      action:()=>switchTab('guide'),
-      btnText:_L==='ru'?'Импорт':_L==='en'?'Import':'Import'
-    });
-  }
-
-  // 5. Taklif berish
-  if(quote.length>0){
-    tips.push({
-      icon:'📋',
-      text:_L==='ru'?`В КП уже ${quote.length} позиций — создайте PDF`
-           :_L==='en'?`${quote.length} items in proposal — create PDF`
-           :`Taklifda ${quote.length} ta mahsulot — PDF yarating`,
-      action:()=>{switchTab('preview');setTimeout(()=>buildPreview&&buildPreview(),80);}
-      ,btnText:'PDF'
-    });
-  }
-
-  // Chiqarish
-  tipsEl.innerHTML=tips.slice(0,3).map(tip=>`
-    <div style="display:flex;align-items:flex-start;gap:10px;padding:8px 10px;
-      background:var(--surface2);border-radius:9px;border:1px solid var(--border)">
-      <span style="font-size:16px;flex-shrink:0">${tip.icon}</span>
-      <div style="flex:1;min-width:0">
-        <div style="font-size:12px;color:var(--text2);line-height:1.4">${tip.text}</div>
-      </div>
-      ${tip.action?`<button onclick="(${tip.action.toString()})()" style="font-size:10px;padding:3px 8px;
-        border-radius:6px;background:var(--surface);border:1px solid var(--border2);
-        color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0">
-        ${tip.btnText||'→'}
-      </button>`:''}
-    </div>`).join('');
-}
 
 // ── ESC tugmasi — barcha modallarni yopish ───────────────────────────────
 document.addEventListener('keydown', e => {
