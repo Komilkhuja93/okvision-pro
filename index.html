@@ -1386,7 +1386,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   </div>
 
   <!-- ADD PRODUCT MODAL -->
-  <div id="addProdModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeAddProdModal()">
+  <div id="addProdModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeAddProdModal()" onkeydown="if(event.key==='Escape')closeAddProdModal()">
     <div class="modal">
       <div class="modal-hd">
         <div class="modal-title" id="addProdModalTitle">➕ Yangi Mahsulot Qo'shish</div>
@@ -1402,9 +1402,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <div class="mf-label" id="lbl_np_brand">Brend</div>
             <input class="mf-inp" id="np_brand" placeholder="Hikvision" list="brandList">
             <datalist id="brandList">
-              <option value="Hikvision"><option value="Dahua"><option value="Uniview">
-              <option value="Axis"><option value="Bosch"><option value="Samsung">
-              <option value="ZKTeco"><option value="Hikvision DS"><option value="Boshqa">
+              <option value="Hikvision">
+              <option value="HiLook">
+              <option value="Dahua">
+              <option value="Uniview">
+              <option value="TP-Link VIGI">
+              <option value="TP-Link">
+              <option value="Mercusys">
+              <option value="Ubiquiti">
+              <option value="UniFi">
+              <option value="MikroTik">
+              <option value="Cisco">
+              <option value="SNR">
+              <option value="BDcom">
+              <option value="ZKTeco">
+              <option value="Axis">
+              <option value="Bosch">
+              <option value="Samsung">
+              <option value="WiTek">
+              <option value="Seagate">
+              <option value="Western Digital">
+              <option value="Boshqa">
             </datalist>
           </div>
           <div>
@@ -7144,18 +7162,53 @@ function handleSealUpload(inp){
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, w, h);
       sealDataUrl = canvas.toDataURL('image/png', 0.85);
-      try {
-        localStorage.setItem('okvSeal', sealDataUrl);
-      } catch(e) {
-        // localStorage to'lib ketgan — sessionStorage ga
-        try { sessionStorage.setItem('okvSeal', sealDataUrl); } catch(e2) {}
-      }
+      // localStorage ga saqlash (tez ko'rish uchun)
+      try { localStorage.setItem('okvSeal', sealDataUrl); } catch(e) {}
       updateSealPreview();
-      showToast('🔏 Muhur saqlandi');
+      // Supabase ga yuklash — barcha qurilmalarda ko'rinsin
+      uploadSealToCloud(sealDataUrl);
     };
     img.src = e.target.result;
   };
   reader.readAsDataURL(file);
+}
+
+// Muhurni Supabase Storage ga yuklash
+async function uploadSealToCloud(dataUrl){
+  const sb=getSB(); if(!sb||!currentUser||!dataUrl) return;
+  try{
+    showToast('☁️ Muhur yuklanmoqda...', 1500);
+    // base64 → blob
+    const res=await fetch(dataUrl);
+    const blob=await res.blob();
+    const path=`${currentUser.id}/seal.png`;
+    const {error}=await sb.storage.from('avatars')
+      .upload(path, blob, {upsert:true, contentType:'image/png'});
+    if(error){ console.warn('Seal upload error:', error.message); return; }
+    const {data:urlData}=sb.storage.from('avatars').getPublicUrl(path);
+    const publicUrl=urlData?.publicUrl;
+    if(publicUrl){
+      // profiles jadvaliga seal_url saqlash
+      await sb.from('profiles').update({seal_url:publicUrl}).eq('id',currentUser.id);
+      if(currentProfile) currentProfile.seal_url=publicUrl;
+      showToast('✅ Muhur barcha qurilmalarda saqlandi');
+    }
+  }catch(e){ console.warn('uploadSealToCloud:', e.message); }
+}
+
+// Muhurni Supabase dan yuklash
+async function loadSealFromCloud(){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  try{
+    const {data}=await sb.from('profiles')
+      .select('seal_url').eq('id',currentUser.id).single();
+    if(data?.seal_url){
+      sealDataUrl=data.seal_url;
+      localStorage.setItem('okvSeal',sealDataUrl);
+      updateSealPreview();
+      console.log('🔏 Muhur cloud dan yuklandi');
+    }
+  }catch(e){}
 }
 
 function updateSealPreview(){
@@ -7166,10 +7219,19 @@ function updateSealPreview(){
   }
 }
 
-function removeSeal(){
+async function removeSeal(){
   sealDataUrl = null;
   localStorage.removeItem('okvSeal');
   document.getElementById('profSealPreview').innerHTML = `<div style="font-size:32px;margin-bottom:6px">🔏</div><div class="prof-seal-hint">Muhur yoki logotip rasmini yuklang</div>`;
+  // Cloud dan ham o'chirish
+  const sb=getSB();
+  if(sb&&currentUser){
+    try{
+      await sb.storage.from('avatars').remove([`${currentUser.id}/seal.png`]);
+      await sb.from('profiles').update({seal_url:null}).eq('id',currentUser.id);
+      if(currentProfile) currentProfile.seal_url=null;
+    }catch(e){}
+  }
   showToast("🗑 Muhur o'chirildi");
 }
 
@@ -7768,7 +7830,9 @@ function subscribeToUnread(){
   if(_unreadSub) try{sb.removeChannel(_unreadSub);}catch(e){}
 
   // ── Realtime subscription ──────────────────────────────────────────────
-  _unreadSub = sb.channel('chat_notifications:'+currentUser.id)
+  // Kanal nomi unikal bo'lishi kerak
+  const _chanId = 'chat_'+currentUser.id.slice(0,8)+'_'+Date.now();
+  _unreadSub = sb.channel(_chanId)
     .on('postgres_changes',{
       event:'INSERT', schema:'public', table:'messages',
       filter:`receiver_id=eq.${currentUser.id}`
@@ -7798,15 +7862,14 @@ function subscribeToUnread(){
         showToast(`💬 ${name}: ${(msg?.content||'').slice(0,55)}`, 3500);
       }
     })
-    .subscribe(status=>{
-      console.log('Chat Realtime:', status);
+    .subscribe((status, err)=>{
+      console.log('Chat Realtime status:', status, err?.message||'');
       if(status==='SUBSCRIBED'){
         checkUnreadMessages();
-        // Polling ni to'xtatish — Realtime ishlayapti
         if(_pollInterval){ clearInterval(_pollInterval); _pollInterval=null; }
-      } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
-        // Realtime ishlamasa — 10 soniyada bir polling
-        console.warn("Realtime ishlamadi, polling rejimiga o'tildi");
+        console.log('✅ Chat Realtime ulandi');
+      } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'||status==='CLOSED'){
+        console.warn("Realtime xato:", status, "— polling rejimi");
         _startPolling();
       }
     });
@@ -7826,20 +7889,25 @@ function _startPolling(){
   }, 8000); // 8 soniyada bir
 }
 
-let _lastMsgId=null;
+let _lastMsgId=null, _lastMsgTime=null;
 async function _pollChatMessages(){
   const sb=getSB(); if(!sb||!currentUser||!_chatRoom) return;
   try{
-    const q=sb.from('messages').select('*').eq('room_id',_chatRoom)
-      .order('created_at',{ascending:false}).limit(5);
-    const {data}=await q;
+    const since = _lastMsgTime || new Date(Date.now()-30000).toISOString();
+    const {data}=await sb.from('messages').select('*')
+      .eq('room_id',_chatRoom)
+      .gt('created_at', since)
+      .order('created_at',{ascending:true});
     if(!data?.length) return;
-    const latest=data[0];
-    if(_lastMsgId && latest.id!==_lastMsgId && latest.sender_id!==currentUser.id){
-      appendChatMsg(latest);
-      playMsgSound('incoming');
-    }
-    _lastMsgId=latest.id;
+    data.forEach(msg=>{
+      if(msg.sender_id===currentUser.id) return; // o'z xabarini skip
+      if(!_lastMsgId || msg.id!==_lastMsgId){
+        appendChatMsg(msg);
+        playMsgSound('incoming');
+        _lastMsgId=msg.id;
+        _lastMsgTime=msg.created_at;
+      }
+    });
   }catch(e){}
 }
 
@@ -8751,6 +8819,8 @@ async function onUserLogin(user){
 
   // Bu foydalanuvchi ID ni saqlash
   localStorage.setItem('okvUserId', user.id);
+  // Muhurni cloud dan yuklash
+  if(typeof loadSealFromCloud==='function') loadSealFromCloud();
   // Auto-lock timerni boshlash
   if(typeof resetAutoLockTimer==='function') resetAutoLockTimer();
 
@@ -8801,6 +8871,11 @@ async function loadUserProfile(userId){
   if(data){
     currentProfile = data;
     // Avatar URL ni Supabase dan yuklash — barcha qurilmalarda sinxron
+    if(data.seal_url && !localStorage.getItem('okvSeal')){
+      sealDataUrl = data.seal_url;
+      localStorage.setItem('okvSeal', data.seal_url);
+      if(typeof updateSealPreview==='function') updateSealPreview();
+    }
     if(data.avatar_url){
       avatarDataUrl = data.avatar_url;
       localStorage.setItem('okvAvatar', data.avatar_url);
@@ -9447,7 +9522,7 @@ document.addEventListener('keydown', e => {
   if(sqDialog){ sqDialog.remove(); return; }
   // Add product modal
   const apModal = document.getElementById('addProdModal');
-  if(apModal?.classList.contains('show')){ closeAddProdModal(); return; }
+  if(apModal && apModal.style.display!=='none'){ closeAddProdModal(); return; }
   // Mob prod sheet
   const mobSheet = document.getElementById('mobProdSheet');
   if(mobSheet){ closeMobProdSheet(); return; }
