@@ -2032,22 +2032,63 @@ function shareViaTelegram(){
     text=header+nl+nl+shortLines+more+totalLine+rateNote;
   }
 
-  const phone=(g('clP')||g('sharePhone')).replace(/[^0-9+]/g,'');
+  // Markdown belgisini olib tashlash (Telegram forward da ishlamaydi)
+  const cleanText = text.replace(/\*/g,'');
+
+  const phone=(g('clP')||g('sharePhone')).replace(/[^0-9]/g,'');
+
+  // 1. Clipboard ga ko'chirish (har doim)
+  const copyToClip = (txt) => {
+    if(navigator.clipboard?.writeText){
+      return navigator.clipboard.writeText(txt).catch(()=>{
+        // Fallback
+        const ta=document.createElement('textarea');
+        ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+        document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+        document.body.removeChild(ta);
+      });
+    } else {
+      const ta=document.createElement('textarea');
+      ta.value=txt; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+      document.body.removeChild(ta);
+    }
+  };
 
   if(phone){
-    // Aniq raqamga yuborish — clipboard + Telegram ochish
-    navigator.clipboard?.writeText(text).catch(()=>{});
-    const cleaned=phone.replace(/[^0-9]/g,'');
-    showToast(_L==='ru'?"📋 Текст скопирован — отправьте в Telegram":_L==='en'?"📋 Copied — paste in Telegram":"📋 Matn ko'chirildi — Telegramga yuboring");
-    setTimeout(()=>window.open(`https://t.me/+${cleaned}`,'_blank'),600);
+    // Telefon raqamiga to'g'ridan yuborish
+    copyToClip(cleanText);
+    const _msg = _L==='ru'
+      ? '📋 Текст скопирован! Telegram ochiladi — xabar maydoniga yapıştiring'
+      : _L==='en'
+      ? '📋 Copied! Telegram opens — paste the message'
+      : "📋 Matn ko'chirildi! Telegram ochiladi — xabar maydoniga joylashtiring";
+    showToast(_msg, 4000);
+    // Telegram deep link — telefon raqamiga
+    const tgUrl = `tg://resolve?phone=${phone}`;
+    const tgWebUrl = `https://t.me/+${phone}`;
+    // Avval app, keyin web
+    const win = window.open(tgUrl, '_blank');
+    setTimeout(()=>{ if(!win||win.closed) window.open(tgWebUrl,'_blank'); }, 1500);
   } else {
-    // Telegram share — faqat text parametri (url yo'q)
-    // Bu Telegram Web / Desktop da "ulashish" sahifasini ochadi
-    window.open('https://t.me/share/url?url=https://okvision-pro.vercel.app&text='+encodeURIComponent(text),'_blank');
+    // Raqam yo'q — clipboard + Telegram Share
+    copyToClip(cleanText);
+    const _msg2 = _L==='ru'
+      ? '📋 Текст скопирован! Telegram ochiladi — kontaktni tanlang va yapıştiring'
+      : _L==='en'
+      ? '📋 Text copied! Choose a contact in Telegram and paste'
+      : "📋 Matn ko'chirildi! Telegram ochiladi — kontakt tanlang va joylashtiring";
+    showToast(_msg2, 4000);
+
+    // Telegram Share URL — bu universal ishlaydi
+    const shareUrl = 'https://t.me/share/url?url='
+      + encodeURIComponent('https://okvision-pro.vercel.app')
+      + '&text=' + encodeURIComponent(cleanText.slice(0,2000));
+    setTimeout(()=>window.open(shareUrl,'_blank'), 500);
 
     // Telefon raqam inputini ko'rsatish
     const bar=document.getElementById('shareContactBar');
-    if(bar) bar.style.display='flex';
+    if(bar){ bar.style.display='flex'; }
   }
 }
 
