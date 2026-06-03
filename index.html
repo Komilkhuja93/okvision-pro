@@ -3787,22 +3787,27 @@ function showProd(id){
       <div class="sg">${specsH}</div>
     </div>
   </div>`;
-  // Mobil: bottom sheet, Desktop: scroll tepaga
+  // Mobil: bottom sheet, Desktop: detail panel
   if(isMobile()){
     setTimeout(()=>showMobProdSheet(p),10);
   } else {
-    // main-cat-bar kichraytirish
+    // main-prod-row ni kichraytirish — detail ko'rinsin
     const mrow=document.getElementById('mainProdRow');
-    if(mrow && mrow.offsetHeight>200){
+    if(mrow){
       mrow.style.maxHeight='180px';
       try{localStorage.setItem('prodRowH','180')}catch(e){}
     }
+    // Detail panelga scroll
     setTimeout(()=>{
       const ms=document.querySelector('.main-scroll');
-      if(ms) ms.scrollTop=0;
-    },30);
+      const det=document.getElementById('det');
+      if(ms && det){
+        ms.scrollTop=0;
+        det.scrollIntoView({behavior:'smooth', block:'start'});
+      }
+    }, 50);
   }
-  // Highlight
+  // Highlight — tanlangan mahsulot
   document.querySelectorAll('.main-prod-item').forEach(item=>{
     item.classList.toggle('sel', item.getAttribute('onclick')?.includes("'"+p.id+"'"));
   });
@@ -6398,10 +6403,21 @@ async function clearAllData(){
     }
   }
 
-  // 2. localStorage tozalash
-  ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2','cqSvc2','cqCustom2','cqMQ2','prodRowH'].forEach(k=>{
+  // 2. localStorage to'liq tozalash (chunked format ham)
+  // Eski format
+  ['cqPRODS2','cqSuppliers2','cqP2','cqQ2','cqIM2','cqF2',
+   'cqSvc2','cqCustom2','cqMQ2','prodRowH','cqPRODS_count'].forEach(k=>{
     try{localStorage.removeItem(k)}catch(e){}
   });
+  // Yangi chunked format (cqPRODS_0, cqPRODS_1, ...)
+  for(let i=0;i<20;i++) try{localStorage.removeItem('cqPRODS_'+i)}catch(e){}
+  // IndexedDB ham tozalash
+  try{
+    const req=indexedDB.deleteDatabase('OKVisionImgDB');
+    req.onsuccess=()=>console.log('IndexedDB tozalandi');
+  }catch(e){}
+  // ExcelZip cache tozalash
+  _excelZip=null; _excelZipMediaCache={};
 
   // 3. Memory tozalash
   PRODS.splice(0,PRODS.length);
