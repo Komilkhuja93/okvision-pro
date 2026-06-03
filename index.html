@@ -1863,7 +1863,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         <button class="btn" onclick="quickSaveQuote()" id="btnQuickSave"
           style="display:flex;align-items:center;gap:6px;background:rgba(0,230,118,.12);
           color:var(--green);border:1px solid rgba(0,230,118,.3)">
-          💾 <span id="lblQuickSave">Taklifni saqlash</span>
+          <span id="lblQuickSave">💾 Taklifni saqlash</span>
         </button>
         <button class="btn bp" onclick="printAndSaveQuote()" style="display:flex;align-items:center;gap:6px">
           🖨 <span data-i18n="btn_print">Chop etish / PDF</span>
@@ -6130,6 +6130,8 @@ function setLang(lang) {
   if(_avChBtn) _avChBtn.textContent=_isRu?'📷 Изменить':_isEn?'📷 Change':"📷 O'zgartirish";
 
   // ── Qolgan barcha placeholder tarjimalari ──────────────────────────────
+  _setPh('aiChatInp',
+    _isRu?'Напишите вопрос...':_isEn?'Type your question...':'Savolingizni yozing...');
   _setPh('aiSearchInput',
     _isRu?'4МП цветная уличная камера...':_isEn?'4MP color outdoor camera...':"4MP rangli ko'cha kamera...");
   _setPh('chatInputPh',
@@ -6159,6 +6161,30 @@ function setLang(lang) {
   if(_mnH) _mnH.textContent=_isRu?'HDD Калк.':_isEn?'HDD Calc.':'HDD Kalk.';
   const _mnI2=document.getElementById('mobNavImport');
   if(_mnI2) _mnI2.textContent=_isRu?'Импорт':_isEn?'Import':'Import';
+
+  // AI panel title
+  const _aiTit=document.getElementById('aiPanelTitle');
+  if(_aiTit) _aiTit.textContent=_isRu?'🤖 ИИ Помощник':_isEn?'🤖 AI Assistant':'🤖 AI Maslahatchi';
+
+  // AI chip matnlarini yangilash
+  const _chipMap={
+    'Ko\'cha kamera':   [_isRu?'Уличная камера':_isEn?'Outdoor camera':"Ko'cha kamera"],
+    'NVR tanlash':       [_isRu?'Выбрать NVR':_isEn?'Choose NVR':'NVR tanlash'],
+    'Tungi rangli':      [_isRu?'Цветная ночная':_isEn?'Night color':'Tungi rangli'],
+    'PoE switch':        [_isRu?'PoE коммутатор':_isEn?'PoE switch':'PoE switch'],
+  };
+  document.querySelectorAll('.ai-qbtn').forEach(btn=>{
+    const txt=btn.textContent.trim();
+    for(const [uz, [tr]] of Object.entries(_chipMap)){
+      if(btn.getAttribute('data-key')===uz || btn.textContent.includes(uz.slice(0,8))){
+        btn.textContent=tr; break;
+      }
+    }
+  });
+
+  // AI chat subtitle
+  const _aiSub=document.getElementById('aiChatSubtitle');
+  if(_aiSub) _aiSub.textContent=_isRu?'Claude · Эксперт CCTV':_isEn?'Claude · CCTV Expert':'Claude · CCTV ekspert';
   const _mnC=document.getElementById('mobNavCats');
   if(_mnC) _mnC.textContent=_isRu?'Категории':_isEn?'Categories':'Kategoriya';
 
@@ -6532,10 +6558,10 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
     <button class="ai-chat-close" onclick="toggleAiChat()">✕</button>
   </div>
   <div class="ai-quick-btns" id="aiQuickBtns">
-    <button class="ai-qbtn" onclick="askAi('Ko\'cha uchun qaysi kamera yaxshi?')">🏠 Ko'cha kamera</button>
-    <button class="ai-qbtn" onclick="askAi('8 kamera uchun NVR kerak')">📹 NVR tanlash</button>
-    <button class="ai-qbtn" onclick="askAi('Tungi ko\'rish rangli kamera')">🌙 Tungi rangli</button>
-    <button class="ai-qbtn" onclick="askAi('PoE switch tavsiya qiling')">🔌 PoE switch</button>
+    <button data-key="🏠 Ko'cha kamera" class="ai-qbtn" onclick="askAi('Ko\'cha uchun qaysi kamera yaxshi?')">🏠 Ko'cha kamera</button>
+    <button data-key="📹 NVR tanlash" class="ai-qbtn" onclick="askAi('8 kamera uchun NVR kerak')">📹 NVR tanlash</button>
+    <button data-key="🌙 Tungi rangli" class="ai-qbtn" onclick="askAi('Tungi ko\'rish rangli kamera')">🌙 Tungi rangli</button>
+    <button data-key="🔌 PoE switch" class="ai-qbtn" onclick="askAi('PoE switch tavsiya qiling')">🔌 PoE switch</button>
   </div>
   <div class="ai-chat-msgs" id="aiChatMsgs"></div>
   <div class="ai-chat-inp-wrap">
