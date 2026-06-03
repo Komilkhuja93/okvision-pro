@@ -3545,13 +3545,21 @@ async function _loadLazyImg(p){
     _excelZipMediaCache[p._imgRef]=dataUrl;
     p._imgData=dataUrl; images[p.id]=dataUrl;
     delete p._imgRef;
-    // Agar shu mahsulot detail panelda ko'rinsa — yangilash
-    if(selP&&selP.id===p.id&&typeof showProd==='function') showProd(p.id);
-    // Katalogda ham yangilash
-    const el=document.querySelector(`[onclick*="${p.id}"] .pt`);
-    if(el&&!el.querySelector('img')){
-      el.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:4px">`;
+    // showProd ni QAYTA chaqirmaymiz (loop oldini olish) — faqat rasmlarni yangilaymiz
+    // 1. Detail panel rasmi
+    if(selP&&selP.id===p.id){
+      const detImg=document.querySelector('#det .dimg img, #det .dimg');
+      if(detImg){
+        if(detImg.tagName==='IMG') detImg.src=dataUrl;
+        else detImg.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain">`;
+      }
     }
+    // 2. Katalog ro'yxat thumbnaillari
+    document.querySelectorAll(`[onclick*="${p.id}"] .main-prod-thumb`).forEach(thumb=>{
+      if(!thumb.querySelector('img')){
+        thumb.innerHTML=`<img src="${dataUrl}" alt="">`;
+      }
+    });
   }catch(e){console.warn('lazy img error:',e.message);}
   finally{_lazyQueue.delete(p.id);}
 }
@@ -3695,9 +3703,14 @@ function renderList(list){
 }
 // filterP defined below in AI search section
 function showProd(id){
-  const p=PRODS.find(x=>x.id===id);if(!p)return;
-  selP=p;switchTab('catalog');
-  const pr=getPrice(p),inq=quote.some(q=>q.product.id===p.id),img=getImg(p);
+  const p=PRODS.find(x=>x.id===id);
+  if(!p){ console.warn('showProd: mahsulot topilmadi:', id); return; }
+  selP=p;
+  switchTab('catalog');
+  const pr=getPrice(p);
+  const inq=quote.some(q=>q.product&&q.product.id===p.id);
+  let img=null;
+  try{ img=getImg(p); }catch(e){ console.warn('getImg error:', e.message); }
   // Til bo'yicha matnlar
   const _lSpecs   = LANG==='ru'?'Технические характеристики':LANG==='en'?'Technical specs':'Texnik xususiyatlar';
   const _lFile    = LANG==='ru'?'Файл':LANG==='en'?'File':'Fayl';
@@ -3713,9 +3726,11 @@ function showProd(id){
   const _lVat     = LANG==='ru'?'НДС':LANG==='en'?'VAT':'QQS';
   const _lSom     = LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm";
 
-  const specsH=Object.entries(p.specs).map(([k,v])=>`<div class="si2"><div class="sl2">${k}</div><div class="sv">${v}</div></div>`).join('');
-  document.getElementById('ph0').style.display='none';
+  const specsH=Object.entries(p.specs||{}).map(([k,v])=>`<div class="si2"><div class="sl2">${k}</div><div class="sv">${v}</div></div>`).join('');
+  const ph0El=document.getElementById('ph0');
+  if(ph0El) ph0El.style.display='none';
   const detEl=document.getElementById('det');
+  if(!detEl){ console.error('det element topilmadi!'); return; }
   detEl.innerHTML=`
   <div class="dc">
     <div class="dh">
@@ -5433,7 +5448,7 @@ const I18N = {
     cat_ip:'IP Kamera', cat_analog:'Analog Kamera', cat_nvr:'NVR / DVR',
     cat_access:'Kirish nazorati', cat_net:'Tarmoq qurilmasi', cat_fire:"Yong'in xavfsizligi",
     import_tip:"Birinchi marta import qilganda Supplier nomini yozing (masalan: HIKVISION). Keyingi importlarda fayl nomi supplier nomini avtomatik aniqlaydi.",
-    btn_add_manual:"+ Qo'shish", btn_add_svc_lbl:"+ Xizmat qo'shish",
+    btn_add_manual:"Qo'shish", btn_add_svc_lbl:"Xizmat qo'shish",
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:"Ko'p varaqlı Excel (.xlsx) faylni yuklang.",
     guide_hik_1:'Rasmlar avtomatik chiqariladi',
@@ -5520,7 +5535,7 @@ const I18N = {
     btn_move: "O'tkazish",
     btn_add_cat: 'Yangi kategoriya',
     btn_add_svc: "+ Xizmat qo'shish",
-    btn_add_manual: "+ Qo'shish",
+    btn_add_manual: "Qo'shish",
     btn_print: 'Chop etish',
     btn_send_email: 'Email',
     btn_send_tg: 'Telegram',
@@ -5632,7 +5647,7 @@ const I18N = {
     cat_ip:'IP-камера', cat_analog:'Аналоговая камера', cat_nvr:'NVR / DVR',
     cat_access:'Контроль доступа', cat_net:'Сетевое оборудование', cat_fire:'Пожарная безопасность',
     import_tip:'При первом импорте укажите название поставщика (например: HIKVISION). При следующих импортах имя файла автоматически определяет поставщика.',
-    btn_add_manual:'+ Добавить', btn_add_svc_lbl:'+ Добавить услугу',
+    btn_add_manual:'Добавить', btn_add_svc_lbl:'Добавить услугу',
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:'Загрузите многолистовой Excel (.xlsx).',
     guide_hik_1:'Изображения извлекаются автоматически',
@@ -5717,7 +5732,7 @@ const I18N = {
     btn_move: 'Переместить',
     btn_add_cat: 'Новая категория',
     btn_add_svc: '+ Добавить услугу',
-    btn_add_manual: '+ Добавить',
+    btn_add_manual: 'Добавить',
     btn_print: 'Печать',
     btn_send_email: 'Email',
     btn_send_tg: 'Telegram',
@@ -5802,7 +5817,7 @@ const I18N = {
     cat_ip:'IP Camera', cat_analog:'Analog Camera', cat_nvr:'NVR / DVR',
     cat_access:'Access Control', cat_net:'Network Equipment', cat_fire:'Fire Safety',
     import_tip:'On first import, enter the supplier name (e.g. HIKVISION). On subsequent imports, the filename automatically identifies the supplier.',
-    btn_add_manual:'+ Add', btn_add_svc_lbl:'+ Add service',
+    btn_add_manual:'+ Add', btn_add_svc_lbl:'Add service',
     guide_hik_title:'Hikvision / KSS / OKVISION',
     guide_hik_sub:'Upload multi-sheet Excel (.xlsx).',
     guide_hik_1:'Images extracted automatically',
