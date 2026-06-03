@@ -2748,8 +2748,9 @@ function showImportResult(known, resolved, supplierName, fileName){
 // xl/drawings/drawing*.xml da qaysi rasm qaysi katak ekanini ko'rsatadi.
 // xl/worksheets/sheet*.xml da drawingId bilan bog'lanadi.
 
+// Global zip instance — getImg() da lazy yuklash uchun ishlatiladi
+
 async function extractExcelImages(arrayBuffer) {
-  // JSZip yuklanganmi tekshirish — agar yo'q bo'lsa biroz kutish
   if(typeof JSZip === 'undefined'){
     console.warn('JSZip hali yuklanmagan — 2 soniya kutamiz...');
     await new Promise(r=>setTimeout(r,2000));
@@ -2758,34 +2759,26 @@ async function extractExcelImages(arrayBuffer) {
       return {};
     }
   }
-  const result = {}; // { sheetName: { rowIndex: base64DataUrl } }
+  const result = {}; // { sheetName: { rowIndex: mediaName } } — base64 EMAS, faqat nom
   try {
     const zip = await JSZip.loadAsync(arrayBuffer);
+    _excelZip = zip;
+    _excelZipMediaCache = {};
+    _lazyQueue.clear();
 
-    // 1. Barcha media rasmlarni base64 ga o'girish
-    const mediaFiles = {};
-    const mediaFolder = zip.folder('xl/media');
-    if(!mediaFolder) return result;
-    const mediaPromises = [];
-    zip.folder('xl/media').forEach((relPath, file) => {
+    // 1. Faqat media fayl nomlarini yig'amiz (base64 QILMAYMIZ)
+    const mediaFileNames = new Set();
+    zip.folder('xl/media').forEach((relPath) => {
       const ext = relPath.split('.').pop().toLowerCase();
       if(['png','jpg','jpeg','gif','bmp','webp'].includes(ext)){
-        mediaPromises.push(
-          file.async('base64').then(b64 => {
-            const mime = ext==='jpg'||ext==='jpeg' ? 'image/jpeg' :
-                         ext==='png' ? 'image/png' :
-                         ext==='gif' ? 'image/gif' : 'image/webp';
-            mediaFiles[relPath] = `data:${mime};base64,${b64}`;
-          })
-        );
+        mediaFileNames.add(relPath);
       }
     });
-    // 20 tadan parallel yuklash (xotira tejash uchun)
-    for(let i=0; i<mediaPromises.length; i+=20){
-      await Promise.all(mediaPromises.slice(i,i+20));
-    }
-    if(Object.keys(mediaFiles).length === 0) return result;
-    console.log('📷 Excel dan', Object.keys(mediaFiles).length, 'rasm chiqarildi');
+    if(mediaFileNames.size === 0) return result;
+    console.log('📷 Excel da', mediaFileNames.size, 'rasm topildi (lazy yuklash)');
+
+    // mediaFiles = Set (nomlar), base64 keyinchalik yuklansayin
+    const mediaFiles = mediaFileNames;
 
     // 2. Workbook relationships — sheet nomlarini aniqlash
     const wbRelsFile = zip.file('xl/_rels/workbook.xml.rels');
@@ -2858,10 +2851,10 @@ async function extractExcelImages(arrayBuffer) {
         if(rowMatch && ridMatch){
           const row0 = parseInt(rowMatch[1]); // 0-based
           const mediaName = imgRels[ridMatch[1]];
-          if(mediaName && mediaFiles[mediaName]){
-            // 0-based va 1-based har ikkalasini saqlash — import da mos kelsin
-            result[sheetName][row0] = mediaFiles[mediaName];     // 0-based
-            result[sheetName][row0+1] = mediaFiles[mediaName];   // 1-based
+          if(mediaName && mediaFiles.has(mediaName)){
+            // Faqat media fayl nomini saqlaymiz — base64 kerak bo'lganda yuklaymiz
+            result[sheetName][row0]   = mediaName;  // 0-based
+            result[sheetName][row0+1] = mediaName;  // 1-based
           }
         }
       });
@@ -3109,7 +3102,8 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
         specs:parseSpec(spec), desc:spec.slice(0,150)||name,
         _usd:usd, _vat:vatPrice, _sheet:sheetName,
         _supplier:sheetSupplier, _parentSupplier:supplierName,
-        _imgData: imgData  // base64 rasm yoki null
+        // Rasm lazy: _imgRef = media nomi, _imgData = base64 (keyin yuklanadi)
+        ...(imgData ? (imgData.startsWith('data:') ? {_imgData:imgData} : {_imgRef:imgData}) : {})
       });
     });
   });
@@ -3517,16 +3511,49 @@ async function idbGetAllImgs(){
 
 function getImg(p){
   if(!p) return null;
-  // 1. Storage URL (eng ishonchli)
+  // 1. Storage URL
   if(p._imgUrl && p._imgUrl.startsWith('http')) return p._imgUrl;
-  // 2. images[] cache (IndexedDB dan oldindan yuklangan)
-  if(images[p.id]){
-    const v = images[p.id];
-    if(v && (v.startsWith('http')||v.startsWith('data:'))) return v;
-  }
-  // 3. base64 (import paytida)
+  // 2. Cache
+  if(images[p.id] && (images[p.id].startsWith('http')||images[p.id].startsWith('data:')))
+    return images[p.id];
+  // 3. Base64
   if(p._imgData && p._imgData.startsWith('data:')) return p._imgData;
+  // 4. Lazy ref — fon rejimda yuklash
+  if(p._imgRef && _excelZip) _loadLazyImg(p);
   return null;
+}
+
+// Global zip va cache
+let _excelZip=null, _excelZipMediaCache={};
+const _lazyQueue=new Set();
+
+async function _loadLazyImg(p){
+  if(!p._imgRef||!_excelZip||_lazyQueue.has(p.id)) return;
+  _lazyQueue.add(p.id);
+  try{
+    if(_excelZipMediaCache[p._imgRef]){
+      p._imgData=_excelZipMediaCache[p._imgRef];
+      images[p.id]=p._imgData;
+      delete p._imgRef; _lazyQueue.delete(p.id); return;
+    }
+    const file=_excelZip.file('xl/media/'+p._imgRef);
+    if(!file){_lazyQueue.delete(p.id);return;}
+    const b64=await file.async('base64');
+    const ext=p._imgRef.split('.').pop().toLowerCase();
+    const mime=ext==='png'?'image/png':ext==='gif'?'image/gif':'image/jpeg';
+    const dataUrl=`data:${mime};base64,${b64}`;
+    _excelZipMediaCache[p._imgRef]=dataUrl;
+    p._imgData=dataUrl; images[p.id]=dataUrl;
+    delete p._imgRef;
+    // Agar shu mahsulot detail panelda ko'rinsa — yangilash
+    if(selP&&selP.id===p.id&&typeof showProd==='function') showProd(p.id);
+    // Katalogda ham yangilash
+    const el=document.querySelector(`[onclick*="${p.id}"] .pt`);
+    if(el&&!el.querySelector('img')){
+      el.innerHTML=`<img src="${dataUrl}" style="width:100%;height:100%;object-fit:contain;border-radius:4px">`;
+    }
+  }catch(e){console.warn('lazy img error:',e.message);}
+  finally{_lazyQueue.delete(p.id);}
 }
 function toggleUrl(id){const el=document.getElementById('uRow_'+id);if(el)el.style.display=el.style.display==='none'?'block':'none'}
 
@@ -7621,8 +7648,28 @@ async function openQuoteHistory(){
     .order('created_at', { ascending: false })
     .limit(50);
 
-  if(error || !data?.length){
-    listEl.innerHTML = "<div style='text-align:center;padding:30px;color:var(--text3)'>📋 Taklif tarixi yo'q</div>";
+  if(error){
+    console.error('Quote history error:', error.message, error.code);
+    const _L2=LANG||'uz';
+    // quotes jadvali yo'q
+    if(error.message?.includes('relation')||error.message?.includes('does not exist')||error.code==='42P01'){
+      listEl.innerHTML=`<div style="text-align:center;padding:24px;color:var(--amber);font-size:13px">
+        ⚠️ <b>quotes</b> jadvali topilmadi.<br>
+        <span style="font-size:11px;color:var(--text3)">Supabase → SQL Editor → setup_full_schema.sql → Run</span>
+      </div>`;
+    } else {
+      listEl.innerHTML=`<div style="text-align:center;padding:24px;color:var(--red);font-size:12px">
+        ❌ ${error.message||'Xato'}
+      </div>`;
+    }
+    return;
+  }
+  if(!data?.length){
+    const _L2=LANG||'uz';
+    listEl.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text3);font-size:13px">
+      📋 ${_L2==='ru'?'История предложений пуста':(_L2==='en'?'No proposals yet':"Taklif tarixi bo'sh")}<br>
+      <span style="font-size:11px;margin-top:6px;display:block">${_L2==='ru'?'Создайте первое предложение':(_L2==='en'?'Create your first proposal':"Birinchi taklifni yaratib saqlang")}</span>
+    </div>`;
     return;
   }
 
