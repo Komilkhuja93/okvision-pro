@@ -6515,7 +6515,7 @@ function setLang(lang) {
   // Quick save tugmasi
   const _qs=document.getElementById('lblQuickSave');
   const _xlEl=document.getElementById('lblExcel');
-  if(_xlEl) _xlEl.textContent='📊 Excel';
+  if(_xlEl) _xlEl.textContent='Excel';
   if(_qs&&!_qs.textContent.includes('✅')&&!_qs.textContent.includes('...')){
     _qs.textContent=_isRu?'💾 Сохранить':_isEn?'💾 Save':'💾 Taklifni saqlash';
   }
@@ -7969,7 +7969,7 @@ async function autoSyncImages(newProds){
 async function saveQuoteToCloud(customName){
   const sb = getSB();
   if(!sb || !currentUser){ return null; }
-
+ try {
   // Ma'lumotlarni yig'ish
   const g = id => document.getElementById(id)?.value?.trim()||'';
   const oCo = g('oCo'), oAd = g('oAd'), oPh = g('oPh'), oEm = g('oEm');
@@ -8052,7 +8052,6 @@ async function saveQuoteToCloud(customName){
       total_usd: discPr*(q.qty||1),
       sort_order: i,
     };
-    try{ it.discount = disc; }catch(e){}
     items.push(it);
   });
   // Qo'lda qo'shilgan mahsulotlar (mqItems)
@@ -8083,12 +8082,23 @@ async function saveQuoteToCloud(customName){
   });
 
   if(items.length){
-    await sb.from('quote_items').insert(items);
+    const { error: itemsErr } = await sb.from('quote_items').insert(items);
+    if(itemsErr){
+      console.warn('quote_items insert error:', itemsErr.message);
+      // discount ustuni yo'q bo'lsa — itemsdan olib qayta urinish
+      const cleanItems = items.map(it=>{ const c={...it}; delete c.discount; return c; });
+      await sb.from('quote_items').insert(cleanItems);
+    }
   }
 
   // Tahrirlash bo'lsa — qNo ni eslab qolish
   if(quoteData) window._editingQuoteNo = quoteData.note;
   return quoteData;
+ } catch(err){
+   console.error('saveQuoteToCloud exception:', err);
+   showToast('❌ Saqlash xatosi: '+(err.message||'').slice(0,60));
+   return null;
+ }
 }
 
 // PDF ni Storage ga yuklash
