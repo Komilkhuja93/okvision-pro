@@ -1437,6 +1437,37 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
             <input class="mf-inp" id="np_spec" placeholder="4MP, IR 30m, H.265+, PoE...">
             <div class="mf-hint" id="np_spec_hint">Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"</div>
           </div>
+          <!-- RASM bo'limi — Copy-Paste, fayl, URL -->
+          <div class="mf-full">
+            <div class="mf-label" id="lbl_np_img">Rasm <span style="color:var(--text3)" id="lbl_np_img_opt">(ixtiyoriy)</span></div>
+            <div id="npImgDrop" tabindex="0"
+              style="border:1.5px dashed var(--border2);border-radius:12px;padding:18px;
+              text-align:center;cursor:pointer;transition:.15s;outline:none;position:relative"
+              onclick="document.getElementById('npImgFile').click()"
+              onpaste="handleNpPaste(event)"
+              ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+              ondragleave="this.style.borderColor='var(--border2)'"
+              ondrop="handleNpDrop(event)">
+              <div id="npImgPlaceholder">
+                <div style="font-size:30px;opacity:.5;margin-bottom:6px">🖼</div>
+                <div style="font-size:13px;color:var(--text2);font-weight:500" id="npImgHint1">
+                  Rasmni shu yerga tashlang yoki bosing
+                </div>
+                <div style="font-size:11px;color:var(--accent);margin-top:6px;font-weight:600" id="npImgHint2">
+                  📋 Ctrl+V bilan ham qo'yish mumkin
+                </div>
+                <div style="font-size:10px;color:var(--text3);margin-top:4px" id="npImgHint3">
+                  Fayl · URL · Copy-Paste
+                </div>
+              </div>
+              <div id="npImgPreview" style="display:none"></div>
+            </div>
+            <input type="file" id="npImgFile" accept="image/*" style="display:none" onchange="handleNpImgFile(this)">
+            <div style="display:flex;gap:8px;margin-top:8px">
+              <input class="mf-inp" id="np_imgurl" placeholder="yoki rasm URL: https://..."
+                style="flex:1" onchange="handleNpImgUrl(this.value)">
+            </div>
+          </div>
         </div>
         <div style="background:var(--surface2);border-radius:var(--r);padding:10px 13px;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:7px">
           <span style="font-size:16px">💡</span>
@@ -2546,7 +2577,22 @@ function finishImport(importedProds, supplierName, fileName){
   unknown.forEach(p=>{p.cat='Kategoriyasiz';p.em='📂';});
 
   // Apply ALL products right away (known + unknown→Kategoriyasiz)
-  applyProds([...known, ...unknown], supplierName);
+  const _res = applyProds([...known, ...unknown], supplierName);
+
+  // Yangilangan/yangi sonini ko'rsatish
+  const _L=LANG||'uz';
+  if(_res){
+    const np=_res.newProds||0, up=_res.updatedProds||0;
+    let msg='';
+    if(np>0 && up>0){
+      msg=_L==='ru'?`✅ ${np} новых, ${up} обновлено`:_L==='en'?`✅ ${np} new, ${up} updated`:`✅ ${np} ta yangi, ${up} ta yangilandi`;
+    } else if(np>0){
+      msg=_L==='ru'?`✅ ${np} товаров добавлено`:_L==='en'?`✅ ${np} products added`:`✅ ${np} ta mahsulot qo'shildi`;
+    } else if(up>0){
+      msg=_L==='ru'?`🔄 ${up} цен обновлено`:_L==='en'?`🔄 ${up} prices updated`:`🔄 ${up} ta narx yangilandi`;
+    }
+    if(msg) showToast(msg, 3500);
+  }
 
   if(unknown.length>0){
     // Still show preview so user can fix categories if they want
@@ -2634,36 +2680,65 @@ function applyProds(importedProds, supplierName){
     if(!p.em) p.em=catEmoji(p.cat);
     const usd=p._usd||p.price;
     const nm=p.name.toLowerCase();
-    // Use per-product _supplier (sheet-level) if available, fallback to supplierName
+    // Har bir distributorning narxi alohida saqlanadi
     const effectiveSupplier=p._supplier||supplierName;
     if(!window.supplierPrices[effectiveSupplier]) window.supplierPrices[effectiveSupplier]={};
+
     if(usd){
+      // O'sha distributor narxini TO'LIQ YANGILASH (qimmatlashsa ham)
       window.supplierPrices[effectiveSupplier][nm]=usd;
-      if(!prices[nm]||usd<prices[nm]) prices[nm]=usd;
+      // prices[] = barcha distributorlar orasidan ENG ARZON narx (qayta hisoblash)
+      let minPrice=usd;
+      for(const sup of Object.keys(window.supplierPrices)){
+        const sp=window.supplierPrices[sup][nm];
+        if(sp && sp<minPrice) minPrice=sp;
+      }
+      prices[nm]=minPrice;
     }
+
     if(!existingNames.has(nm)){
+      // YANGI mahsulot
       const pid='imp_'+nm.replace(/[^a-z0-9]/g,'_').slice(0,28)+'_'+Math.abs(hashStr(p.name));
       if(!p.id) p.id=pid;
-      if(!p._suppliers) p._suppliers=[effectiveSupplier];
-      else if(!p._suppliers.includes(effectiveSupplier)) p._suppliers.push(effectiveSupplier);
+      p._suppliers=[effectiveSupplier];
+      // Joriy mahsulot narxi = shu distributor narxi
+      p._usd=usd;
+      p._supplier=effectiveSupplier;
       p._imported=true;
-      if(!p._sourceFile) p._sourceFile=p._sourceFile||'';
-      // Excel dan chiqarilgan rasmni images[] va IndexedDB ga saqlash
       if(p._imgData){
-        images[p.id] = p._imgData;
-        idbSetImg(p.id, p._imgData); // IndexedDB ga — sahifa yangilansa ham qoladi
+        images[p.id]=p._imgData;
+        idbSetImg(p.id, p._imgData);
       }
       PRODS.push(p);
       existingNames.add(nm);
       newProds++;
     } else {
+      // MAVJUD mahsulot — o'sha distributor narxini yangilash
       const ex=PRODS.find(x=>x.name.toLowerCase()===nm);
       if(ex){
         if(!ex._suppliers) ex._suppliers=[];
         if(!ex._suppliers.includes(effectiveSupplier)) ex._suppliers.push(effectiveSupplier);
-        if(usd&&(!ex._usd||usd<ex._usd)) ex._usd=usd;
-        // Mavjud mahsulotga rasm qo'shish
-        if(p._imgData && !images[ex.id]) images[ex.id]=p._imgData;
+        // Agar bu mahsulot SHU distributorники bo'lsa — narxni to'liq yangilash
+        if(usd){
+          if(ex._supplier===effectiveSupplier){
+            // Aynan shu distributor praysini yangiladi — narxni almashtirish
+            ex._usd=usd;
+          } else if(!ex._usd || usd<ex._usd){
+            // Boshqa distributor arzonroq taklif qildi
+            ex._usd=usd;
+            ex._supplier=effectiveSupplier;
+          }
+        }
+        // Rasm yangilash
+        if(p._imgData){
+          images[ex.id]=p._imgData;
+          idbSetImg(ex.id, p._imgData);
+          if(ex._imgRef) delete ex._imgRef;
+        }
+        // Spec/kategoriya yangilash (yangi praysda to'liqroq bo'lishi mumkin)
+        if(p.specs && Object.keys(p.specs).length>Object.keys(ex.specs||{}).length){
+          ex.specs=p.specs;
+        }
         updatedProds++;
       }
     }
@@ -3071,12 +3146,31 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
       const spec=cols.spec>=0?String(row[cols.spec]||'').trim():'';
       const finalCat=smartCat(name, spec, sectionCat);
 
-      // Parse price
+      // Parse price — so'm yoki dollar avtomatik aniqlash
       let usd=null;
       if(!isPriceEmpty){
-        const cleaned=rawPriceStr.replace(/[^0-9.,\-]/g,'').replace(/,/g,'.');
+        // Bo'shliq va vergullarni tozalash: "2 702 000" yoki "2,702,000" → 2702000
+        let cleaned=rawPriceStr.replace(/\s/g,'').replace(/[^0-9.,]/g,'');
+        // Agar bir nechta vergul/nuqta bo'lsa — minglik ajratuvchi
+        const dotCount=(cleaned.match(/\./g)||[]).length;
+        const commaCount=(cleaned.match(/,/g)||[]).length;
+        if(commaCount>1){ cleaned=cleaned.replace(/,/g,''); } // 2,702,000 → 2702000
+        else if(commaCount===1 && dotCount===0){
+          // Bitta vergul — o'nlik bo'lishi mumkin (12,5) yoki minglik (702,000)
+          const afterComma=cleaned.split(',')[1]||'';
+          if(afterComma.length===3) cleaned=cleaned.replace(',',''); // minglik
+          else cleaned=cleaned.replace(',','.'); // o'nlik
+        }
+        if(dotCount>1){ cleaned=cleaned.replace(/\./g,''); } // 2.702.000 → 2702000
         const v=parseFloat(cleaned);
-        if(!isNaN(v)&&v>0&&v<1000000) usd=v;
+        if(!isNaN(v)&&v>0){
+          // Narx 50000 dan katta bo'lsa — bu SO'M, dollarga aylantirish
+          if(v>=50000){
+            usd=Math.round(v/RATE*100)/100; // so'm → dollar
+          } else {
+            usd=v; // allaqachon dollar
+          }
+        }
       }
       if(!usd) return;
 
@@ -3335,10 +3429,20 @@ function importSimple(wb, supplierHint, sheetImages={}){
     if(!row[namCol]) return;
     const name = String(row[namCol]).trim();
     if(name.length<3) return;
-    // Narx — vergul/probel tozalash
+    // Narx — so'm/dollar avtomatik aniqlash
     const priceRaw = priceCol>=0 ? String(row[priceCol]||'') : '';
-    const usd = parseFloat(priceRaw.replace(/\s/g,'').replace(',','.').replace(/[^0-9.]/g,''));
+    let _clean=priceRaw.replace(/\s/g,'').replace(/[^0-9.,]/g,'');
+    const _cc=(_clean.match(/,/g)||[]).length, _dc=(_clean.match(/\./g)||[]).length;
+    if(_cc>1) _clean=_clean.replace(/,/g,'');
+    else if(_cc===1&&_dc===0){
+      const aft=_clean.split(',')[1]||'';
+      _clean = aft.length===3 ? _clean.replace(',','') : _clean.replace(',','.');
+    }
+    if(_dc>1) _clean=_clean.replace(/\./g,'');
+    let usd=parseFloat(_clean);
     if(!usd||usd<=0) return;
+    // 50000+ → so'm, dollarga aylantirish
+    if(usd>=50000) usd=Math.round(usd/RATE*100)/100;
     // Desc
     const desc = specCol>=0 ? String(row[specCol]||'').replace(/&gt;/g,'>').replace(/[\r\n]+/g,' ').trim() : '';
     // Image — qator bo'yicha, ustundan qat'i nazar (0/1-based)
@@ -4456,6 +4560,90 @@ function fmtP(usd){
 }
 function fmtUZS(uzs){return uzs.toLocaleString('uz')+' so\'m'}
 // ── ADD PRODUCT MODAL ───────────────────────────────────────────────────────
+// ══ YANGI MAHSULOT RASM — Copy-Paste / Drop / Fayl / URL ════════════════
+let _npImgData = null; // joriy rasm (base64 yoki URL)
+
+function _setNpImg(dataUrl){
+  _npImgData = dataUrl;
+  const prev=document.getElementById('npImgPreview');
+  const ph=document.getElementById('npImgPlaceholder');
+  if(prev && ph){
+    ph.style.display='none';
+    prev.style.display='block';
+    prev.innerHTML=`
+      <div style="position:relative;display:inline-block">
+        <img src="${dataUrl}" style="max-width:160px;max-height:120px;border-radius:8px;object-fit:contain">
+        <button onclick="event.stopPropagation();_clearNpImg()"
+          style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;
+          background:var(--red);color:#fff;border:2px solid var(--surface);cursor:pointer;
+          font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center">✕</button>
+      </div>
+      <div style="font-size:11px;color:var(--green);margin-top:6px">✅ Rasm tayyor</div>`;
+  }
+}
+
+function _clearNpImg(){
+  _npImgData=null;
+  const prev=document.getElementById('npImgPreview');
+  const ph=document.getElementById('npImgPlaceholder');
+  if(prev && ph){ prev.style.display='none'; prev.innerHTML=''; ph.style.display='block'; }
+  const urlInp=document.getElementById('np_imgurl'); if(urlInp) urlInp.value='';
+}
+
+// Ctrl+V paste
+function handleNpPaste(e){
+  const items=(e.clipboardData||e.originalEvent?.clipboardData)?.items;
+  if(!items) return;
+  for(const item of items){
+    if(item.type.indexOf('image')!==-1){
+      e.preventDefault();
+      const blob=item.getAsFile();
+      const reader=new FileReader();
+      reader.onload=ev=>{ _setNpImg(ev.target.result); showToast('📋 Rasm qo\'yildi'); };
+      reader.readAsDataURL(blob);
+      return;
+    }
+  }
+}
+
+// Drag-drop
+function handleNpDrop(e){
+  e.preventDefault();
+  const drop=document.getElementById('npImgDrop');
+  if(drop) drop.style.borderColor='var(--border2)';
+  const file=e.dataTransfer?.files?.[0];
+  if(file && file.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=ev=>{ _setNpImg(ev.target.result); showToast('🖼 Rasm yuklandi'); };
+    reader.readAsDataURL(file);
+  }
+}
+
+// Fayl tanlash
+function handleNpImgFile(inp){
+  const file=inp.files?.[0];
+  if(file && file.type.startsWith('image/')){
+    const reader=new FileReader();
+    reader.onload=ev=>_setNpImg(ev.target.result);
+    reader.readAsDataURL(file);
+  }
+  inp.value='';
+}
+
+// URL
+function handleNpImgUrl(url){
+  url=(url||'').trim();
+  if(url && url.startsWith('http')) _setNpImg(url);
+}
+
+// Global paste — modal ochiq bo'lsa Ctrl+V ishlasin (drop zone ga bosmasa ham)
+document.addEventListener('paste', e=>{
+  const modal=document.getElementById('addProdModal');
+  if(modal && modal.style.display!=='none'){
+    handleNpPaste(e);
+  }
+});
+
 function openAddProdModal(){
   // Til bo'yicha placeholder larni yangilash
   const _isRu2=LANG==='ru',_isEn2=LANG==='en';
@@ -4467,15 +4655,26 @@ function openAddProdModal(){
   if(npHint) npHint.textContent=_isRu2?'Разделяйте запятой: например "4МП, ИК 30м, IP67, PoE"':
     _isEn2?'Separate by comma: e.g. "4MP, IR 30m, IP67, PoE"':
     'Vergul bilan ajrating: masalan "4MP, IR 30m, IP67, PoE"';
+  // Rasm bo'limi yorliqlari
+  const _setT=(id,t)=>{const e=document.getElementById(id);if(e)e.textContent=t;};
+  _setT('lbl_np_img', _isRu2?'Изображение':_isEn2?'Image':'Rasm');
+  _setT('lbl_np_img_opt', _isRu2?'(необязательно)':_isEn2?'(optional)':'(ixtiyoriy)');
+  _setT('npImgHint1', _isRu2?'Перетащите изображение сюда или нажмите':_isEn2?'Drop image here or click':'Rasmni shu yerga tashlang yoki bosing');
+  _setT('npImgHint2', _isRu2?'📋 Можно вставить через Ctrl+V':_isEn2?'📋 You can paste with Ctrl+V':"📋 Ctrl+V bilan ham qo'yish mumkin");
+  _setT('npImgHint3', _isRu2?'Файл · URL · Копировать-Вставить':_isEn2?'File · URL · Copy-Paste':'Fayl · URL · Copy-Paste');
+  const _urlInp=document.getElementById('np_imgurl');
+  if(_urlInp) _urlInp.placeholder=_isRu2?'или URL изображения: https://...':_isEn2?'or image URL: https://...':'yoki rasm URL: https://...';
+
   document.getElementById('addProdModal').style.display='flex';
   setTimeout(()=>(document.getElementById('np_name')||{focus:()=>{}}).focus(),100);
 }
 function closeAddProdModal(){
   document.getElementById('addProdModal').style.display='none';
-  ['np_name','np_brand','np_price','np_desc','np_spec'].forEach(id=>{
+  ['np_name','np_brand','np_price','np_desc','np_spec','np_imgurl'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   const sel=document.getElementById('np_cat');if(sel)sel.selectedIndex=0;
+  _clearNpImg(); // rasmni tozalash
 }
 function saveNewProduct(addToQuote){
   const name=(document.getElementById('np_name')||{}).value.trim();
@@ -4495,6 +4694,17 @@ function saveNewProduct(addToQuote){
   const id='custom_'+Date.now();
   const em=catEmoji(cat);
   const newP={id,name,brand,cat,desc,specs,em,_custom:true};
+  // Rasm — base64 yoki URL
+  if(_npImgData){
+    if(_npImgData.startsWith('http')){
+      newP._imgUrl=_npImgData;
+      images[id]=_npImgData;
+    } else {
+      newP._imgData=_npImgData;
+      images[id]=_npImgData;
+      try{ idbSetImg(id, _npImgData); }catch(e){}
+    }
+  }
   PRODS.push(newP);
   if(!isNaN(priceVal)&&priceVal>0){
     prices[name.toLowerCase()]=priceVal;
@@ -4502,7 +4712,17 @@ function saveNewProduct(addToQuote){
   }
   // Save custom products
   saveCustomProds();
+  saveIM();
   updPC();renderCats();renderList();filterP();
+  // Rasmni Supabase Storage ga yuklash (base64 bo'lsa)
+  if(_npImgData && !_npImgData.startsWith('http') && currentUser){
+    setTimeout(async ()=>{
+      if(typeof uploadImageToStorage==='function'){
+        const url=await uploadImageToStorage(id, _npImgData);
+        if(url){ newP._imgUrl=url; images[id]=url; saveCustomProds(); }
+      }
+    }, 500);
+  }
 
   const _savedMsg=LANG==='ru'?'добавлен в каталог':LANG==='en'?'added to catalog':"katalogga qo'shildi";
   showToast('✅ "'+name+'" '+_savedMsg);
