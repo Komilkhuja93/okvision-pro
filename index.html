@@ -1374,7 +1374,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <div class="modal">
       <div class="modal-hd">
         <div class="modal-title" id="addProdModalTitle">➕ Yangi Mahsulot Qo'shish</div>
-        <button class="modal-close" onclick="closeAddProdModal()">✕</button>
+        <button class="modal-close" onclick="closeAddProdModal()" title="Yopish (ma'lumotlar saqlanadi)">✕</button>
       </div>
       <div class="modal-body">
         <div class="mf-grid">
@@ -1475,7 +1475,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
         </div>
       </div>
       <div class="modal-ft">
-        <button class="btn bs" id="btn_addprod_cancel" onclick="closeAddProdModal()">Bekor qilish</button>
+        <button class="btn" id="btn_addprod_clear" onclick="if(confirm(LANG==='ru'?'Очистить все поля?':LANG==='en'?'Clear all fields?':'Barcha maydonlarni tozalaymizmi?')){clearNpFields();showToast('🗑 Tozalandi')}" style="background:rgba(255,71,87,.1);color:var(--red);border:1px solid rgba(255,71,87,.25)">🗑 <span id="lbl_clear_np">Tozalash</span></button>
+        <button class="btn bs" id="btn_addprod_cancel" onclick="closeAddProdModal()">Yopish</button>
         <button class="btn bp" id="btn_addprod_save" onclick="saveNewProduct(false)">💾 Saqlash</button>
         <button class="btn" id="btn_addprod_saveq" style="background:var(--green);color:#0a0c10;border:none" onclick="saveNewProduct(true)">➕ Saqlash & Taklifga qo'sh</button>
       </div>
@@ -1483,6 +1484,24 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   </div>
 
   <div class="page" id="pg-quote">
+    <!-- Tahrirlash banneri -->
+    <div id="editingBanner" style="display:none;background:rgba(255,170,0,.1);border:1px solid rgba(255,170,0,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:8px;min-width:0">
+        <span style="font-size:16px">✏️</span>
+        <div style="min-width:0">
+          <div style="font-size:13px;font-weight:600;color:var(--amber)" id="editingBannerTitle">Tahrirlanmoqda</div>
+          <div style="font-size:11px;color:var(--text3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="editingBannerName"></div>
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button onclick="saveEditedQuote()" style="font-size:12px;padding:7px 14px;border-radius:8px;background:var(--green);color:#0a0c10;border:none;font-weight:700;cursor:pointer" id="btnSaveEdit">
+          💾 <span id="lblSaveEdit">Yangilash</span>
+        </button>
+        <button onclick="exitEditMode()" style="font-size:12px;padding:7px 12px;border-radius:8px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);cursor:pointer" id="btnExitEdit">
+          <span id="lblExitEdit">Yangi taklif</span>
+        </button>
+      </div>
+    </div>
     <div class="qh" style="flex-wrap:wrap;gap:8px">
       <div class="qt2">📋 <span data-i18n="q_title">Tijorat Taklifi</span></div>
       <!-- Desktop tugmalar -->
@@ -1539,8 +1558,23 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     </div>
     <div id="emQ" class="eq"><div style="font-size:38px;margin-bottom:9px;opacity:.25">🛒</div><div style="font-weight:500" data-i18n="q_empty">Taklif bo'sh</div><div style="font-size:12px;color:var(--text3);margin-top:2px" data-i18n="q_empty_hint">Katalogdan mahsulot qo'shing</div></div>
     <div id="qtW" style="display:none">
+      <!-- Umumiy chegirma boshqaruvi -->
+      <div id="globalDiscBar" style="display:none;background:rgba(255,170,0,.06);border:1px solid rgba(255,170,0,.2);border-radius:10px;padding:10px 14px;margin-bottom:10px;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;font-weight:600;color:var(--amber)" id="globalDiscLbl">💸 Hammaga chegirma:</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <input type="number" id="globalDiscInp" min="0" max="100" step="0.5" value="0" placeholder="0"
+            style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:14px;text-align:center"
+            oninput="applyGlobalDiscount(this.value)">
+          <span style="font-size:14px;color:var(--text2);font-weight:600">%</span>
+        </div>
+        <button onclick="applyGlobalDiscount(0);document.getElementById('globalDiscInp').value=0"
+          style="font-size:11px;padding:5px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);cursor:pointer" id="globalDiscReset">
+          Tozalash
+        </button>
+        <span style="font-size:11px;color:var(--text3)" id="globalDiscHint">Har bir mahsulotni alohida ham o'zgartirish mumkin</span>
+      </div>
       <div class="qtw"><table class="qt"><thead><tr>
-        <th>#</th><th></th><th>Model</th><th>Kat.</th><th>Miqdor</th><th style="text-align:right">Narx</th><th style="text-align:right">Jami</th><th></th>
+        <th>#</th><th></th><th id="thModel">Model</th><th id="thKat">Kat.</th><th id="thQty">Miqdor</th><th style="text-align:right" id="thPrice">Narx</th><th style="text-align:center" id="thDisc">Chegirma %</th><th style="text-align:right" id="thTotal">Jami</th><th></th>
       </tr></thead><tbody id="qBody"></tbody></table></div>
       <div class="tb"><div style="text-align:right">
         <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label"><span data-i18n="q_total_label">Jami summa</span></div>
@@ -2298,13 +2332,21 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Agar Supabase session bo'lmasa — offline rejim uchun yuklaymiz
     // loadPRODS har doim chaqirilsin — login bo'lmasa ham localStorage dan yuklash
     loadPRODS();
+    // Tahrirlash rejimini tiklash
+    try{
+      const ed=localStorage.getItem('editingQuote');
+      if(ed){
+        const d=JSON.parse(ed);
+        window._editingQuoteId=d.id; window._editingQuoteTitle=d.title; window._editingQuoteNo=d.no;
+        setTimeout(()=>{if(typeof updateEditingBanner==='function')updateEditingBanner()},500);
+      }
+    }catch(e){}
     const q=localStorage.getItem('cqQ2');
     if(q){
-      JSON.parse(q).forEach(({id,qty,name})=>{
-        // id bo'yicha qidirish, topilmasa name bo'yicha
+      JSON.parse(q).forEach(({id,qty,name,disc})=>{
         let pr=PRODS.find(x=>x.id===id);
         if(!pr&&name) pr=PRODS.find(x=>x.name===name);
-        if(pr) quote.push({product:pr,qty:qty||1});
+        if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0});
       });
       renderQ();updBdg();
       if(typeof updateMobBadge==='function') updateMobBadge();
@@ -4075,14 +4117,36 @@ function removeFromQ(id){
   saveQ();renderQ();updBdg();updHDDCams();
   showToast('🗑 Olib tashlandi');if(selP&&selP.id===id)showProd(id);
 }
-function clearQ(){if(!quote.length)return;quote=[];saveQ();renderQ();updBdg();updHDDCams();showToast('🗑 Tozalandi');if(selP)showProd(selP.id)}
-function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();}
+function clearQ(){
+  if(!quote.length)return;
+  quote=[];saveQ();renderQ();updBdg();updHDDCams();
+  // Tahrirlash rejimidan chiqish
+  if(window._editingQuoteId){
+    window._editingQuoteId=null; window._editingQuoteTitle=''; window._editingQuoteNo=null;
+    if(typeof updateEditingBanner==='function') updateEditingBanner();
+  }
+  showToast('🗑 Tozalandi');
+  if(selP)showProd(selP.id);
+}
+function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();}
 function renderQ(){
   const em=document.getElementById('emQ'),wr=document.getElementById('qtW');
-  if(!quote.length){em.style.display='block';wr.style.display='none';document.getElementById('tAmt').textContent='$0';updSvcTotal();return}
+  if(!quote.length){
+    em.style.display='block';wr.style.display='none';
+    document.getElementById('tAmt').textContent='$0';
+    const gdb=document.getElementById('globalDiscBar'); if(gdb) gdb.style.display='none';
+    updSvcTotal();return;
+  }
   em.style.display='none';wr.style.display='block';
+  // Umumiy chegirma bar ko'rsatish
+  const gdb=document.getElementById('globalDiscBar'); if(gdb) gdb.style.display='flex';
+
   document.getElementById('qBody').innerHTML=quote.map((item,i)=>{
-    const pr=getPrice(item.product),lt=pr?pr*item.qty:null,img=getImg(item.product);
+    const pr=getPrice(item.product);
+    const disc=item.disc||0; // chegirma %
+    const discPr=pr?pr*(1-disc/100):null; // chegirmali narx
+    const lt=discPr?discPr*item.qty:null;
+    const img=getImg(item.product);
     return`<tr>
       <td style="color:var(--text3);font-size:12px">${i+1}</td>
       <td style="padding:7px 12px">
@@ -4093,12 +4157,40 @@ function renderQ(){
       <td><div style="font-weight:500;font-size:13px">${item.product.name||''}</div><div style="font-size:11px;color:var(--text3)">${item.product.brand||''}</div></td>
       <td><span style="font-size:11px;background:var(--surface3);border-radius:5px;padding:2px 7px;color:var(--text2)">${item.product.cat}</span></td>
       <td><input class="qi" type="number" min="0" step="any" value="${item.qty}" oninput="updQty('${item.product.id}',this.value)" onchange="updQty('${item.product.id}',this.value)"></td>
-      <td style="text-align:right;color:${pr?'var(--text)':'var(--text3)'}">${pr?fmtP(pr):'—'}</td>
+      <td style="text-align:right;color:${pr?'var(--text)':'var(--text3)'}">
+        ${pr?(disc>0?`<span style="text-decoration:line-through;color:var(--text3);font-size:11px">${fmtP(pr)}</span><br><span style="color:var(--green)">${fmtP(discPr)}</span>`:fmtP(pr)):'—'}
+      </td>
+      <td style="text-align:center">
+        <input class="qi" type="number" min="0" max="100" step="0.5" value="${disc}"
+          style="width:60px;text-align:center;color:${disc>0?'var(--amber)':'var(--text3)'}"
+          oninput="updDisc('${item.product.id}',this.value)" onchange="updDisc('${item.product.id}',this.value)"
+          placeholder="0">
+      </td>
       <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
       <td><button class="rb" onclick="removeFromQ('${item.product.id}')">✕</button></td>
     </tr>`;
   }).join('');
   updTotal();
+}
+
+// Bir mahsulot chegirmasi
+function updDisc(id, val){
+  const item=quote.find(q=>q.product.id===id);
+  if(!item) return;
+  const d=Math.max(0,Math.min(100,parseFloat(val)||0));
+  item.disc=d;
+  saveQ();
+  renderQ(); // narx ko'rsatkichlari yangilanishi uchun
+}
+
+// Hammaga umumiy chegirma
+function applyGlobalDiscount(val){
+  const d=Math.max(0,Math.min(100,parseFloat(val)||0));
+  quote.forEach(item=>{ item.disc=d; });
+  saveQ();
+  renderQ();
+  const _L=LANG||'uz';
+  if(d>0) showToast(_L==='ru'?`💸 Скидка ${d}% применена ко всем`:_L==='en'?`💸 ${d}% discount applied to all`:`💸 Hammaga ${d}% chegirma qo'llandi`, 2000);
 }
 function updQty(id,val){
   const item=quote.find(q=>q.product.id===id);
@@ -4121,8 +4213,20 @@ function updQty(id,val){
   }
 }
 function updTotal(){
-  let t=0;quote.forEach(item=>{const pr=getPrice(item.product);if(pr)t+=pr*item.qty});
+  let t=0, saved=0;
+  quote.forEach(item=>{
+    const pr=getPrice(item.product);
+    if(pr){
+      const disc=item.disc||0;
+      const discPr=pr*(1-disc/100);
+      t+=discPr*item.qty;
+      saved+=(pr-discPr)*item.qty;
+    }
+  });
   document.getElementById('tAmt').textContent=fmtP(t);
+  // Tejalgan summa ko'rsatish
+  const tAltEl=document.getElementById('tAlt');
+  window._totalSaved=saved;
   document.getElementById('tAlt').textContent=cur==='USD'?'≈ '+fmtUZS(t*RATE):'= $'+t.toLocaleString();
   updSvcTotal();
 }
@@ -4353,17 +4457,26 @@ function buildPreview(){
   const g=id=>{const el=document.getElementById(id);return el?el.value:'';};
   const oCo=g('oCo')||(LANG==='ru'?'Компания':LANG==='en'?'Company':'Kompaniya'),oAd=g('oAd'),oPh=g('oPh'),oEm=g('oEm');
   const clN=g('clN')||(LANG==='ru'?'Клиент':LANG==='en'?'Client':'Mijoz'),clA=g('clA'),clP=g('clP'),dt=g('qDt')||new Date().toISOString().slice(0,10);
-  let total=0;
+  let total=0, hasDisc=quote.some(it=>(it.disc||0)>0);
   const rows=quote.map((item,i)=>{
-    const pr=getPrice(item.product),lt=pr?pr*item.qty:null;
+    const pr=getPrice(item.product);
+    const disc=item.disc||0;
+    const discPr=pr?pr*(1-disc/100):null;
+    const lt=discPr?discPr*item.qty:null;
     if(lt)total+=lt;
     const img=getImg(item.product);
+    const priceCell = pr
+      ? (disc>0
+          ? `<span style="text-decoration:line-through;color:#999;font-size:10px">${fmtP(pr)}</span><br><span style="color:#15803d;font-weight:700">${fmtP(discPr)}</span>`
+          : fmtP(pr))
+      : '—';
     return`<tr>
       <td>${i+1}</td>
       <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
       <td><strong>${item.product?.name||''}</strong><br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
-      <td class="nr">${pr?fmtP(pr):'—'}</td>
+      <td class="nr">${priceCell}</td>
+      ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
       <td class="nr" style="font-weight:700">${lt?fmtP(lt):'—'}</td>
     </tr>`;
   }).join('');
@@ -4442,7 +4555,7 @@ function buildPreview(){
     <div><div class="pml">${LANG==='ru'?'Кому':LANG==='en'?'To':'Kimga'}</div><div class="pmv"><strong>${clN}</strong>${clA?'<br>'+clA:''}${clP?'<br>'+clP:''}</div></div>
     <div><div class="pml">${LANG==='ru'?'Валюта':LANG==='en'?'Currency':'Valyuta'}</div><div class="pmv">${cur==='USD'?'USD · 1$ ≈ '+RATE.toLocaleString()+(LANG==="ru"?' сум':LANG==="en"?' UZS':LANG==="ru"?' сум':' so\'m'):LANG==="ru"?"Узбекский сум (UZS)":LANG==="en"?"Uzbek som (UZS)":"O\'zbek so\'mi (UZS)"}</div></div>
   </div>
-  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="5">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="5" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">${LANG==='ru'?'Эквивалент в сумах':LANG==='en'?'Equivalent in UZS':"So'mga ekvivalent"}</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">'+(LANG==="ru"?"Товары не добавлены":LANG==="en"?"No products added":"Mahsulot qo\'shilmagan")+"</div>"}
+  ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th>${hasDisc?`<th class="nr">${LANG==='ru'?'Скидка':LANG==='en'?'Disc.':'Chegirma'}</th>`:''}<th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="${hasDisc?6:5}">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="${hasDisc?6:5}" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">${LANG==='ru'?'Эквивалент в сумах':LANG==='en'?'Equivalent in UZS':"So'mga ekvivalent"}</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">'+(LANG==="ru"?"Товары не добавлены":LANG==="en"?"No products added":"Mahsulot qo\'shilmagan")+"</div>"}
   ${mqHtml}
   ${svcHtml}
   ${grandPreview>total&&(svcTotal2>0||mqTotal2>0)?`<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
@@ -4666,15 +4779,82 @@ function openAddProdModal(){
   if(_urlInp) _urlInp.placeholder=_isRu2?'или URL изображения: https://...':_isEn2?'or image URL: https://...':'yoki rasm URL: https://...';
 
   document.getElementById('addProdModal').style.display='flex';
+
+  // Qoralamani tiklash
+  const restored=loadNpDraft();
+  if(restored){
+    const _L=LANG||'uz';
+    showToast(_L==='ru'?'📝 Восстановлен черновик':_L==='en'?'📝 Draft restored':'📝 Qoralama tiklandi', 2500);
+  }
+
+  // Auto-save — har bir o'zgarishda qoralama saqlash
+  ['np_name','np_brand','np_price','np_desc','np_spec'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && !el._draftBound){
+      el.addEventListener('input', ()=>{ saveNpDraft(); });
+      el._draftBound=true;
+    }
+  });
+  const _catSel=document.getElementById('np_cat');
+  if(_catSel && !_catSel._draftBound){
+    _catSel.addEventListener('change', ()=>saveNpDraft());
+    _catSel._draftBound=true;
+  }
+
   setTimeout(()=>(document.getElementById('np_name')||{focus:()=>{}}).focus(),100);
 }
 function closeAddProdModal(){
+  // Yopishdan oldin qoralamani saqlash (adashib yopilsa ham yo'qolmaydi)
+  saveNpDraft();
   document.getElementById('addProdModal').style.display='none';
+  // Maydonlarni TOZALAMAYMIZ — qoralama qoladi, qayta ochilganda tiklanadi
+}
+
+// Maydonlarni to'liq tozalash (faqat saqlanganda yoki "tozalash" bosilganda)
+function clearNpFields(){
   ['np_name','np_brand','np_price','np_desc','np_spec','np_imgurl'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.value='';
   });
   const sel=document.getElementById('np_cat');if(sel)sel.selectedIndex=0;
-  _clearNpImg(); // rasmni tozalash
+  _clearNpImg();
+  // Qoralamani ham o'chirish
+  try{ localStorage.removeItem('npDraft'); }catch(e){}
+}
+
+// ── Qoralama saqlash/yuklash ──────────────────────────────────────────────
+function saveNpDraft(){
+  try{
+    const draft={
+      name: document.getElementById('np_name')?.value||'',
+      brand: document.getElementById('np_brand')?.value||'',
+      cat: document.getElementById('np_cat')?.value||'',
+      price: document.getElementById('np_price')?.value||'',
+      desc: document.getElementById('np_desc')?.value||'',
+      spec: document.getElementById('np_spec')?.value||'',
+      img: _npImgData||'',
+      ts: Date.now()
+    };
+    // Bo'sh bo'lmasa saqlash
+    if(draft.name||draft.brand||draft.price||draft.desc||draft.spec||draft.img){
+      localStorage.setItem('npDraft', JSON.stringify(draft));
+    }
+  }catch(e){}
+}
+
+function loadNpDraft(){
+  try{
+    const raw=localStorage.getItem('npDraft');
+    if(!raw) return false;
+    const d=JSON.parse(raw);
+    // 24 soatdan eski qoralamani o'tkazib yuborish
+    if(Date.now()-(d.ts||0) > 86400000){ localStorage.removeItem('npDraft'); return false; }
+    const setV=(id,v)=>{const e=document.getElementById(id);if(e&&v)e.value=v;};
+    setV('np_name',d.name); setV('np_brand',d.brand);
+    setV('np_price',d.price); setV('np_desc',d.desc); setV('np_spec',d.spec);
+    if(d.cat){ const sel=document.getElementById('np_cat'); if(sel) sel.value=d.cat; }
+    if(d.img) _setNpImg(d.img);
+    return !!(d.name||d.brand||d.price||d.desc||d.img);
+  }catch(e){ return false; }
 }
 function saveNewProduct(addToQuote){
   const name=(document.getElementById('np_name')||{}).value.trim();
@@ -4726,7 +4906,9 @@ function saveNewProduct(addToQuote){
 
   const _savedMsg=LANG==='ru'?'добавлен в каталог':LANG==='en'?'added to catalog':"katalogga qo'shildi";
   showToast('✅ "'+name+'" '+_savedMsg);
-  closeAddProdModal();
+  // Muvaffaqiyatli saqlandi — qoralama va maydonlarni tozalash
+  clearNpFields();
+  document.getElementById('addProdModal').style.display='none';
   if(addToQuote){
     switchTab('quote');
     setTimeout(()=>{addToQ(id);},80);
@@ -6316,7 +6498,20 @@ function setLang(lang) {
   _setEl('addProdHint', _isRu?'Товар сохранится в каталоге. Можно сразу добавить в КП.':
     _isEn?'Product saved to catalog. Can be added to proposal immediately.':
     "Mahsulot katalogga saqlanadi. Taklifga darhol qo'shish ham mumkin.");
-  _setEl('btn_addprod_cancel', _isRu?'Отмена':_isEn?'Cancel':'Bekor qilish');
+  _setEl('btn_addprod_cancel', _isRu?'Закрыть':_isEn?'Close':'Yopish');
+  _setEl('lbl_clear_np', _isRu?'Очистить':_isEn?'Clear':'Tozalash');
+  // Chegirma bar
+  _setEl('globalDiscLbl', _isRu?'💸 Скидка всем:':_isEn?'💸 Discount all:':'💸 Hammaga chegirma:');
+  _setEl('globalDiscReset', _isRu?'Сброс':_isEn?'Reset':'Tozalash');
+  _setEl('globalDiscHint', _isRu?'Каждый товар можно изменить отдельно':_isEn?'Each product can be changed separately':"Har birini alohida o'zgartirish mumkin");
+  _setEl('thDisc', _isRu?'Скидка %':_isEn?'Discount %':'Chegirma %');
+  _setEl('thModel', _isRu?'Модель':_isEn?'Model':'Model');
+  _setEl('thKat', _isRu?'Кат.':_isEn?'Cat.':'Kat.');
+  _setEl('thQty', _isRu?'Кол-во':_isEn?'Qty':'Miqdor');
+  _setEl('thPrice', _isRu?'Цена':_isEn?'Price':'Narx');
+  _setEl('thTotal', _isRu?'Сумма':_isEn?'Total':'Jami');
+  // Tahrirlash banneri til bo'yicha yangilash
+  if(typeof updateEditingBanner==='function' && window._editingQuoteId) updateEditingBanner();
   // Quick save tugmasi
   const _qs=document.getElementById('lblQuickSave');
   const _xlEl=document.getElementById('lblExcel');
@@ -7782,20 +7977,21 @@ async function saveQuoteToCloud(customName){
   const dt  = g('qDt') || new Date().toISOString().slice(0,10);
   const cur = document.querySelector('.cb.active')?.textContent?.trim()||'USD';
 
-  // Jami hisoblash
+  // Jami hisoblash (chegirma bilan)
   let totalUsd = 0;
   quote.forEach(q => {
-    const pr = q.product?._usd || getPrice(q.product) || 0;
-    totalUsd += pr*(q.qty||1);
+    const pr = getPrice(q.product) || q.product?._usd || 0;
+    const disc = q.disc||0;
+    totalUsd += pr*(1-disc/100)*(q.qty||1);
   });
   (mqItems||[]).forEach(m => { if(m.name&&parseFloat(m.price)>0) totalUsd += parseFloat(m.price)*(m.qty||1); });
   (services||[]).forEach(s => { if(s.name&&parseFloat(s.price)>0) totalUsd += parseFloat(s.price)*(parseInt(s.qty)||1); });
 
-  // Taklif raqami
-  const qNo = 'TT-' + Math.floor(100000+Math.random()*900000);
+  // Tahrirlash rejimi?
+  const isEditing = !!window._editingQuoteId;
+  const qNo = isEditing ? (window._editingQuoteNo||'TT-'+Math.floor(100000+Math.random()*900000)) : 'TT-'+Math.floor(100000+Math.random()*900000);
 
-  // Supabase ga saqlash
-  const quoteTitle = customName || `${oCo} → ${clN||'Mijoz'} (${dt})`;
+  const quoteTitle = customName || window._editingQuoteTitle || `${oCo} → ${clN||'Mijoz'} (${dt})`;
   // Minimal ma'lumotlar — faqat asosiy ustunlar
   const quotePayload = {
     user_id: currentUser.id,
@@ -7812,8 +8008,25 @@ async function saveQuoteToCloud(customName){
   try{ quotePayload.total_uzs=Math.round(totalUsd*RATE); }catch(e){}
   try{ quotePayload.rate=RATE; }catch(e){}
 
-  const { data: quoteData, error: qErr } = await sb.from('quotes')
-    .insert(quotePayload).select().single();
+  let quoteData, qErr;
+  if(isEditing){
+    // TAHRIRLASH — mavjud taklifni yangilash
+    delete quotePayload.status; // statusni o'zgartirmaymiz
+    const res = await sb.from('quotes')
+      .update(quotePayload)
+      .eq('id', window._editingQuoteId)
+      .eq('user_id', currentUser.id)
+      .select().single();
+    quoteData = res.data; qErr = res.error;
+    // Eski quote_items larni o'chirish (qaytadan yoziladi)
+    if(!qErr){
+      await sb.from('quote_items').delete().eq('quote_id', window._editingQuoteId);
+    }
+  } else {
+    // YANGI taklif
+    const res = await sb.from('quotes').insert(quotePayload).select().single();
+    quoteData = res.data; qErr = res.error;
+  }
 
   if(qErr){
     console.error('Quote save error:', qErr.message, qErr.details);
@@ -7824,8 +8037,10 @@ async function saveQuoteToCloud(customName){
   // Quote items saqlash
   const items = [];
   quote.forEach((q,i) => {
-    const pr = q.product?._usd || getPrice(q.product) || 0;
-    items.push({
+    const pr = getPrice(q.product) || q.product?._usd || 0;
+    const disc = q.disc||0;
+    const discPr = pr*(1-disc/100);
+    const it = {
       quote_id: quoteData.id,
       product_id: q.product?.id||null,
       product_name: q.product?.name||'',
@@ -7833,10 +8048,12 @@ async function saveQuoteToCloud(customName){
       category: q.product?.cat||'',
       qty: q.qty||1,
       unit: 'dona',
-      price_usd: pr,
-      total_usd: pr*(q.qty||1),
+      price_usd: discPr,
+      total_usd: discPr*(q.qty||1),
       sort_order: i,
-    });
+    };
+    try{ it.discount = disc; }catch(e){}
+    items.push(it);
   });
   // Qo'lda qo'shilgan mahsulotlar (mqItems)
   (mqItems||[]).forEach((m,i) => {
@@ -7869,6 +8086,8 @@ async function saveQuoteToCloud(customName){
     await sb.from('quote_items').insert(items);
   }
 
+  // Tahrirlash bo'lsa — qNo ni eslab qolish
+  if(quoteData) window._editingQuoteNo = quoteData.note;
   return quoteData;
 }
 
@@ -8933,6 +9152,79 @@ async function printAndSaveQuote(){
 }
 
 // Taklifni bulutdan yuklash va redaktorga ochish
+// ══ TAHRIRLASH REJIMI ══════════════════════════════════════════════════
+function updateEditingBanner(){
+  const banner=document.getElementById('editingBanner');
+  if(!banner) return;
+  const _L=LANG||'uz';
+  if(window._editingQuoteId){
+    banner.style.display='flex';
+    const titleEl=document.getElementById('editingBannerTitle');
+    const nameEl=document.getElementById('editingBannerName');
+    if(titleEl) titleEl.textContent=_L==='ru'?'✏️ Редактирование':_L==='en'?'✏️ Editing':'✏️ Tahrirlanmoqda';
+    if(nameEl) nameEl.textContent=window._editingQuoteTitle||'';
+    // Tugma yorliqlari
+    const sv=document.getElementById('lblSaveEdit');
+    if(sv) sv.textContent=_L==='ru'?'Обновить':_L==='en'?'Update':'Yangilash';
+    const ex=document.getElementById('lblExitEdit');
+    if(ex) ex.textContent=_L==='ru'?'Новое':_L==='en'?'New':'Yangi taklif';
+  } else {
+    banner.style.display='none';
+  }
+}
+
+// Tahrirlangan taklifni saqlash (yangilash)
+async function saveEditedQuote(){
+  if(!window._editingQuoteId){ showToast('❌ Tahrirlash rejimi yo\'q'); return; }
+  const _L=LANG||'uz';
+  const btn=document.getElementById('btnSaveEdit');
+  const lbl=document.getElementById('lblSaveEdit');
+  if(btn) btn.disabled=true;
+  if(lbl) lbl.textContent=_L==='ru'?'Сохранение...':_L==='en'?'Saving...':'Saqlanmoqda...';
+  try{
+    const saved=await saveQuoteToCloud(window._editingQuoteTitle);
+    if(saved){
+      if(lbl) lbl.textContent=_L==='ru'?'✅ Обновлено':_L==='en'?'✅ Updated':'✅ Yangilandi';
+      showToast(_L==='ru'?'✅ Предложение обновлено':_L==='en'?'✅ Proposal updated':'✅ Taklif yangilandi');
+      setTimeout(()=>{
+        if(lbl) lbl.textContent=_L==='ru'?'Обновить':_L==='en'?'Update':'Yangilash';
+        if(btn) btn.disabled=false;
+      },2000);
+    } else {
+      if(lbl) lbl.textContent=_L==='ru'?'Обновить':_L==='en'?'Update':'Yangilash';
+      if(btn) btn.disabled=false;
+    }
+  }catch(e){
+    showToast('❌ '+e.message);
+    if(btn) btn.disabled=false;
+    if(lbl) lbl.textContent='Yangilash';
+  }
+}
+
+// Tahrirlash rejimidan chiqish — yangi taklif boshlash
+function exitEditMode(){
+  const _L=LANG||'uz';
+  const _msg=_L==='ru'?'Начать новое предложение? Текущее редактирование завершится.':
+             _L==='en'?'Start new proposal? Current editing will end.':
+             'Yangi taklif boshlaymizmi? Joriy tahrirlash tugaydi.';
+  if(quote.length>0 && !confirm(_msg)) return;
+  window._editingQuoteId=null;
+  window._editingQuoteTitle='';
+  window._editingQuoteNo=null;
+  try{ localStorage.removeItem('editingQuote'); }catch(e){}
+  // Taklifni tozalash
+  quote.splice(0,quote.length);
+  mqItems=[]; services=[];
+  saveQ();
+  if(typeof renderQ==='function') renderQ();
+  if(typeof renderMqRows==='function') renderMqRows();
+  if(typeof renderSvcRows==='function') renderSvcRows();
+  // Mijoz maydonlarini tozalash
+  ['clN','clA','clP'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  updateEditingBanner();
+  showToast(_L==='ru'?'📝 Новое предложение':_L==='en'?'📝 New proposal':'📝 Yangi taklif');
+}
+
 async function loadQuoteFromCloud(quoteId){
   const sb = getSB(); if(!sb||!currentUser) return;
   const _L = LANG||'uz';
@@ -8981,7 +9273,7 @@ async function loadQuoteFromCloud(quoteId){
           _imported: true,
         };
       }
-      quote.push({ product: prod, qty: item.qty||1 });
+      quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0 });
     }
 
     // Qo'lda qo'shilgan mahsulotlar (mqItems)
@@ -9010,10 +9302,17 @@ async function loadQuoteFromCloud(quoteId){
     if(typeof renderMqRows==='function') renderMqRows();
     if(typeof buildPreview==='function') buildPreview();
 
+    // TAHRIRLASH REJIMI — bu taklif endi tahrirlanadi
+    window._editingQuoteId = quoteId;
+    window._editingQuoteTitle = q.title || '';
+    window._editingQuoteNo = q.note || '';
+    try{ localStorage.setItem('editingQuote', JSON.stringify({id:quoteId,title:q.title||'',no:q.note||''})); }catch(e){}
+    updateEditingBanner();
+
     closeQuoteHistory();
     switchTab('quote');
-    const _loaded = _L==='ru'?'загружено в редактор':_L==='en'?'loaded into editor':'redaktorga yuklandi';
-    showToast(`✅ "${q.title||'Taklif'}" ${_loaded}`);
+    const _loaded = _L==='ru'?'загружено для редактирования':_L==='en'?'loaded for editing':'tahrirlash uchun yuklandi';
+    showToast(`✏️ "${q.title||'Taklif'}" ${_loaded}`, 3500);
   }catch(e){
     console.error('loadQuoteFromCloud error:', e);
     showToast('❌ Xato: '+e.message);
