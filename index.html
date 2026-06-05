@@ -3614,16 +3614,61 @@ function getPrice(p){
 function handleImgFile(id,inp){
   const f=inp.files[0];if(!f)return;
   const r=new FileReader();
-  r.onload=e=>{images[id]=e.target.result;saveIM();showProd(id);renderList();showToast('🖼 Rasm saqlandi')};
+  r.onload=e=>{
+    const data=e.target.result;
+    images[id]=data;
+    saveIM();
+    try{ idbSetImg(id, data); }catch(err){}  // IndexedDB — sahifa yangilansa ham qoladi
+    // Mahsulot obyektiga ham yozish
+    const p=PRODS.find(x=>x.id===id);
+    if(p){ p._imgData=data; saveCustomProds&&saveCustomProds(); }
+    showProd(id);renderList();showToast('🖼 Rasm saqlandi');
+    // Cloud Storage ga yuklash — barcha qurilmalarda ko'rinsin
+    _persistImageToCloud(id, data);
+  };
   r.readAsDataURL(f);inp.value='';
 }
 function setImgUrl(id){
   const url=(document.getElementById('uInp_'+id)||{}).value||'';
   if(!url.trim()){showToast('❌ URL kiriting');return}
-  images[id]=url.trim();saveIM();showProd(id);renderList();showToast('🖼 URL saqlandi');
+  images[id]=url.trim();saveIM();
+  const p=PRODS.find(x=>x.id===id);
+  if(p){ p._imgUrl=url.trim(); saveCustomProds&&saveCustomProds(); }
+  showProd(id);renderList();showToast('🖼 URL saqlandi');
+}
+
+// Rasmni Supabase Storage ga yuklab, URL ni mahsulotga yozish (fon rejimda)
+async function _persistImageToCloud(id, base64){
+  if(!base64 || !base64.startsWith('data:')) return;
+  if(typeof uploadImageToStorage!=='function' || !currentUser) return;
+  try{
+    const url=await uploadImageToStorage(id, base64);
+    if(url){
+      const p=PRODS.find(x=>x.id===id);
+      if(p){ p._imgUrl=url; }
+      images[id]=url;
+      saveCustomProds&&saveCustomProds();
+      // Mahsulotni cloud products jadvalida ham yangilash
+      if(typeof syncToCloud==='function') syncToCloud(true);
+    }
+  }catch(e){ console.warn('_persistImageToCloud:', e.message); }
 }
 function removeImg(id){delete images[id];saveIM();showProd(id);renderList();showToast('🗑 Rasm o\'chirildi')}
-function saveIM(){try{localStorage.setItem('cqIM2',JSON.stringify(images))}catch(e){}}
+function saveIM(){
+  try{
+    // localStorage ga FAQAT URL larni saqlaymiz (base64 5MB limitdan oshadi)
+    const urlsOnly={};
+    for(const k in images){
+      const v=images[k];
+      if(typeof v==='string' && v.startsWith('http')) urlsOnly[k]=v;
+      else if(typeof v==='string' && v.startsWith('data:')){
+        // base64 → IndexedDB ga (localStorage ga emas)
+        try{ idbSetImg(k, v); }catch(e){}
+      }
+    }
+    localStorage.setItem('cqIM2', JSON.stringify(urlsOnly));
+  }catch(e){}
+}
 
 // ══ INDEXEDDB — RASMLAR UCHUN (localStorage 5MB limitidan qochish) ════════
 let _imgDB = null;
@@ -8007,6 +8052,21 @@ async function saveQuoteToCloud(customName){
   const sb = getSB();
   if(!sb || !currentUser){ return null; }
  try {
+  // Sessiyani tekshirish — token eskirgan bo'lsa yangilash (osilishning oldini oladi)
+  try{
+    const sessRes = await Promise.race([
+      sb.auth.getSession(),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('SESS_TIMEOUT')), 8000))
+    ]);
+    if(!sessRes?.data?.session){
+      showToast('🔑 Sessiya tugagan — qaytadan kiring', 5000);
+      return null;
+    }
+  }catch(se){
+    console.warn('Session check:', se.message);
+    showToast('🔑 Ulanish muammosi — qaytadan kiring', 5000);
+    return null;
+  }
   // Ma'lumotlarni yig'ish
   const g = id => document.getElementById(id)?.value?.trim()||'';
   const oCo = g('oCo'), oAd = g('oAd'), oPh = g('oPh'), oEm = g('oEm');
@@ -9171,7 +9231,11 @@ async function quickSaveQuote(){
   if(lbl) lbl.textContent = _L==='ru'?'Сохранение...':_L==='en'?'Saving...':'Saqlanmoqda...';
 
   try{
-    const saved = await saveQuoteToCloud(quoteName);
+    // Timeout bilan — Supabase javob bermasa 20s da to'xtaydi (abadiy osilmaydi)
+    const saved = await Promise.race([
+      saveQuoteToCloud(quoteName),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT')), 20000))
+    ]);
     if(saved){
       if(lbl) lbl.textContent = _L==='ru'?'✅ Сохранено!':_L==='en'?'✅ Saved!':"✅ Saqlandi!";
       showToast(_L==='ru'?`✅ "${quoteName}" сохранено`:_L==='en'?`✅ "${quoteName}" saved`:`✅ "${quoteName}" saqlandi`);
@@ -9187,7 +9251,11 @@ async function quickSaveQuote(){
   } catch(e){
     if(lbl) lbl.textContent = _L==='ru'?'💾 Сохранить':_L==='en'?'💾 Save':'💾 Taklifni saqlash';
     if(btn){ btn.disabled=false; btn.style.opacity='1'; }
-    showToast('❌ '+e.message);
+    if(e.message==='TIMEOUT'){
+      showToast(_L==='ru'?'⏱ Сервер не отвечает. Проверьте интернет и попробуйте снова':_L==='en'?'⏱ Server timeout. Check internet and retry':"⏱ Server javob bermadi. Internetni tekshirib qayta urining", 5000);
+    } else {
+      showToast('❌ '+e.message);
+    }
   }
 }
 
