@@ -1101,6 +1101,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   <div class="mob-search-bar">
     <span style="font-size:14px;opacity:.5" aria-hidden="true">🔍</span>
     <input id="mobSrch" type="search" placeholder="Model yoki tavsif..." data-i18n-ph="ph_search"
+      name="okv-mob-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
       aria-label="Mahsulot qidirish"
       oninput="onAiSearch(this.value);document.getElementById('srch').value=this.value"
       onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
@@ -1335,7 +1336,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     </div>
     <div class="ai-search-wrap">
       <span class="ai-search-icon" id="aiSrchIcon" aria-hidden="true">🔍</span>
-      <input class="ai-search-inp" type="text" id="srch"
+      <input class="ai-search-inp" type="search" id="srch"
+        name="okv-product-search" autocomplete="off" autocorrect="off"
+        autocapitalize="off" spellcheck="false" data-form-type="other"
         aria-label="Mahsulot qidirish" placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
@@ -9451,7 +9454,8 @@ async function loadQuoteFromCloud(quoteId){
       let type = item.item_type;
       if(!type){
         if(item.unit==='xizmat') type='service';
-        else if(item.product_id) type='product';
+        // Mahsulot — product_id bor VA (katalogda mavjud YOKI kategoriyasi bor)
+        else if(item.product_id && (PRODS.find(p=>p.id===item.product_id) || (item.category && item.category.trim()))) type='product';
         else type='manual';
       }
 
