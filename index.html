@@ -8455,20 +8455,6 @@ function closeQuoteHistory(){
 }
 
 // ── Unread xabarlarni tekshirish ─────────────────────────────────────────
-async function checkUnreadMessages(){
-  const sb=getSB(); if(!sb||!currentUser) return;
-  try{
-    const {count}=await sb.from('messages')
-      .select('*',{count:'exact',head:true})
-      .eq('receiver_id',currentUser.id)
-      .eq('read',false);
-    const badge=document.getElementById('chatUnreadBadge');
-    if(badge){
-      if(count>0){ badge.textContent=count>9?'9+':count; badge.style.display='block'; }
-      else badge.style.display='none';
-    }
-  }catch(e){}
-}
 // ── Telegram uslubi xabar tovushi ────────────────────────────────────────
 // ── Audio Context — bir marta yaratib qayta ishlatamiz ─────────────────
 let _audioCtx = null;
