@@ -4704,29 +4704,38 @@ function switchTab(name){
 // Fix 3: Send order via Telegram
 function sendTelegramOrder(){
   const g=id=>(document.getElementById(id)||{}).value||'';
-  const clN=g('clN')||'Mijoz';
+  const _L=LANG||'uz';
+  const clN=g('clN')||(_L==='ru'?'Клиент':_L==='en'?'Client':'Mijoz');
   const clP=g('clP')||'—';
-  const oCo=g('oCo')||'Kompaniya';
+  const oCo=g('oCo')||(_L==='ru'?'Компания':_L==='en'?'Company':'Kompaniya');
   const dt=g('qDt')||new Date().toISOString().slice(0,10);
-  if(!quote.length){showToast('⚠️ Taklif bo\'sh!');return}
+  if(!quote.length){showToast(_L==='ru'?'⚠️ Заказ пуст!':_L==='en'?'⚠️ Order is empty!':"⚠️ Buyurtma bo'sh!");return}
   let total=0;
   let lines=quote.map((item,i)=>{
     const pr=getPrice(item.product);
-    const lt=pr?pr*item.qty:null;
+    const disc=item.disc||0;
+    const discPr=pr?pr*(1-disc/100):null;
+    const lt=discPr?discPr*item.qty:null;
     if(lt)total+=lt;
-    return`${i+1}. ${item.product.name} × ${item.qty} = ${lt?fmtP(lt):'narx yo\'q'}`;
+    const noPr=_L==='ru'?'нет цены':_L==='en'?'no price':"narx yo'q";
+    return`${i+1}. ${item.product.name} × ${item.qty} = ${lt?fmtP(lt):noPr}`;
   }).join('\n');
+  const T = _L==='ru'
+    ? {head:'🛒 НОВЫЙ ЗАКАЗ', co:'Компания', cl:'Заказчик', ph:'Телефон', dt:'Дата', total:'Итого к заказу'}
+    : _L==='en'
+    ? {head:'🛒 NEW ORDER', co:'Company', cl:'Customer', ph:'Phone', dt:'Date', total:'Order total'}
+    : {head:'🛒 YANGI BUYURTMA', co:'Kompaniya', cl:'Buyurtmachi', ph:'Telefon', dt:'Sana', total:'Buyurtma jami'};
   const msg=
-`📋 *Tijorat Taklifi*
+`${T.head}
 ━━━━━━━━━━━━━━━━
-🏢 ${oCo}
-👤 ${clN}
-📞 ${clP}
-📅 ${dt}
+🏢 ${T.co}: ${oCo}
+👤 ${T.cl}: ${clN}
+📞 ${T.ph}: ${clP}
+📅 ${T.dt}: ${dt}
 ━━━━━━━━━━━━━━━━
 ${lines}
 ━━━━━━━━━━━━━━━━
-💰 *Jami: ${fmtP(total)}*
+💰 ${T.total}: ${fmtP(total)}
 ${total&&cur==='USD'?'≈ '+fmtUZS(total*RATE):''}`;
   const encoded=encodeURIComponent(msg);
   window.open('https://t.me/Komilkhuja?text='+encoded,'_blank');
@@ -8081,8 +8090,8 @@ async function saveQuoteToCloud(customName){
     const disc = q.disc||0;
     totalUsd += pr*(1-disc/100)*(q.qty||1);
   });
-  (mqItems||[]).forEach(m => { if(m.name&&parseFloat(m.price)>0) totalUsd += parseFloat(m.price)*(m.qty||1); });
-  (services||[]).forEach(s => { if(s.name&&parseFloat(s.price)>0) totalUsd += parseFloat(s.price)*(parseInt(s.qty)||1); });
+  (mqItems||[]).forEach(m => { if(m.name&&parseFloat(m.price)>0){ const p=parseFloat(m.price); const pUsd=m.cur==='uzs'?p/RATE:p; totalUsd += pUsd*(parseFloat(m.qty)||1); } });
+  (services||[]).forEach(s => { if(s.name&&parseFloat(s.price)>0) totalUsd += parseFloat(s.price)*(parseFloat(s.qty)||1); });
 
   // Tahrirlash rejimi?
   const isEditing = !!window._editingQuoteId;
@@ -8156,60 +8165,102 @@ async function saveQuoteToCloud(customName){
     return null;
   }
 
-  // Quote items saqlash
+  // Quote items saqlash — har bir item O'ZIDA TO'LIQ saqlanadi (katalogga bog'liq emas)
   const items = [];
-  quote.forEach((q,i) => {
-    const pr = getPrice(q.product) || q.product?._usd || 0;
+
+  // Mahsulotlar — rasm URL ni ta'minlash (base64 bo'lsa cloud ga yuklab URL olamiz)
+  for(let i=0;i<quote.length;i++){
+    const q=quote[i];
+    const pr = getPrice(q.product) || q.product?._usd || 0;  // BAZA narx (chegirmasiz)
     const disc = q.disc||0;
-    const discPr = pr*(1-disc/100);
-    const it = {
+    // Rasm URL — http bo'lsa to'g'ridan, base64 bo'lsa Storage ga yuklaymiz
+    let imgUrl = q.product?._imgUrl || null;
+    if(!imgUrl){
+      const im = (typeof getImg==='function') ? getImg(q.product) : null;
+      if(im && im.startsWith('http')) imgUrl = im;
+      else if(im && im.startsWith('data:') && typeof uploadImageToStorage==='function'){
+        try{
+          const u = await Promise.race([
+            uploadImageToStorage(q.product.id, im),
+            new Promise(r=>setTimeout(()=>r(null), 8000))
+          ]);
+          if(u){ imgUrl=u; q.product._imgUrl=u; images[q.product.id]=u; }
+        }catch(e){}
+      }
+    }
+    items.push({
       quote_id: quoteData.id,
+      item_type: 'product',
       product_id: q.product?.id||null,
       product_name: q.product?.name||'',
+      brand: q.product?.brand||'',
       supplier: q.product?._supplier||q.product?._parentSupplier||'',
       category: q.product?.cat||'',
+      image_url: imgUrl,
       qty: q.qty||1,
       unit: 'dona',
-      price_usd: discPr,
-      total_usd: discPr*(q.qty||1),
+      price_usd: pr,               // BAZA narx
+      discount: disc,              // chegirma %
+      orig_currency: 'usd',
+      total_usd: pr*(1-disc/100)*(q.qty||1),
       sort_order: i,
-    };
-    items.push(it);
-  });
-  // Qo'lda qo'shilgan mahsulotlar (mqItems)
+    });
+  }
+
+  // Qo'lda qo'shilgan mahsulotlar (mqItems) — valyuta saqlanadi
   (mqItems||[]).forEach((m,i) => {
     const p=parseFloat(m.price)||0;
+    const curr = m.cur==='uzs' ? 'uzs' : 'usd';
+    const pUsd = curr==='uzs' ? p/RATE : p;  // cloud da USD, lekin orig valyuta eslab qolinadi
     if(m.name&&p>0) items.push({
       quote_id: quoteData.id,
+      item_type: 'manual',
       product_name: m.name,
-      qty: parseInt(m.qty)||1,
+      qty: parseFloat(m.qty)||1,
       unit: m.unit||'dona',
-      price_usd: p,
-      total_usd: p*(parseInt(m.qty)||1),
+      price_usd: pUsd,
+      orig_currency: curr,
+      discount: 0,
+      total_usd: pUsd*(parseFloat(m.qty)||1),
       sort_order: quote.length+i,
     });
   });
+
   // Xizmatlar (services)
   (services||[]).forEach((s,i) => {
     const p=parseFloat(s.price)||0;
     if(s.name&&p>0) items.push({
       quote_id: quoteData.id,
+      item_type: 'service',
       product_name: s.name,
-      qty: parseInt(s.qty)||1,
+      qty: parseFloat(s.qty)||1,
       unit: 'xizmat',
       price_usd: p,
-      total_usd: p*(parseInt(s.qty)||1),
+      orig_currency: 'usd',
+      discount: 0,
+      total_usd: p*(parseFloat(s.qty)||1),
       sort_order: quote.length+(mqItems?.length||0)+i,
     });
   });
 
   if(items.length){
-    const { error: itemsErr } = await sb.from('quote_items').insert(items);
+    let { error: itemsErr } = await sb.from('quote_items').insert(items);
     if(itemsErr){
       console.warn('quote_items insert error:', itemsErr.message);
-      // discount ustuni yo'q bo'lsa — itemsdan olib qayta urinish
-      const cleanItems = items.map(it=>{ const c={...it}; delete c.discount; return c; });
-      await sb.from('quote_items').insert(cleanItems);
+      // Yangi ustunlar yo'q bo'lsa (migratsiya qilinmagan) — ularsiz qayta urinish
+      const stripped = items.map(it=>{
+        const c={...it};
+        delete c.item_type; delete c.image_url; delete c.orig_currency;
+        delete c.brand; delete c.discount;
+        return c;
+      });
+      const r2 = await sb.from('quote_items').insert(stripped);
+      if(r2.error){
+        console.error('quote_items insert (stripped) error:', r2.error.message);
+        showToast('⚠️ Mahsulotlar saqlanmadi: '+r2.error.message.slice(0,50), 5000);
+      } else {
+        showToast('⚠️ Eski sxema — upgrade_quote_items.sql ni ishga tushiring', 5000);
+      }
     }
   }
 
@@ -9394,40 +9445,57 @@ async function loadQuoteFromCloud(quoteId){
     mqItems = [];
     services = [];
 
-    // Mahsulotlarni yuklash
-    const regularItems = (items||[]).filter(i => i.product_id);
-    const mqItemsList  = (items||[]).filter(i => !i.product_id);
-
-    for(const item of regularItems){
-      // PRODS dan mahsulotni topish
-      let prod = PRODS.find(p => p.id === item.product_id);
-      if(!prod){
-        // Topilmasa — minimal mahsulot yaratish
-        prod = {
-          id: item.product_id||('imp_'+Date.now()),
-          name: item.product_name||'',
-          cat: item.category||'',
-          em: '📦',
-          brand: item.supplier||'',
-          _usd: item.price_usd||0,
-          _vat: Math.round((item.price_usd||0)*RATE),
-          _supplier: item.supplier||'',
-          _parentSupplier: item.supplier||'',
-          _imported: true,
-        };
+    // Har bir item O'ZIDA TO'LIQ — katalogga bog'liq emas, turi bo'yicha tiklanadi
+    (items||[]).forEach(item => {
+      // item_type bo'lmasa (eski sxema) — eski mantiq bilan aniqlash
+      let type = item.item_type;
+      if(!type){
+        if(item.unit==='xizmat') type='service';
+        else if(item.product_id) type='product';
+        else type='manual';
       }
-      quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0 });
-    }
 
-    // Qo'lda qo'shilgan mahsulotlar (mqItems)
-    mqItemsList.forEach(item => {
-      mqItems.push({
-        name: item.product_name||'',
-        price: item.price_usd||0,
-        qty: item.qty||1,
-        unit: item.unit||'dona',
-        cur: 'usd',
-      });
+      if(type==='service'){
+        services.push({
+          name: item.product_name||'',
+          price: item.price_usd||0,
+          qty: item.qty||1
+        });
+      } else if(type==='manual'){
+        const cur = item.orig_currency==='uzs' ? 'uzs' : 'usd';
+        // USD da saqlangan — orig valyuta so'm bo'lsa, ko'rsatish uchun so'mga qaytaramiz
+        const price = cur==='uzs' ? Math.round((item.price_usd||0)*RATE) : (item.price_usd||0);
+        mqItems.push({
+          name: item.product_name||'',
+          price: price,
+          qty: item.qty||1,
+          unit: item.unit||'dona',
+          cur: cur
+        });
+      } else {
+        // product — katalogdan topamiz, topilmasa item ma'lumotidan tiklaymiz
+        let prod = PRODS.find(p => p.id === item.product_id);
+        if(!prod){
+          prod = {
+            id: item.product_id || ('q_'+Math.random().toString(36).slice(2,10)),
+            name: item.product_name||'',
+            cat: item.category||'',
+            em: '📦',
+            brand: item.brand||item.supplier||'',
+            _usd: item.price_usd||0,
+            _vat: Math.round((item.price_usd||0)*RATE),
+            _supplier: item.supplier||'',
+            _parentSupplier: item.supplier||'',
+            _imported: true,
+          };
+        }
+        // Rasmni tiklash — item da saqlangan URL
+        if(item.image_url){
+          prod._imgUrl = item.image_url;
+          images[prod.id] = item.image_url;
+        }
+        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0 });
+      }
     });
 
     // Mijoz ma'lumotlarini to'ldirish
