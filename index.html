@@ -677,6 +677,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 /* ── AI SEARCH ─────────────────────────────────────────────────────────── */
 .ai-search-wrap{position:relative;margin-bottom:4px}
 .ai-search-inp{width:100%;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--rl);padding:10px 40px 10px 38px;color:var(--text);font-family:var(--fb);font-size:13px;outline:none;transition:.2s;line-height:1.4}
+/* Brauzer autofill (email) ni aniqlash uchun — animatsiya hodisasi */
+@keyframes okvAutoFill{from{}to{}}
+input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
 .ai-search-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
 .ai-search-inp::placeholder{color:var(--text3);font-size:12px}
 .ai-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;transition:.2s}
@@ -1102,6 +1105,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     <span style="font-size:14px;opacity:.5" aria-hidden="true">🔍</span>
     <input id="mobSrch" type="search" placeholder="Model yoki tavsif..." data-i18n-ph="ph_search"
       name="okv-mob-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
+      readonly onfocus="this.removeAttribute('readonly')"
       aria-label="Mahsulot qidirish"
       oninput="onAiSearch(this.value);document.getElementById('srch').value=this.value"
       onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
@@ -1339,6 +1343,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
       <input class="ai-search-inp" type="search" id="srch"
         name="okv-product-search" autocomplete="off" autocorrect="off"
         autocapitalize="off" spellcheck="false" data-form-type="other"
+        readonly onfocus="this.removeAttribute('readonly')"
         aria-label="Mahsulot qidirish" placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
@@ -2336,6 +2341,26 @@ function updateRate(v){
 }
 
 document.addEventListener('DOMContentLoaded',()=>{
+  // Brauzer autofill (email) ni tozalash — qidiruv maydonlari
+  const _clearSrch=()=>{
+    ['srch','mobSrch'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el && el!==document.activeElement && el.value){ el.value=''; }
+    });
+  };
+  _clearSrch();
+  setTimeout(_clearSrch, 200);
+  setTimeout(_clearSrch, 600);
+  setTimeout(_clearSrch, 1200);
+  // Brauzer autofill qilgan ZAHOTI aniqlab tozalash (chat ochilgandan keyin ham ishlaydi)
+  document.addEventListener('animationstart', e=>{
+    if(e.animationName==='okvAutoFill'){
+      const t=e.target;
+      if(t && (t.id==='srch'||t.id==='mobSrch') && t!==document.activeElement){
+        t.value='';
+      }
+    }
+  }, true);
   // Pre-load all supplier prices into prices map (lowest wins)
   Object.entries(window.supplierPrices||{}).forEach(([sup,pm])=>{
     Object.entries(pm).forEach(([k,v])=>{
@@ -6604,6 +6629,12 @@ function setLang(lang) {
   if(typeof updateEditingBanner==='function' && window._editingQuoteId) updateEditingBanner();
   // Taklif jadvali va preview ni qayta render (valyuta/til yangilanishi uchun)
   if(typeof renderQ==='function' && quote.length) renderQ();
+  // Chat ochiq bo'lsa — yangi tilda qayta qurish
+  if(document.getElementById('chatPanel') && typeof openChat==='function'){
+    const _tid = (typeof _chatTargetId!=='undefined') ? _chatTargetId : null;
+    const _tname = window._chatTargetName || '';
+    openChat(_tid, _tname);
+  }
   const _pv=document.getElementById('pg-preview');
   if(_pv && _pv.classList.contains('active') && typeof buildPreview==='function') buildPreview();
   // Quick save tugmasi
@@ -8806,13 +8837,16 @@ async function openAnalytics(){
 
 // ══ CHAT TIZIMI ═════════════════════════════════════════════════════════
 
-let _chatOpen=false, _chatRoom='global', _chatSub=null, _chatUsers=[];
+let _chatOpen=false, _chatRoom='global', _chatSub=null, _chatUsers=[], _chatTargetId=null;
 
 async function openChat(targetUserId=null, targetName=''){
   const sb=getSB(); if(!sb||!currentUser){ showToast('❌ Login kerak'); return; }
   const _L=LANG||'uz';
+  _chatTargetId = targetUserId || null;
+  window._chatTargetName = targetName || '';
+  // room_id — UUID lar '-' saqlaydi, shuning uchun '__' bilan birlashtiramiz (buzilmasin)
   _chatRoom = targetUserId
-    ? [currentUser.id, targetUserId].sort().join('-')
+    ? [currentUser.id, targetUserId].sort().join('__')
     : 'global';
 
   document.getElementById('chatPanel')?.remove();
@@ -8849,6 +8883,7 @@ async function openChat(targetUserId=null, targetName=''){
     <div id="chatMessages" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch"></div>
     <div style="padding:10px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0">
       <input id="chatInput" type="text" placeholder="${_L==='ru'?'Сообщение...':_L==='en'?'Message...':'Xabar...'}"
+        name="okv-chat-message" autocomplete="off" autocorrect="off" autocapitalize="sentences" spellcheck="false" data-form-type="other"
         style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;
         padding:8px 12px;color:var(--text);font-size:13px;outline:none"
         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChatMsg()}">
@@ -8857,6 +8892,12 @@ async function openChat(targetUserId=null, targetName=''){
       </button>
     </div>`;
   document.body.appendChild(panel);
+
+  // Chat ochilganda brauzer qidiruv maydoniga email autofill qilmasin — tozalash
+  ['srch','mobSrch'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el && el!==document.activeElement && el.value) el.value='';
+  });
 
   // Supabase ulanishini tekshirish
   const _sb=getSB();
@@ -8893,6 +8934,9 @@ async function openChat(targetUserId=null, targetName=''){
           markMessagesRead(_chatRoom);
         }
       })
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',
+      filter:`room_id=eq.${_chatRoom}`},
+      payload => { updateChatMsgInUI(payload.new); })
     .subscribe(status=>{
       const statusEl=document.getElementById('chatStatus');
       if(statusEl){
@@ -8946,7 +8990,7 @@ async function loadChatMessages(){
     msgEl.innerHTML='';
     if(!data?.length){
       msgEl.innerHTML=`<div style="text-align:center;color:var(--text3);font-size:12px;padding:30px">
-        💬 ${_L==='ru'?'Xabar yo\'q':_L==='en'?'No messages yet':"Xabar yo'q. Birinchi yozing!"}
+        💬 ${_L==='ru'?'Нет сообщений. Напишите первым!':_L==='en'?'No messages yet':"Xabar yo'q. Birinchi yozing!"}
       </div>`;
     } else {
       data.forEach(m=>appendChatMsg(m,false));
@@ -8966,19 +9010,157 @@ function appendChatMsg(msg, scroll=true){
   const msgEl=document.getElementById('chatMessages');
   if(!msgEl) return;
   const isMe=msg.sender_id===currentUser?.id;
+
+  // Dedup — bu xabar allaqachon ko'rsatilganmi (id bo'yicha)
+  if(msg.id && msgEl.querySelector(`[data-mid="${msg.id}"]`)) return;
+
+  // O'z xabarim serverdan qaytsa — kutilayotgan (pending) pufakni "tasdiqlash"
+  if(isMe && msg.id && !msg._pending){
+    const pend=[...msgEl.querySelectorAll('[data-pending="1"]')]
+      .find(el=>el.getAttribute('data-content')===msg.content);
+    if(pend){
+      pend.setAttribute('data-mid', msg.id);
+      pend.removeAttribute('data-pending');
+      const b=pend.querySelector('div[style*="background"]');
+      if(b) b.style.opacity='1';
+      return; // qayta qo'shmaymiz
+    }
+  }
+
   const time=new Date(msg.created_at).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
   const div=document.createElement('div');
   div.style.cssText=`display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'}`;
+  if(msg.id) div.setAttribute('data-mid', msg.id);
+  if(msg._pending){ div.setAttribute('data-pending','1'); div.setAttribute('data-content', msg.content); }
+
+  const _L=LANG||'uz';
+  // O'chirilgan xabar — "Xabar o'chirildi" deb qoladi
+  if(msg.deleted){
+    const delTxt=_L==='ru'?'Сообщение удалено':_L==='en'?'Message deleted':"Xabar o'chirildi";
+    div.innerHTML=`
+      ${!isMe?`<div style="font-size:10px;color:var(--text3);margin-bottom:2px">${msg.sender_name||'User'}</div>`:''}
+      <div style="max-width:80%;padding:8px 12px;border-radius:12px;background:var(--surface2);
+        color:var(--text3);font-size:12px;font-style:italic;line-height:1.4">🚫 ${delTxt}</div>
+      <div style="font-size:9px;color:var(--text3);margin-top:2px">${time}</div>`;
+    msgEl.appendChild(div);
+    if(scroll) msgEl.scrollTop=msgEl.scrollHeight;
+    return;
+  }
+
+  const esc=(msg.content||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const editedMark = msg.edited ? `<span style="font-size:8px;opacity:.7"> (${_L==='ru'?'изм.':_L==='en'?'ed.':'tahr.'})</span>` : '';
+  // O'z xabarim bo'lsa — tahrir/o'chirish tugmalari (doim ko'rinadi)
+  const actions = (isMe && msg.id && !msg._pending) ? `
+    <div class="msg-actions" style="display:flex;gap:10px;margin-top:3px">
+      <button onclick="editChatMsg('${msg.id}')" title="${_L==='ru'?'Изменить':_L==='en'?'Edit':'Tahrirlash'}" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0;opacity:.6">✏️</button>
+      <button onclick="deleteChatMsg('${msg.id}')" title="${_L==='ru'?'Удалить':_L==='en'?'Delete':"O'chirish"}" style="background:none;border:none;color:#ff6b6b;cursor:pointer;font-size:11px;padding:0;opacity:.6">🗑</button>
+    </div>` : '';
   div.innerHTML=`
     ${!isMe?`<div style="font-size:10px;color:var(--text3);margin-bottom:2px">${msg.sender_name||'User'}</div>`:''}
-    <div style="max-width:80%;padding:8px 12px;border-radius:${isMe?'12px 12px 4px 12px':'12px 12px 12px 4px'};
+    <div class="msg-bubble" style="max-width:80%;padding:8px 12px;border-radius:${isMe?'12px 12px 4px 12px':'12px 12px 12px 4px'};
       background:${isMe?'var(--accent)':'var(--surface2)'};color:${isMe?'#0a0c10':'var(--text)'};
-      font-size:13px;line-height:1.4">
-      ${msg.content}
+      font-size:13px;line-height:1.4;${msg._pending?'opacity:.7':''}">
+      <span class="msg-text">${esc}</span>
     </div>
-    <div style="font-size:9px;color:var(--text3);margin-top:2px">${time}</div>`;
+    <div style="font-size:9px;color:var(--text3);margin-top:2px">${time}${editedMark}${msg._pending?' ⏳':''}</div>
+    ${actions}`;
   msgEl.appendChild(div);
   if(scroll) msgEl.scrollTop=msgEl.scrollHeight;
+}
+
+// Xabarni tahrirlash
+async function editChatMsg(msgId){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  const _L=LANG||'uz';
+  const div=document.querySelector(`[data-mid="${msgId}"]`);
+  const textEl=div?.querySelector('.msg-text');
+  if(!textEl) return;
+  const oldText=textEl.textContent;
+  const newText=prompt(_L==='ru'?'Изменить сообщение:':_L==='en'?'Edit message:':'Xabarni tahrirlash:', oldText);
+  if(newText===null) return;            // Bekor qilindi
+  const trimmed=newText.trim();
+  if(!trimmed || trimmed===oldText) return;
+  try{
+    let {error}=await sb.from('messages')
+      .update({content:trimmed, edited:true, updated_at:new Date().toISOString()})
+      .eq('id',msgId).eq('sender_id',currentUser.id);
+    // Ustun yo'q bo'lsa (migratsiya qilinmagan) — faqat content bilan
+    if(error && (error.message?.includes('column')||error.message?.includes('edited')||error.code==='PGRST204')){
+      const r=await sb.from('messages').update({content:trimmed}).eq('id',msgId).eq('sender_id',currentUser.id);
+      error=r.error;
+    }
+    if(error){ showToast('❌ '+error.message.slice(0,50)); return; }
+    // UI ni darhol yangilash
+    textEl.textContent=trimmed;
+    const meta=div.querySelector('div[style*="font-size:9px"]');
+    if(meta && !meta.innerHTML.includes('tahr')&&!meta.innerHTML.includes('изм')&&!meta.innerHTML.includes('ed.')){
+      meta.innerHTML+=`<span style="font-size:8px;opacity:.7"> (${_L==='ru'?'изм.':_L==='en'?'ed.':'tahr.'})</span>`;
+    }
+  }catch(e){ showToast('❌ '+e.message); }
+}
+
+// Xabarni o'chirish ("Xabar o'chirildi" deb qoladi)
+async function deleteChatMsg(msgId){
+  const sb=getSB(); if(!sb||!currentUser) return;
+  const _L=LANG||'uz';
+  const confirmTxt=_L==='ru'?'Удалить сообщение?':_L==='en'?'Delete this message?':"Xabarni o'chirasizmi?";
+  if(!confirm(confirmTxt)) return;
+  try{
+    let {error}=await sb.from('messages')
+      .update({deleted:true, content:'', updated_at:new Date().toISOString()})
+      .eq('id',msgId).eq('sender_id',currentUser.id);
+    // 'deleted' ustuni yo'q bo'lsa — xabarni butunlay o'chiramiz
+    let hardDeleted=false;
+    if(error && (error.message?.includes('column')||error.message?.includes('deleted')||error.code==='PGRST204')){
+      const r=await sb.from('messages').delete().eq('id',msgId).eq('sender_id',currentUser.id);
+      error=r.error; hardDeleted=!error;
+    }
+    if(error){ showToast('❌ '+error.message.slice(0,50)); return; }
+    // UI ni darhol yangilash — "o'chirildi" ko'rinishiga
+    const div=document.querySelector(`[data-mid="${msgId}"]`);
+    if(div){
+      if(hardDeleted){ div.remove(); return; }
+      const delTxt=_L==='ru'?'Сообщение удалено':_L==='en'?'Message deleted':"Xabar o'chirildi";
+      const bubble=div.querySelector('.msg-bubble');
+      if(bubble){
+        bubble.style.background='var(--surface2)';
+        bubble.style.color='var(--text3)';
+        bubble.style.fontStyle='italic';
+        bubble.innerHTML=`🚫 ${delTxt}`;
+      }
+      const acts=div.querySelector('.msg-actions'); if(acts) acts.remove();
+      div.onmouseenter=null; div.onmouseleave=null;
+    }
+  }catch(e){ showToast('❌ '+e.message); }
+}
+
+// Realtime — boshqa odam xabarni tahrir/o'chirsa UI da yangilash
+function updateChatMsgInUI(msg){
+  if(!msg||!msg.id) return;
+  const _L=LANG||'uz';
+  const div=document.querySelector(`[data-mid="${msg.id}"]`);
+  if(!div) return;
+  if(msg.deleted){
+    const delTxt=_L==='ru'?'Сообщение удалено':_L==='en'?'Message deleted':"Xabar o'chirildi";
+    const bubble=div.querySelector('.msg-bubble');
+    if(bubble){
+      bubble.style.background='var(--surface2)';
+      bubble.style.color='var(--text3)';
+      bubble.style.fontStyle='italic';
+      bubble.innerHTML=`🚫 ${delTxt}`;
+    }
+    const acts=div.querySelector('.msg-actions'); if(acts) acts.remove();
+    div.onmouseenter=null; div.onmouseleave=null;
+  } else {
+    const textEl=div.querySelector('.msg-text');
+    if(textEl) textEl.textContent=msg.content||'';
+    if(msg.edited){
+      const meta=div.querySelector('div[style*="font-size:9px"]');
+      if(meta && !meta.innerHTML.includes('tahr')&&!meta.innerHTML.includes('изм')&&!meta.innerHTML.includes('ed.')){
+        meta.innerHTML+=`<span style="font-size:8px;opacity:.7"> (${_L==='ru'?'изм.':_L==='en'?'ed.':'tahr.'})</span>`;
+      }
+    }
+  }
 }
 
 async function sendChatMsg(){
@@ -8993,19 +9175,32 @@ async function sendChatMsg(){
   inp.value='';
   inp.disabled=true;
   const senderName=currentProfile?.full_name||currentUser.email?.split('@')[0]||'User';
-  // receiver_id — global chat bo'lmasa, room_id dan topamiz
-  let receiverId=null;
-  if(_chatRoom!=='global'){
-    const ids=_chatRoom.split('-').filter(id=>id!==currentUser.id&&id.length>8);
-    receiverId=ids[0]||null;
-  }
-  const {error}=await sb.from('messages').insert({
+  // receiver_id — to'g'ridan _chatTargetId dan (room_id ni parse qilmaymiz, UUID buzilmasin)
+  const receiverId = (_chatRoom!=='global') ? _chatTargetId : null;
+
+  // Optimistik UI — xabarni DARHOL ko'rsatamiz (yuborilishini kutmasdan)
+  const optimistic = {
+    sender_id: currentUser.id, sender_name: senderName,
+    room_id: _chatRoom, content: msgText, receiver_id: receiverId,
+    created_at: new Date().toISOString(), _pending: true
+  };
+  // "Xabar yo'q" placeholder ni olib tashlash
+  const msgElBox=document.getElementById('chatMessages');
+  if(msgElBox && msgElBox.querySelector('div[style*="text-align:center"]')) msgElBox.innerHTML='';
+  appendChatMsg(optimistic);
+
+  const {data:inserted, error}=await sb.from('messages').insert({
     sender_id:currentUser.id, sender_name:senderName,
     room_id:_chatRoom, content:msgText, receiver_id:receiverId
-  });
+  }).select().single();
   if(error){
     console.error('Chat send error:', error.message);
     inp.value=msgText; // Xato bo'lsa matnni qaytarish
+    // Optimistik xabarni belgilash (xato)
+    if(msgElBox && msgElBox.lastChild){
+      const bubble=msgElBox.lastChild.querySelector('div[style*="background"]');
+      if(bubble){ bubble.style.opacity='0.5'; bubble.title='Yuborilmadi'; }
+    }
     if(error.message.includes('relation')||error.message.includes('does not exist')){
       showToast("❌ messages jadvali yo'q — setup_full_schema.sql ishga tushiring", 5000);
     } else {
