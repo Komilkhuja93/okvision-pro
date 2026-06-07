@@ -8608,8 +8608,7 @@ function subscribeToUnread(){
       const chatPanel=document.getElementById('chatPanel');
       const isCurrentRoom=chatPanel&&_chatRoom===msg.room_id;
       if(!isCurrentRoom){
-        _unreadCount++;
-        updateUnreadBadge(_unreadCount);
+        computeUnread();
         playMsgSound('incoming');
         const name=msg?.sender_name||'User';
         const prev=(msg?.content||'').slice(0,55);
@@ -8624,6 +8623,7 @@ function subscribeToUnread(){
       if(msg.sender_id===currentUser.id) return;
       const chatPanel=document.getElementById('chatPanel');
       if(!(chatPanel&&_chatRoom==='global')){
+        computeUnread();
         playMsgSound('incoming');
         const name=msg?.sender_name||'User';
         showToast(`💬 ${name}: ${(msg?.content||'').slice(0,55)}`, 3500);
@@ -8678,28 +8678,64 @@ async function _pollChatMessages(){
   }catch(e){}
 }
 
-async function checkUnreadMessages(){
+// ── Per-room o'qilmagan tizimi (umumiy + shaxsiy), Telegram uslubi ──────────
+let _unreadPerRoom = {};        // { roomId: count }
+let _lastSeen = {};             // { roomId: ISO }
+function _seenKey(){ return 'okvSeen_'+(currentUser?.id||'anon'); }
+function loadLastSeen(){
+  try{ _lastSeen = JSON.parse(localStorage.getItem(_seenKey())||'{}'); }catch(e){ _lastSeen={}; }
+}
+function saveLastSeen(){ try{ localStorage.setItem(_seenKey(), JSON.stringify(_lastSeen)); }catch(e){} }
+function markRoomSeen(roomId){
+  if(!roomId) return;
+  _lastSeen[roomId]=new Date().toISOString();
+  saveLastSeen();
+  _unreadPerRoom[roomId]=0;
+  const total=Object.values(_unreadPerRoom).reduce((a,b)=>a+b,0);
+  _unreadCount=total; updateUnreadBadge(total);
+}
+
+async function computeUnread(){
   const sb=getSB(); if(!sb||!currentUser) return;
   try{
-    const {count}=await sb.from('messages')
-      .select('*',{count:'exact',head:true})
-      .eq('receiver_id',currentUser.id)
-      .eq('read',false);
-    _unreadCount=count||0;
-    updateUnreadBadge(_unreadCount);
-  }catch(e){}
+    const uid=currentUser.id;
+    // Foydalanuvchiga aloqador xabarlar: umumiy + unga/undan shaxsiy
+    const {data,error}=await sb.from('messages')
+      .select('id,room_id,sender_id,created_at,deleted')
+      .or(`room_id.eq.global,receiver_id.eq.${uid},sender_id.eq.${uid}`)
+      .order('created_at',{ascending:false})
+      .limit(500);
+    if(error){ console.warn('computeUnread:',error.message); return; }
+    const def = new Date(Date.now()-3*86400000).toISOString(); // ko'rilmagan xona uchun: 3 kun
+    const per={};
+    (data||[]).forEach(m=>{
+      if(m.sender_id===uid) return;           // o'z xabarim emas
+      if(m.deleted) return;
+      const seen=_lastSeen[m.room_id]||def;
+      if(m.created_at>seen){ per[m.room_id]=(per[m.room_id]||0)+1; }
+    });
+    // Ochiq turgan xona — o'qilgan hisoblanadi
+    const openPanel=document.getElementById('chatPanel');
+    if(openPanel && _chatRoom){ per[_chatRoom]=0; _lastSeen[_chatRoom]=new Date().toISOString(); saveLastSeen(); }
+    _unreadPerRoom=per;
+    const total=Object.values(per).reduce((a,b)=>a+b,0);
+    _unreadCount=total; updateUnreadBadge(total);
+    // Agar foydalanuvchilar ro'yxati ochiq bo'lsa — badge larni yangilash
+    if(document.getElementById('userListPanel')) renderUserUnreadBadges();
+  }catch(e){ console.warn('computeUnread',e); }
 }
+
+// Eski nom — moslik uchun
+async function checkUnreadMessages(){ loadLastSeen(); await computeUnread(); }
 
 async function markMessagesRead(roomId){
   const sb=getSB(); if(!sb||!currentUser) return;
+  markRoomSeen(roomId);
   try{
     await sb.from('messages').update({read:true})
-      .eq('receiver_id',currentUser.id)
-      .eq('room_id',roomId)
-      .eq('read',false);
-    _unreadCount=Math.max(0,_unreadCount-1);
-    checkUnreadMessages(); // aniq son uchun
+      .eq('receiver_id',currentUser.id).eq('room_id',roomId).eq('read',false);
   }catch(e){}
+  computeUnread();
 }
 
 // ── Status yangilash ──────────────────────────────────────────────────────
@@ -8898,6 +8934,8 @@ async function openChat(targetUserId=null, targetName=''){
   await loadChatMessages();
   _lastMsgId = null;
   _lastMsgTime = null;
+  // Bu xonani "o'qilgan" deb belgilash (Telegram kabi badge tushadi)
+  loadLastSeen(); markRoomSeen(_chatRoom);
   // Realtime + Polling
   if(!_pollInterval) _startPolling();
 
@@ -9202,42 +9240,75 @@ async function sendChatMsg(){
 async function openUserList(){
   const sb=getSB(); if(!sb||!currentUser) return;
   const _L=LANG||'uz';
+  loadLastSeen(); await computeUnread();
   const {data}=await sb.from('profiles')
     .select('id,full_name,company_name,display_name,avatar_url')
     .neq('id',currentUser.id).limit(50);
+
+  const roomFor=uid=>[currentUser.id,uid].sort().join('__');
+  const badge=cnt=>cnt>0?`<span class="user-unread" style="margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:#ff4757;color:#fff;font-size:10px;font-weight:800;line-height:18px;text-align:center;padding:0 5px;flex-shrink:0">${cnt>99?'99+':cnt}</span>`:'';
 
   document.getElementById('userListPanel')?.remove();
   const panel=document.createElement('div');
   panel.id='userListPanel';
   panel.style.cssText=`position:fixed;right:392px;bottom:80px;z-index:8001;
-    width:220px;background:var(--surface);border:1px solid var(--border2);
+    width:240px;background:var(--surface);border:1px solid var(--border2);
     border-radius:14px;box-shadow:0 10px 40px rgba(0,0,0,.4);overflow:hidden`;
+
+  const gUnread=_unreadPerRoom['global']||0;
+  const globalRow=`<div onclick="openChat();document.getElementById('userListPanel')?.remove()"
+      data-room="global"
+      style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--border)"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="width:32px;height:32px;border-radius:50%;background:rgba(52,227,176,.15);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0">💬</div>
+      <div style="font-size:12px;font-weight:600">${_L==='ru'?'Общий чат':_L==='en'?'General chat':'Umumiy chat'}</div>
+      ${badge(gUnread)}
+    </div>`;
+
   panel.innerHTML=`
     <div style="padding:10px 12px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;display:flex;justify-content:space-between">
-      👥 ${_L==='ru'?'Пользователи':_L==='en'?'Users':'Foydalanuvchilar'}
+      👥 ${_L==='ru'?'Чаты':_L==='en'?'Chats':'Suhbatlar'}
       <button onclick="document.getElementById('userListPanel').remove()" style="background:none;border:none;color:var(--text3);cursor:pointer">✕</button>
     </div>
-    <div style="max-height:280px;overflow-y:auto">
+    <div style="max-height:320px;overflow-y:auto">
+      ${globalRow}
       ${(data||[]).length===0
         ?`<div style="padding:20px;text-align:center;color:var(--text3);font-size:12px">${_L==='ru'?'Нет пользователей':_L==='en'?'No users':"Foydalanuvchi yo'q"}</div>`
         :(data||[]).map(u=>{
           const name=u.full_name||u.display_name||u.company_name||'User';
           const initials=name.split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'U';
+          const rid=roomFor(u.id); const cnt=_unreadPerRoom[rid]||0;
           return`<div onclick="openChat('${u.id}','${name.replace(/'/g,'&#39;')}');document.getElementById('userListPanel')?.remove()"
-            style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--border);"
+            data-room="${rid}"
+            style="padding:10px 12px;display:flex;align-items:center;gap:10px;cursor:pointer;border-bottom:1px solid var(--border)"
             onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
             <div style="width:32px;height:32px;border-radius:50%;background:rgba(0,212,255,.15);
-              display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0">
-              ${initials}
-            </div>
-            <div style="min-width:0">
+              display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0">${initials}</div>
+            <div style="min-width:0;flex:1">
               <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
               ${u.company_name?`<div style="font-size:10px;color:var(--text3)">${u.company_name}</div>`:''}
             </div>
+            ${badge(cnt)}
           </div>`;
         }).join('')}
     </div>`;
   document.body.appendChild(panel);
+}
+
+// O'qilmagan badge larni jonli yangilash (foydalanuvchilar ro'yxati ochiq bo'lsa)
+function renderUserUnreadBadges(){
+  const panel=document.getElementById('userListPanel'); if(!panel) return;
+  panel.querySelectorAll('[data-room]').forEach(row=>{
+    const rid=row.getAttribute('data-room');
+    const cnt=_unreadPerRoom[rid]||0;
+    let b=row.querySelector('.user-unread');
+    if(cnt>0){
+      if(!b){ b=document.createElement('span'); b.className='user-unread';
+        b.style.cssText='margin-left:auto;min-width:18px;height:18px;border-radius:9px;background:#ff4757;color:#fff;font-size:10px;font-weight:800;line-height:18px;text-align:center;padding:0 5px;flex-shrink:0';
+        row.appendChild(b); }
+      b.textContent=cnt>99?'99+':cnt;
+    } else if(b){ b.remove(); }
+  });
 }
 
 // ══ AI MASLAHATCHI (Claude API) ═════════════════════════════════════════
