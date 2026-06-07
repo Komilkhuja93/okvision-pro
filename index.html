@@ -1383,6 +1383,11 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
   <div class="main-cat-bar" id="mainCatBar">
     <div class="main-cat-row1">
       <div class="main-cat-sup" id="mainSupRow"></div>
+      <button id="catAnnBtn" onclick="openAnnouncementsList()" title="E'lonlar / aksiyalar"
+        style="display:none;align-items:center;gap:6px;background:linear-gradient(90deg,rgba(0,212,255,.12),rgba(124,58,237,.10));border:1px solid rgba(0,212,255,.3);color:var(--accent);border-radius:9px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+        📢 <span data-i18n="btn_announcements">E'lonlar</span>
+        <span id="catAnnBadge" style="display:none;min-width:16px;height:16px;border-radius:8px;background:#ff4757;color:#fff;font-size:9px;font-weight:800;line-height:16px;text-align:center;padding:0 4px"></span>
+      </button>
       <span id="mainProdCount" class="main-prod-count"></span>
     </div>
     <div class="main-cat-chips" id="mainCatChips"></div>
@@ -6030,6 +6035,7 @@ const I18N = {
     import_simple_desc: "1 varaqlı fayllar — nom + narx ustunlari avtomatik topiladi. Istalgan tartibda bo'lishi mumkin.",
     import_pdf_desc: "PDF dan matn chiqarilib, nom va narxlar aniqlanadi. Skanerlangan (rasm) PDF emas, matnli PDF kerak.",
     stat_products_short: 'ta mahsulot',
+    btn_announcements: "E'lonlar",
     stat_suppliers_short: 'ta supplier',
     stat_prices_short: 'ta narx',
     h_supplier_label: 'Supplier nomi:',
@@ -6229,6 +6235,7 @@ const I18N = {
     import_simple_desc: 'Однолистовые файлы — название и цена находятся автоматически.',
     import_pdf_desc: 'Из PDF извлекается текст. PDF должен быть текстовым, не сканом.',
     stat_products_short: 'товаров',
+    btn_announcements: 'Объявления',
     stat_suppliers_short: 'поставщиков',
     stat_prices_short: 'цен',
     h_supplier_label: 'Название поставщика:',
@@ -6399,6 +6406,7 @@ const I18N = {
     import_simple_desc: 'Single-sheet files — name and price columns found automatically.',
     import_pdf_desc: 'Text extracted from PDF. PDF must be text-based, not a scan.',
     stat_products_short: 'products',
+    btn_announcements: 'News',
     stat_suppliers_short: 'suppliers',
     stat_prices_short: 'prices',
     h_supplier_label: 'Supplier name:',
@@ -9984,18 +9992,40 @@ async function loadAnnouncements(){
   }catch(e){ console.warn('loadAnnouncements:', e.message); }
 }
 
+// E'lon turlari — markaziy (icon, rang, 3 til nomi)
+function annTypeMeta(type){
+  const L=LANG||'uz';
+  const M={
+    promo:    {icon:'🎁', color:'#22c55e', uz:'Aksiya',        ru:'Акция',         en:'Promo'},
+    stock:    {icon:'📦', color:'#00d4ff', uz:'Yangi mahsulot', ru:'Новый товар',   en:'New stock'},
+    solution: {icon:'💡', color:'#a78bfa', uz:'Yangi yechim',   ru:'Новое решение', en:'New solution'},
+    event:    {icon:'📅', color:'#f59e0b', uz:'Tadbir',         ru:'Событие',       en:'Event'},
+    important:{icon:'⚠️', color:'#f59e0b', uz:'Muhim',          ru:'Важно',         en:'Important'},
+    info:     {icon:'📢', color:'#00d4ff', uz:"E'lon",          ru:'Объявление',    en:'Info'},
+  };
+  const m=M[type]||M.info;
+  return {icon:m.icon, color:m.color, label:m[L]||m.uz};
+}
+
 function renderAnnTicker(){
   const ticker=document.getElementById('annTicker');
-  if(!ticker) return;
-  // Dismiss qilinmaganlarni ko'rsatish
   const visible=_announcements.filter(a=>!_annDismissed.includes(a.id));
+  // Katalogdagi "E'lonlar" tugmasi — kirgan har bir foydalanuvchiga doim ko'rinadi
+  const catBtn=document.getElementById('catAnnBtn');
+  const catBadge=document.getElementById('catAnnBadge');
+  if(catBtn && currentUser) catBtn.style.display='flex';
+  if(catBadge){
+    if(visible.length>0){ catBadge.style.display='inline-block'; catBadge.textContent=visible.length; }
+    else catBadge.style.display='none';
+  }
+  if(!ticker) return;
   if(!visible.length){ ticker.style.display='none'; return; }
   const a=visible[0];
   ticker.style.display='flex';
   const tEl=document.getElementById('annTickerTitle');
   const bEl=document.getElementById('annTickerBody');
   const cEl=document.getElementById('annTickerCount');
-  const icon=a.type==='promo'?'🎁':a.type==='important'?'⚠️':'📢';
+  const icon=annTypeMeta(a.type).icon;
   if(tEl) tEl.textContent=icon+' '+(a.title||'');
   if(bEl) bEl.textContent=a.body||'';
   if(cEl) cEl.textContent=visible.length>1?`+${visible.length-1}`:'';
@@ -10020,14 +10050,14 @@ function openAnnouncementsList(){
   modal.onclick=e=>{if(e.target===modal)modal.remove()};
 
   const annHtml=_announcements.length ? _announcements.map(a=>{
-    const icon=a.type==='promo'?'🎁':a.type==='important'?'⚠️':'📢';
-    const color=a.type==='promo'?'#22c55e':a.type==='important'?'#f59e0b':'var(--accent)';
+    const meta=annTypeMeta(a.type); const icon=meta.icon; const color=meta.color;
     const date=new Date(a.created_at).toLocaleDateString('ru');
     return `<div style="background:var(--surface2);border:1px solid var(--border);border-left:3px solid ${color};border-radius:10px;padding:14px;margin-bottom:10px">
       <div style="display:flex;justify-content:space-between;align-items:start;gap:8px;margin-bottom:6px">
         <div style="font-size:14px;font-weight:700;color:${color}">${icon} ${a.title||''}</div>
         ${isAdmin()?`<button onclick="deleteAnnouncement('${a.id}')" style="background:transparent;border:none;color:#ff4757;cursor:pointer;font-size:13px">🗑</button>`:''}
       </div>
+      <div style="display:inline-block;font-size:10px;font-weight:600;color:${color};border:1px solid ${color};border-radius:6px;padding:1px 8px;margin-bottom:8px">${meta.label}</div>
       ${a.image_url?`<img src="${a.image_url}" style="max-width:100%;border-radius:8px;margin-bottom:8px">`:''}
       <div style="font-size:13px;color:var(--text2);line-height:1.5;white-space:pre-wrap">${a.body||''}</div>
       <div style="font-size:10px;color:var(--text3);margin-top:8px">${date} · ${a.author_name||''}</div>
@@ -10060,8 +10090,11 @@ function openAnnouncementForm(){
     <textarea id="annBody" placeholder="${_L==='ru'?'Текст объявления...':_L==='en'?'Announcement text...':'E\'lon matni...'}" rows="4" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:11px;color:var(--text);font-size:14px;margin-bottom:10px;resize:vertical"></textarea>
     <div style="display:flex;gap:8px;margin-bottom:10px">
       <select id="annType" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px;color:var(--text);font-size:13px">
-        <option value="info">📢 ${_L==='ru'?'Информация':_L==='en'?'Info':"Ma'lumot"}</option>
         <option value="promo">🎁 ${_L==='ru'?'Акция':_L==='en'?'Promo':'Aksiya'}</option>
+        <option value="stock">📦 ${_L==='ru'?'Новый товар':_L==='en'?'New stock':'Yangi mahsulot'}</option>
+        <option value="solution">💡 ${_L==='ru'?'Новое решение':_L==='en'?'New solution':'Yangi yechim'}</option>
+        <option value="event">📅 ${_L==='ru'?'Событие':_L==='en'?'Event':'Tadbir'}</option>
+        <option value="info">📢 ${_L==='ru'?'Объявление':_L==='en'?'Info':"E'lon"}</option>
         <option value="important">⚠️ ${_L==='ru'?'Важно':_L==='en'?'Important':'Muhim'}</option>
       </select>
       <select id="annExpire" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px;color:var(--text);font-size:13px">
