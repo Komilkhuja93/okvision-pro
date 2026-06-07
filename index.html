@@ -5636,6 +5636,46 @@ function sendAiChat(){
   askAi(val);
 }
 
+// ── OKVISION Pro bilim bazasi (AI maslahatchi uchun) ───────────────────────
+function okvisionKB(_L){
+  const head = _L==='ru'
+    ? "Ты — AI-консультант платформы OKVISION Pro. Отвечай на русском."
+    : _L==='en'
+    ? "You are the AI assistant of the OKVISION Pro platform. Reply in English."
+    : "Sen — OKVISION Pro platformasining AI maslahatchisisan. O'zbek tilida javob ber.";
+  // Platforma haqida to'liq ma'lumot (3 tilga mos, sodda)
+  const about = _L==='ru' ? `
+О ПЛАТФОРМЕ OKVISION Pro:
+Это платформа для специалистов по видеонаблюдению (CCTV): быстрое составление коммерческих предложений.
+Возможности: импорт прайса (Excel/PDF), AI-поиск товаров, фирменное PDF-предложение (логотип, печать, валюты, скидки),
+умный расчёт HDD, мультивалютность (USD/сум), облачная синхронизация, командный чат, запросы товаров,
+объявления/акции, редактирование предложений, мгновенные заказы.
+Устанавливается на Android, iPhone, Windows, macOS, Linux (онлайн и офлайн, без магазина — PWA).
+Сайт: okvision-pro.vercel.app` 
+  : _L==='en' ? `
+ABOUT OKVISION Pro:
+A platform for CCTV/surveillance professionals to build commercial proposals fast.
+Features: price-list import (Excel/PDF), AI product search, branded PDF proposals (logo, seal, currencies, discounts),
+smart HDD calculator, multi-currency (USD/som), cloud sync, team chat, product requests, announcements/promos,
+quote editing, instant orders. Installs on Android, iPhone, Windows, macOS, Linux (online & offline, no store — PWA).
+Site: okvision-pro.vercel.app`
+  : `
+OKVISION Pro HAQIDA:
+Bu videokuzatuv (CCTV) mutaxassislari uchun platforma — tijorat takliflarini tez tayyorlash.
+Imkoniyatlar: prays import (Excel/PDF), AI mahsulot qidiruvi, brendlangan PDF taklif (logo, muhur, valyutalar, chegirma),
+aqlli HDD kalkulyator, ko'p valyuta (USD/so'm), bulutda sinxron, jamoaviy chat, mahsulot so'rovlari,
+e'lonlar/aksiyalar, taklifni tahrirlash, tezkor buyurtma.
+Android, iPhone, Windows, macOS, Linux ga o'rnatiladi (onlayn va oflayn, do'konsiz — PWA).
+Sayt: okvision-pro.vercel.app`;
+  // Sotuvchiga yo'naltirish
+  const contact = _L==='ru'
+    ? `\nКОНТАКТ/ПОКУПКА: если пользователь хочет купить, заказать, узнать цену у продавца, оформить заказ или связаться — направляй его к продавцу в Telegram: @Komilkhuja (https://t.me/Komilkhuja).`
+    : _L==='en'
+    ? `\nCONTACT/PURCHASE: if the user wants to buy, order, get a price from the seller, place an order or get in touch — direct them to the seller on Telegram: @Komilkhuja (https://t.me/Komilkhuja).`
+    : `\nALOQA/XARID: agar foydalanuvchi sotib olmoqchi, buyurtma bermoqchi, sotuvchidan narx so'ramoqchi yoki bog'lanmoqchi bo'lsa — uni sotuvchiga Telegram orqali yo'naltir: @Komilkhuja (https://t.me/Komilkhuja).`;
+  return head+"\n"+about+contact;
+}
+
 async function askAi(query){
   if(!aiChatOpen) toggleAiChat();
   const _L=LANG||'uz';
@@ -5654,14 +5694,15 @@ async function askAi(query){
     const topProds=PRODS.filter(p=>p._usd>0).sort((a,b)=>a._usd-b._usd).slice(0,5).map(p=>`${p.name}: $${p._usd}`).join(', ');
     const langNote=_L==='ru'?'Отвечай на русском языке.':_L==='en'?'Reply in English.':"O'zbek tilida javob ber.";
 
-    const systemPrompt=`Sen OKVISION Pro platformasining AI ekspert maslahatchisan.
-CCTV, IP kamera, NVR, DVR, kirish nazorati va tarmoq qurilmalari sohasida mutaxassissan.
-${langNote}
+    const systemPrompt=`${okvisionKB(_L)}
+
+Sen CCTV, IP kamera, NVR, DVR, kirish nazorati va tarmoq qurilmalari bo'yicha ham mutaxassissan.
 Foydalanuvchi katalogida ${prodCount} ta mahsulot bor.
 Distributorlar: ${suppNames||"mavjud emas"}.
 Arzon mahsulotlardan: ${topProds||'yo\'q'}.
 Qisqa, foydali va texnik aniq javob ber. Mahsulot nomi bilan maslahat ber.
-Narx so'ralsa — dollar ($) va so'mda (${Math.round(RATE).toLocaleString()} so'm/$ kurs) ko'rsat.`;
+Narx so'ralsa — dollar ($) va so'mda (${Math.round(RATE).toLocaleString()} so'm/$ kurs) ko'rsat.
+Platforma (OKVISION Pro) haqida so'rasa — yuqoridagi ma'lumot asosida to'liq tushuntir.`;
 
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -9354,11 +9395,12 @@ async function sendAiMessage(userMsg){
     const suppNames=[...new Set(PRODS.map(p=>p._parentSupplier||p._supplier||'').filter(Boolean))].slice(0,5).join(', ');
     const langNote=_L==='ru'?'Отвечай на русском языке.':_L==='en'?'Reply in English.':"O'zbek tilida javob ber.";
 
-    const systemPrompt=`Sen OKVISION Pro platformasining AI maslahatchiisan. 
-CCTV (kamera, kuzatuv) sohasida mutaxassissan.
-${langNote}
+    const systemPrompt=`${okvisionKB(_L)}
+
+Sen CCTV (kamera, kuzatuv) sohasida ham mutaxassissan.
 Foydalanuvchining katalogida ${prodCount} ta mahsulot bor. Distributorlar: ${suppNames||'mavjud'}.
-Qisqa, aniq va foydali maslahatlarga ber. Texnik savollarga to'liq javob ber.
+Qisqa, aniq va foydali maslahatlar ber. Texnik savollarga to'liq javob ber.
+Platforma (OKVISION Pro) imkoniyatlari, o'rnatish yoki ishlatish haqida so'rasa — yuqoridagi ma'lumot asosida to'liq tushuntir.
 Taklif yoki narx haqida savol bo'lsa — platformadagi mahsulotlardan foydalanishni tavsiya et.`;
 
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
