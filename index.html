@@ -221,6 +221,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .mq-ht{font-family:var(--fh);font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
 .mq-body{padding:12px 14px;display:flex;flex-direction:column;gap:7px}
 .mq-row{display:grid;grid-template-columns:1fr 110px 55px 90px 72px 34px;gap:6px;align-items:center}
+.mq-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
 .mq-inp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:100%;transition:.15s}
 .mq-inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,193,7,.1)}
 .mq-add{padding:7px 13px;border-radius:var(--r);background:rgba(255,193,7,.12);color:var(--amber);border:1px solid rgba(255,193,7,.3);font-size:12px;font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap}
@@ -244,6 +245,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .svc-preset{padding:4px 10px;border-radius:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;cursor:pointer;transition:.12s}
 .svc-preset:hover{border-color:var(--green);color:var(--green);background:rgba(0,229,160,.07)}
 .svc-row{display:grid;grid-template-columns:1fr 120px 90px 34px;gap:6px;align-items:center}
+.svc-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
+.svc-desc,.mq-desc{background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:5px 10px;color:var(--text2);font-family:var(--fb);font-size:11px;outline:none;width:100%;resize:vertical;min-height:30px}
 .svc-inp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:100%;transition:.15s}
 .svc-inp:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,229,160,.1)}
 .svc-add{padding:7px 13px;border-radius:var(--r);background:rgba(0,229,160,.12);color:var(--green);border:1px solid rgba(0,229,160,.28);font-size:12px;font-weight:600;cursor:pointer;transition:.12s;white-space:nowrap}
@@ -1315,6 +1318,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
     <div class="user-menu-item" onclick="loadFromCloud()">⬇️ <span data-i18n="menu_load">Bulutdan yuklash</span></div>
     <div class="user-menu-item" id="menuAnalyticsBtn" onclick="openAnalytics();toggleUserMenu()">📊 <span>Tahlil</span></div>
     <div class="user-menu-item" id="menuChatBtn" onclick="openChat();toggleUserMenu()">💬 <span>Chat</span></div>
+    <div class="user-menu-item" onclick="togglePush()">🔔 <span data-i18n="menu_push">Bildirishnoma</span> <span id="pushToggleState" style="margin-left:auto;font-size:11px;color:var(--text3)"></span></div>
     <div class="user-menu-item" onclick="openRequestsBoard();toggleUserMenu()">🔎 <span>Mahsulot so'rovlari</span></div>
     <div class="user-menu-item" onclick="openAnnouncementsList();toggleUserMenu()">📢 <span>E'lonlar</span></div>
     <div class="user-menu-item" id="pwaInstallBtn" onclick="installPWA()" style="display:none;color:var(--accent)">📲 <span>Ilovani o'rnatish</span></div>
@@ -4363,11 +4367,14 @@ function renderSvcRows(){
   if(!services.length){cont.innerHTML='';emp.style.display='block';updSvcTotal();return}
   emp.style.display='none';
   cont.innerHTML=services.map((s,i)=>`
-    <div class="svc-row" id="svcRow_${i}">
-      <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
-      <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
-      <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
-      <button class="svc-del" onclick="delSvc(${i})">✕</button>
+    <div class="svc-item" id="svcRow_${i}">
+      <div class="svc-row">
+        <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
+        <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
+        <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
+        <button class="svc-del" onclick="delSvc(${i})">✕</button>
+      </div>
+      <textarea class="svc-desc" placeholder="${LANG==='ru'?'Описание (необязательно)':LANG==='en'?'Description (optional)':'Tavsif (ixtiyoriy)'}" oninput="updSvcField(${i},'desc',this.value)">${(s.desc||'').replace(/</g,'&lt;')}</textarea>
     </div>`).join('');
   updSvcTotal();
 }
@@ -4473,6 +4480,7 @@ function updSvcField(i,field,val){
   if(!services[i])return;
   if(field==='price')services[i].price=parseFloat(val)||'';
   else if(field==='qty')services[i].qty=Math.max(1,parseInt(val)||1);
+  else if(field==='desc')services[i].desc=val;
   else services[i].name=val;
   saveSvc();updSvcTotal();
 }
@@ -4625,7 +4633,7 @@ function buildPreview(){
     </div>
     <table class="ptbl ptbl-svc">
       <thead><tr><th style="width:5%">#</th><th style="width:55%">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th style="width:12%">${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';return`<tr><td>${i+1}</td><td><strong>${s.name}</strong></td><td>${qLabel}</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';const dsc=(s.desc||'').trim();return`<tr><td>${i+1}</td><td><strong>${s.name}</strong>${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${qLabel}</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#f0f9f4"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#15803d">${LANG==='ru'?'ИТОГО УСЛУГИ':LANG==='en'?'SERVICES TOTAL':'XIZMATLAR JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -4640,7 +4648,7 @@ function buildPreview(){
     </div>
     <table class="ptbl">
       <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong></td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -5083,7 +5091,8 @@ function renderMqRows(){
   cont.innerHTML=mqItems.map((m,i)=>{
     const cur2=m.cur||'uzs';
     const pHolder=cur2==="usd"?"Narx $":"Narx "+(LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm");
-    return`<div class="mq-row" id="mqRow_${i}">
+    return`<div class="mq-item" id="mqRow_${i}">
+      <div class="mq-row">
       <input class="mq-inp" placeholder="${typeof t==='function'?t('ph_prod_name'):'Mahsulot nomi...'}" value="${(m.name||'').replace(/"/g,'&quot;')}" oninput="updMqField(${i},'name',this.value)">
       <input class="mq-inp" type="number" min="0" step="any" placeholder="${pHolder}" value="${m.price||''}" oninput="updMqField(${i},'price',this.value)" style="text-align:right">
       <select class="mq-inp" onchange="updMqField(${i},'cur',this.value)" style="padding:5px 4px;cursor:pointer;font-size:11px;font-weight:600;color:${cur2==='usd'?'var(--accent)':'var(--amber)'}">
@@ -5095,6 +5104,8 @@ function renderMqRows(){
         ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${u}</option>`).join('')}
       </select>
       <button class="mq-del" onclick="delMq(${i})">✕</button>
+      </div>
+      <textarea class="mq-desc" placeholder="${LANG==='ru'?'Описание (необязательно)':LANG==='en'?'Description (optional)':'Tavsif (ixtiyoriy)'}" oninput="updMqField(${i},'desc',this.value)">${(m.desc||'').replace(/</g,'&lt;')}</textarea>
     </div>`;}).join('');
   updMqTotal();
 }
@@ -5114,6 +5125,7 @@ function updMqField(i,field,val){
   }
   else if(field==='unit') mqItems[i].unit=val;
   else if(field==='cur'){mqItems[i].cur=val;renderMqRows();return;}
+  else if(field==='desc') mqItems[i].desc=val;
   else mqItems[i].name=val;
   saveMQ();updMqTotal();
 }
@@ -6095,6 +6107,7 @@ const I18N = {
     stat_products_short: 'ta mahsulot',
     btn_announcements: "E'lonlar",
     fb_tab: "Shikoyat yoki takliflaringiz?",
+    menu_push: "Bildirishnoma",
     stat_suppliers_short: 'ta supplier',
     stat_prices_short: 'ta narx',
     h_supplier_label: 'Supplier nomi:',
@@ -6296,6 +6309,7 @@ const I18N = {
     stat_products_short: 'товаров',
     btn_announcements: 'Объявления',
     fb_tab: 'Жалобы или предложения?',
+    menu_push: 'Уведомления',
     stat_suppliers_short: 'поставщиков',
     stat_prices_short: 'цен',
     h_supplier_label: 'Название поставщика:',
@@ -6468,6 +6482,7 @@ const I18N = {
     stat_products_short: 'products',
     btn_announcements: 'News',
     fb_tab: 'Complaints or suggestions?',
+    menu_push: 'Notifications',
     stat_suppliers_short: 'suppliers',
     stat_prices_short: 'prices',
     h_supplier_label: 'Supplier name:',
@@ -7174,7 +7189,9 @@ function showToast(msg){const o=document.querySelector('.toast');if(o)o.remove()
 <!-- Feedback (shikoyat/taklif) tugmasi -->
 <button class="fb-tab" id="fbTab" onclick="openFeedback()">
   <span class="fb-label" data-i18n="fb_tab">Shikoyat yoki takliflaringiz?</span>
-  <span class="fb-ic">✍️</span>
+  <span class="fb-ic" style="position:relative">✍️
+    <span id="fbBadge" style="display:none;position:absolute;top:-2px;left:-2px;min-width:17px;height:17px;border-radius:9px;background:#ff4757;color:#fff;font-size:10px;font-weight:800;line-height:17px;text-align:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg,#06080c)"></span>
+  </span>
 </button>
 <div class="fb-panel" id="fbPanel"></div>
 
@@ -8352,6 +8369,7 @@ async function saveQuoteToCloud(customName){
       price_usd: pUsd,
       orig_currency: curr,
       discount: 0,
+      description: m.desc||'',
       total_usd: pUsd*(parseFloat(m.qty)||1),
       sort_order: quote.length+i,
     });
@@ -8369,6 +8387,7 @@ async function saveQuoteToCloud(customName){
       price_usd: p,
       orig_currency: 'usd',
       discount: 0,
+      description: s.desc||'',
       total_usd: p*(parseFloat(s.qty)||1),
       sort_order: quote.length+(mqItems?.length||0)+i,
     });
@@ -8382,7 +8401,7 @@ async function saveQuoteToCloud(customName){
       const stripped = items.map(it=>{
         const c={...it};
         delete c.item_type; delete c.image_url; delete c.orig_currency;
-        delete c.brand; delete c.discount;
+        delete c.brand; delete c.discount; delete c.description;
         return c;
       });
       const r2 = await sb.from('quote_items').insert(stripped);
@@ -8584,6 +8603,54 @@ function _unlockAudio(){
   document.addEventListener(evt, _unlockAudio, {once:false, passive:true});
 });
 
+// ── Push bildirishnoma (bepul, serversiz — ilova ochiq/fonda ishlaganda) ────
+function pushEnabled(){ return localStorage.getItem('okvPush')==='1' && _notifGranted(); }
+function _notifGranted(){ return ('Notification' in window) && Notification.permission==='granted'; }
+async function requestPushPermission(){
+  const L=LANG||'uz';
+  if(!('Notification' in window)){
+    showToast(L==='ru'?'Браузер не поддерживает уведомления':L==='en'?'Notifications not supported':"Brauzer bildirishnomani qo'llamaydi");
+    return false;
+  }
+  try{
+    let perm=Notification.permission;
+    if(perm!=='granted' && perm!=='denied') perm=await Notification.requestPermission();
+    if(perm==='granted'){
+      localStorage.setItem('okvPush','1');
+      showToast(L==='ru'?'🔔 Уведомления включены':L==='en'?'🔔 Notifications on':'🔔 Bildirishnoma yoqildi');
+      // Sinov bildirishnomasi
+      showLocalPush('OKVISION Pro', L==='ru'?'Уведомления включены!':L==='en'?'Notifications enabled!':'Bildirishnoma yoqildi!', 'okv-test', true);
+      updatePushToggleUI();
+      return true;
+    } else {
+      showToast(L==='ru'?'Уведомления заблокированы в браузере':L==='en'?'Notifications blocked in browser':'Bildirishnoma brauzerda bloklangan');
+      return false;
+    }
+  }catch(e){ return false; }
+}
+function disablePush(){ localStorage.setItem('okvPush','0'); updatePushToggleUI();
+  const L=LANG||'uz'; showToast(L==='ru'?'Уведомления выключены':L==='en'?'Notifications off':"Bildirishnoma o'chirildi"); }
+function togglePush(){ if(pushEnabled()) disablePush(); else requestPushPermission(); }
+function updatePushToggleUI(){
+  const el=document.getElementById('pushToggleState'); if(!el) return;
+  const L=LANG||'uz'; const on=pushEnabled();
+  el.textContent = on ? (L==='ru'?'Вкл':L==='en'?'On':'Yoqilgan') : (L==='ru'?'Выкл':L==='en'?'Off':"O'chiq");
+  el.style.color = on ? 'var(--green)' : 'var(--text3)';
+}
+// Bildirishnoma ko'rsatish — faqat ilova fonda bo'lsa (force=true bo'lsa har doim)
+function showLocalPush(title, body, tag, force){
+  if(!_notifGranted()) return;
+  if(!force && !document.hidden) return;          // fokusda bo'lsa — toast yetarli
+  if(!force && localStorage.getItem('okvPush')!=='1') return;
+  try{
+    if(navigator.serviceWorker && navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(reg=>{
+        reg.showNotification(title,{ body, icon:'/icons/icon-192.png', badge:'/icons/icon-192.png', tag:tag||'okv-msg', renotify:true });
+      }).catch(()=>{ try{ new Notification(title,{body,icon:'/icons/icon-192.png'}); }catch(e){} });
+    } else { new Notification(title,{body,icon:'/icons/icon-192.png'}); }
+  }catch(e){}
+}
+
 function playMsgSound(type='incoming'){
   try{
     const ctx = _getAudioCtx();
@@ -8689,6 +8756,42 @@ function _updateFaviconBadge(count){
 
 let _unreadSub=null, _unreadCount=0, _pollInterval=null;
 
+// ── Yangi feedback (shikoyat/taklif) xabarnomasi — faqat admin ──────────────
+let _fbUnread=0, _fbSub=null;
+function updateFbBadge(n){
+  _fbUnread=n||0;
+  const b=document.getElementById('fbBadge');
+  if(!b) return;
+  if(_fbUnread>0){ b.style.display='block'; b.textContent=_fbUnread>99?'99+':_fbUnread; }
+  else b.style.display='none';
+}
+async function computeFeedbackUnread(){
+  const sb=getSB(); if(!sb||!isAdmin()) return;
+  try{
+    const {count}=await sb.from('feedback')
+      .select('*',{count:'exact',head:true})
+      .eq('status','new');
+    updateFbBadge(count||0);
+  }catch(e){}
+}
+function subscribeFeedback(){
+  const sb=getSB(); if(!sb||!isAdmin()) return;
+  if(_fbSub) try{sb.removeChannel(_fbSub);}catch(e){}
+  _fbSub=sb.channel('fb_'+(currentUser?.id||'a').slice(0,8)+'_'+Date.now())
+    .on('postgres_changes',{event:'INSERT',schema:'public',table:'feedback'},
+      payload=>{
+        const f=payload.new;
+        computeFeedbackUnread();
+        playMsgSound('incoming');
+        const k=f.kind==='complaint'?'😟':f.kind==='bug'?'🐞':'💡';
+        showToast(`${k} ${LANG==='ru'?'Новый отзыв':LANG==='en'?'New feedback':'Yangi fikr'}: ${(f.message||'').slice(0,45)}`, 5000);
+        showLocalPush(`${k} ${LANG==='ru'?'Новый отзыв':LANG==='en'?'New feedback':'Yangi fikr'}`, (f.message||'').slice(0,60), 'okv-fb');
+        // Panel ochiq va inbox ko'rinayotgan bo'lsa — ro'yxatni yangilash
+        if(document.getElementById('fbList')) loadFeedbackList();
+      })
+    .subscribe();
+}
+
 function subscribeToUnread(){
   const sb=getSB(); if(!sb||!currentUser) return;
   if(_unreadSub) try{sb.removeChannel(_unreadSub);}catch(e){}
@@ -8710,6 +8813,7 @@ function subscribeToUnread(){
         const name=msg?.sender_name||'User';
         const prev=(msg?.content||'').slice(0,55);
         showToast(`💬 ${name}: ${prev}`, 4000);
+        showLocalPush(LANG==='ru'?'Новое сообщение':LANG==='en'?'New message':'Yangi xabar', `${name}: ${prev}`, 'okv-chat');
       }
     })
     .on('postgres_changes',{
@@ -8724,6 +8828,7 @@ function subscribeToUnread(){
         playMsgSound('incoming');
         const name=msg?.sender_name||'User';
         showToast(`💬 ${name}: ${(msg?.content||'').slice(0,55)}`, 3500);
+        showLocalPush(LANG==='ru'?'Общий чат':LANG==='en'?'General chat':'Umumiy chat', `${name}: ${(msg?.content||'').slice(0,55)}`, 'okv-global');
       }
     })
     .subscribe((status, err)=>{
@@ -9813,7 +9918,8 @@ async function loadQuoteFromCloud(quoteId){
         services.push({
           name: item.product_name||'',
           price: item.price_usd||0,
-          qty: item.qty||1
+          qty: item.qty||1,
+          desc: item.description||''
         });
       } else if(type==='manual'){
         const cur = item.orig_currency==='uzs' ? 'uzs' : 'usd';
@@ -9824,7 +9930,8 @@ async function loadQuoteFromCloud(quoteId){
           price: price,
           qty: item.qty||1,
           unit: item.unit||'dona',
-          cur: cur
+          cur: cur,
+          desc: item.description||''
         });
       } else {
         // product — katalogdan topamiz, topilmasa item ma'lumotidan tiklaymiz
@@ -10223,12 +10330,12 @@ async function loadFeedbackList(){
 }
 async function fbSetStatus(id,status){
   const sb=getSB(); if(!sb||!isAdmin()) return;
-  try{ await sb.from('feedback').update({status}).eq('id',id); loadFeedbackList(); }catch(e){ showToast('❌ '+e.message); }
+  try{ await sb.from('feedback').update({status}).eq('id',id); loadFeedbackList(); computeFeedbackUnread(); }catch(e){ showToast('❌ '+e.message); }
 }
 async function fbDelete(id){
   const sb=getSB(); if(!sb||!isAdmin()) return;
   if(!confirm(LANG==='ru'?'Удалить?':LANG==='en'?'Delete?':"O'chirasizmi?")) return;
-  try{ await sb.from('feedback').delete().eq('id',id); loadFeedbackList(); }catch(e){ showToast('❌ '+e.message); }
+  try{ await sb.from('feedback').delete().eq('id',id); loadFeedbackList(); computeFeedbackUnread(); }catch(e){ showToast('❌ '+e.message); }
 }
 
 function renderAnnTicker(){
@@ -10843,6 +10950,7 @@ function updateUserUI(){
   // Unread xabarlar
   if(typeof checkUnreadMessages==='function') checkUnreadMessages();
   if(typeof subscribeToUnread==='function') subscribeToUnread();
+  if(typeof computeFeedbackUnread==='function'){ computeFeedbackUnread(); subscribeFeedback(); }
   // E'lonlar va so'rovlarni yuklash
   if(typeof loadAnnouncements==='function') loadAnnouncements();
   if(typeof loadRequests==='function') loadRequests();
@@ -10858,6 +10966,7 @@ function updateUserUI(){
 // ── User menu ─────────────────────────────────────────────────────────────
 function toggleUserMenu(){
   document.getElementById('userMenu').classList.toggle('show');
+  if(typeof updatePushToggleUI==='function') updatePushToggleUI();
 }
 document.addEventListener('click', e=>{
   if(!e.target.closest('#userPill')&&!e.target.closest('#userMenu')){
