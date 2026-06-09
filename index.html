@@ -8002,6 +8002,27 @@ function base64ToBlob(base64, mimeType='image/jpeg'){
 }
 
 // Rasmni Supabase Storage ga yuklash
+// E'lon media (rasm yoki video) faylini "media" bucketga yuklash
+async function uploadMediaToStorage(file, kind){
+  const sb=getSB();
+  if(!sb||!currentUser||!file) return null;
+  try{
+    const extMap={'image/png':'png','image/jpeg':'jpg','image/jpg':'jpg','image/webp':'webp','image/gif':'gif',
+      'video/mp4':'mp4','video/webm':'webm','video/quicktime':'mov','video/ogg':'ogv'};
+    const ext=extMap[file.type] || (file.name.split('.').pop()||'bin');
+    const path=`${currentUser.id}/${kind}_${Date.now()}.${ext}`;
+    const {error}=await sb.storage.from('media').upload(path, file, {upsert:true, contentType:file.type});
+    if(error){
+      if(/bucket|not found/i.test(error.message)){
+        showToast("⚠️ 'media' ombori yo'q — setup_announcement_media_bucket.sql ni ishga tushiring", 6000);
+      } else showToast('⚠️ Yuklashda xato: '+error.message.slice(0,40));
+      return null;
+    }
+    const {data}=sb.storage.from('media').getPublicUrl(path);
+    return data?.publicUrl||null;
+  }catch(e){ console.warn('uploadMedia',e); return null; }
+}
+
 async function uploadImageToStorage(prodId, base64Data){
   const sb = getSB();
   if(!sb || !currentUser) return null;
@@ -10101,6 +10122,7 @@ function openAnnouncementsList(){
       </div>
       <div style="display:inline-block;font-size:10px;font-weight:600;color:${color};border:1px solid ${color};border-radius:6px;padding:1px 8px;margin-bottom:8px">${meta.label}</div>
       ${a.image_url?`<img src="${a.image_url}" style="max-width:100%;border-radius:8px;margin-bottom:8px">`:''}
+      ${a.video_url?annVideoEmbed(a.video_url):''}
       <div style="font-size:13px;color:var(--text2);line-height:1.5;white-space:pre-wrap">${a.body||''}</div>
       <div style="font-size:10px;color:var(--text3);margin-top:8px">${date} · ${a.author_name||''}</div>
     </div>`;
@@ -10118,6 +10140,22 @@ function openAnnouncementsList(){
 }
 
 // Admin — e'lon yaratish formasi
+// E'lon videosini ko'rsatish — YouTube embed yoki to'g'ridan video
+function annVideoEmbed(url){
+  if(!url) return '';
+  const yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/);
+  if(yt){
+    return `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;margin-bottom:8px">
+      <iframe src="https://www.youtube.com/embed/${yt[1]}" frameborder="0" allowfullscreen
+        style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe></div>`;
+  }
+  if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(url)){
+    return `<video src="${url}" controls style="max-width:100%;border-radius:8px;margin-bottom:8px"></video>`;
+  }
+  // Boshqa havola — tugma
+  return `<a href="${url}" target="_blank" style="display:inline-block;margin-bottom:8px;color:var(--accent);font-size:13px;text-decoration:none">🎬 Videoni ochish →</a>`;
+}
+
 function openAnnouncementForm(){
   if(!isAdmin()){ showToast('❌ Faqat admin'); return; }
   const _L=LANG||'uz';
@@ -10145,13 +10183,44 @@ function openAnnouncementForm(){
         <option value="30">30 ${_L==='ru'?'дней':_L==='en'?'days':'kun'}</option>
       </select>
     </div>
+    <div style="border:1px dashed var(--border2);border-radius:10px;padding:10px;margin-bottom:10px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">🖼️ ${_L==='ru'?'Изображение':_L==='en'?'Image':'Rasm'}</div>
+      <input id="annImgFile" type="file" accept="image/*" onchange="annPickImg(this)" style="width:100%;font-size:12px;color:var(--text2);margin-bottom:6px">
+      <div id="annImgPreview"></div>
+      <input id="annImgUrl" placeholder="${_L==='ru'?'или ссылка на картинку':_L==='en'?'or paste image URL':'yoki rasm havolasi'}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-size:12px">
+    </div>
+    <div style="border:1px dashed var(--border2);border-radius:10px;padding:10px;margin-bottom:12px">
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">🎬 ${_L==='ru'?'Видео — загрузите файл или вставьте ссылку':_L==='en'?'Video — upload a file or paste a link':"Video — fayl yuklang yoki havola joylang"}</div>
+      <input id="annVideoFile" type="file" accept="video/*" onchange="annPickVideo(this)" style="width:100%;font-size:12px;color:var(--text2);margin-bottom:6px">
+      <div id="annVideoPreview" style="font-size:11px;color:var(--accent2);margin-bottom:6px"></div>
+      <input id="annVideoUrl" placeholder="${_L==='ru'?'или YouTube / прямая ссылка':_L==='en'?'or YouTube / direct link':"yoki YouTube / to'g'ridan havola"}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-size:12px">
+      <div style="font-size:10px;color:var(--text3);margin-top:5px">💡 ${_L==='ru'?'Файл до 50 МБ. Для длинных видео лучше YouTube.':_L==='en'?'File up to 50MB. For long videos use YouTube.':"Fayl 50MB gacha. Uzun video uchun YouTube yaxshiroq."}</div>
+    </div>
     <div style="display:flex;gap:8px">
-      <button onclick="submitAnnouncement()" style="flex:1;padding:11px;border-radius:10px;background:var(--green);color:#0a0c10;border:none;font-weight:700;cursor:pointer">💾 ${_L==='ru'?'Опубликовать':_L==='en'?'Publish':'Joylash'}</button>
+      <button onclick="submitAnnouncement()" class="ann-save-btn" style="flex:1;padding:11px;border-radius:10px;background:var(--green);color:#0a0c10;border:none;font-weight:700;cursor:pointer">💾 ${_L==='ru'?'Опубликовать':_L==='en'?'Publish':'Joylash'}</button>
       <button onclick="document.getElementById('annFormModal').remove()" style="padding:11px 16px;border-radius:10px;background:var(--surface2);color:var(--text3);border:1px solid var(--border);cursor:pointer">${_L==='ru'?'Отмена':_L==='en'?'Cancel':'Bekor'}</button>
     </div>
   </div>`;
   document.body.appendChild(modal);
   setTimeout(()=>document.getElementById('annTitle')?.focus(),100);
+}
+
+let _annImgFile=null, _annVideoFile=null;
+function annPickImg(input){
+  const f=input.files&&input.files[0]; if(!f){ _annImgFile=null; return; }
+  if(f.size>10*1024*1024){ showToast('⚠️ Rasm 10MB dan katta'); input.value=''; return; }
+  _annImgFile=f;
+  const r=new FileReader();
+  r.onload=e=>{ const prev=document.getElementById('annImgPreview');
+    if(prev) prev.innerHTML='<img src="'+e.target.result+'" style="max-width:100%;max-height:140px;border-radius:8px;margin-bottom:6px">'; };
+  r.readAsDataURL(f);
+}
+function annPickVideo(input){
+  const f=input.files&&input.files[0]; if(!f){ _annVideoFile=null; return; }
+  if(f.size>50*1024*1024){ showToast('⚠️ Video 50MB dan katta — YouTube ishlating'); input.value=''; return; }
+  _annVideoFile=f;
+  const prev=document.getElementById('annVideoPreview');
+  if(prev) prev.textContent='🎬 '+f.name+' ('+(f.size/1048576).toFixed(1)+' MB)';
 }
 
 async function submitAnnouncement(){
@@ -10161,21 +10230,43 @@ async function submitAnnouncement(){
   const body=(document.getElementById('annBody')?.value||'').trim();
   const type=document.getElementById('annType')?.value||'info';
   const expDays=parseInt(document.getElementById('annExpire')?.value||'0');
+  const imgUrlInput=(document.getElementById('annImgUrl')?.value||'').trim();
+  const videoUrlInput=(document.getElementById('annVideoUrl')?.value||'').trim();
   if(!title){ showToast('❌ Sarlavha kiriting'); return; }
   let expires_at=null;
   if(expDays>0) expires_at=new Date(Date.now()+expDays*86400000).toISOString();
+
+  const saveBtn=document.querySelector('#annFormModal .ann-save-btn');
+  let image_url=imgUrlInput||null;
+  let video_url=videoUrlInput||null;
   try{
-    const {error}=await sb.from('announcements').insert({
+    if(_annImgFile){
+      if(saveBtn) saveBtn.textContent='⏳ Rasm...';
+      const u=await uploadMediaToStorage(_annImgFile,'img'); if(u) image_url=u;
+    }
+    if(_annVideoFile){
+      if(saveBtn) saveBtn.textContent='⏳ Video...';
+      const u=await uploadMediaToStorage(_annVideoFile,'vid'); if(u) video_url=u;
+    }
+    if(saveBtn) saveBtn.textContent='⏳ ...';
+    const row={
       author_id:currentUser.id,
       author_name:currentProfile?.full_name||currentUser.email?.split('@')[0]||'Admin',
-      title, body, type, expires_at, active:true
-    });
-    if(error){ showToast('❌ '+error.message.slice(0,50)); return; }
-    showToast('✅ E\'lon joylandi');
+      title, body, type, expires_at, active:true, image_url, video_url
+    };
+    let {error}=await sb.from('announcements').insert(row);
+    if(error && ((error.message&&error.message.includes('video_url'))||error.code==='PGRST204')){
+      delete row.video_url;
+      showToast('⚠️ Video uchun setup_announcement_media_bucket.sql ni ishga tushiring');
+      const r=await sb.from('announcements').insert(row); error=r.error;
+    }
+    if(error){ showToast('❌ '+error.message.slice(0,60)); if(saveBtn) saveBtn.textContent='💾'; return; }
+    _annImgFile=null; _annVideoFile=null;
+    showToast("✅ E'lon joylandi");
     document.getElementById('annFormModal')?.remove();
     document.getElementById('annModal')?.remove();
     await loadAnnouncements();
-  }catch(e){ showToast('❌ '+e.message); }
+  }catch(e){ showToast('❌ '+e.message); if(saveBtn) saveBtn.textContent='💾'; }
 }
 
 async function deleteAnnouncement(id){
