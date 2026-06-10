@@ -266,6 +266,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .mob-topbar,.mob-bottom-nav,.mob-rate-modal,.mob-rate-sheet,
   .main-cat-bar,.ai-search-wrap,.ai-answer,.ai-result-chips,
   #cmpResults,.sb-add-btn,.ai-fab,.ai-chat-panel,
+  .fb-tab,.fb-panel,#annTicker,
   #aiThinking,#aiChips,.mob-nav-badge,
   #mobRateModal,#catManagerOverlay,
   #shareContactBar,.pv-toolbar,.pv-actions,.pw-toolbar{display:none!important;visibility:hidden!important}
@@ -1313,15 +1314,15 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
     <div class="user-menu-item" onclick="openQuoteHistory()">📋 <span data-i18n="menu_quotes">Taklif tarixi</span></div>
     <div class="user-menu-item" onclick="openSubscription()">💳 <span data-i18n="menu_subscription">Obuna</span></div>
     <div class="user-menu-item" onclick="syncToCloud()">☁️ <span data-i18n="menu_sync">Bulutga saqlash</span></div>
-    <div class="user-menu-item" onclick="cloudDiagnostics();toggleUserMenu()">🔍 <span>Cloud holati</span></div>
+    <div class="user-menu-item" onclick="cloudDiagnostics();toggleUserMenu()">🔍 <span data-i18n="menu_cloud_status">Cloud holati</span></div>
     <div class="user-menu-item" onclick="syncImagesToStorage()">🖼 <span data-i18n="menu_sync_images">Rasmlarni bulutga</span></div>
     <div class="user-menu-item" onclick="loadFromCloud()">⬇️ <span data-i18n="menu_load">Bulutdan yuklash</span></div>
-    <div class="user-menu-item" id="menuAnalyticsBtn" onclick="openAnalytics();toggleUserMenu()">📊 <span>Tahlil</span></div>
+    <div class="user-menu-item" id="menuAnalyticsBtn" onclick="openAnalytics();toggleUserMenu()">📊 <span data-i18n="menu_analytics">Tahlil</span></div>
     <div class="user-menu-item" id="menuChatBtn" onclick="openChat();toggleUserMenu()">💬 <span>Chat</span></div>
     <div class="user-menu-item" onclick="togglePush()">🔔 <span data-i18n="menu_push">Bildirishnoma</span> <span id="pushToggleState" style="margin-left:auto;font-size:11px;color:var(--text3)"></span></div>
-    <div class="user-menu-item" onclick="openRequestsBoard();toggleUserMenu()">🔎 <span>Mahsulot so'rovlari</span></div>
-    <div class="user-menu-item" onclick="openAnnouncementsList();toggleUserMenu()">📢 <span>E'lonlar</span></div>
-    <div class="user-menu-item" id="pwaInstallBtn" onclick="installPWA()" style="display:none;color:var(--accent)">📲 <span>Ilovani o'rnatish</span></div>
+    <div class="user-menu-item" onclick="openRequestsBoard();toggleUserMenu()">🔎 <span data-i18n="menu_requests">Mahsulot so'rovlari</span></div>
+    <div class="user-menu-item" onclick="openAnnouncementsList();toggleUserMenu()">📢 <span data-i18n="btn_announcements">E'lonlar</span></div>
+    <div class="user-menu-item" id="pwaInstallBtn" onclick="installPWA()" style="display:none;color:var(--accent)">📲 <span data-i18n="menu_install">Ilovani o'rnatish</span></div>
     <div style="border-top:1px solid var(--border);margin:4px 0"></div>
     <div class="user-menu-item danger" onclick="doSignOut()">🚪 <span data-i18n="menu_signout">Chiqish</span></div>
   </div>
@@ -1625,10 +1626,10 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <div style="display:flex;align-items:center;gap:6px">
           <input type="number" id="globalDiscInp" min="0" max="100" step="0.5" value="0" placeholder="0"
             style="width:70px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;color:var(--text);font-size:14px;text-align:center"
-            oninput="applyGlobalDiscount(this.value)">
+            oninput="applyGlobalDiscount(this.value)" onchange="applyGlobalDiscount(this.value,true)">
           <span style="font-size:14px;color:var(--text2);font-weight:600">%</span>
         </div>
-        <button onclick="applyGlobalDiscount(0);document.getElementById('globalDiscInp').value=0"
+        <button onclick="applyGlobalDiscount(0,true);document.getElementById('globalDiscInp').value=0"
           style="font-size:11px;padding:5px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);cursor:pointer" id="globalDiscReset">
           Tozalash
         </button>
@@ -3853,9 +3854,11 @@ function renderCats(){
   const bar=document.getElementById('mainCatBar');
   if(!bar) return;
 
-  // Show bar only if there are products
+  // Show bar only if there are products AND catalog page is open
   if(!PRODS.length){bar.classList.remove('active');return}
-  bar.classList.add('active');
+  const catPageActive=document.getElementById('pg-catalog')?.classList.contains('active');
+  if(catPageActive) bar.classList.add('active');
+  else bar.classList.remove('active');
 
   // ── Supplier row ──
   const supRow=document.getElementById('mainSupRow');
@@ -3972,6 +3975,21 @@ function renderList(list){
   el.innerHTML=rows.join('');
 }
 // filterP defined below in AI search section
+// Rasmni katta ochish (telefon va kompyuter uchun)
+function openImgViewer(src, name){
+  if(!src) return;
+  document.getElementById('imgViewer')?.remove();
+  const d=document.createElement('div');
+  d.id='imgViewer';
+  d.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;flex-direction:column;padding:16px';
+  d.innerHTML=`
+    <img src="${src}" style="max-width:96vw;max-height:82vh;object-fit:contain;border-radius:10px;box-shadow:0 10px 60px rgba(0,0,0,.7)">
+    ${name?`<div style="color:#cfe6f5;font-size:13px;margin-top:12px;text-align:center;max-width:90vw">${name}</div>`:''}
+    <button style="position:absolute;top:14px;right:14px;width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.12);border:none;color:#fff;font-size:20px;cursor:pointer">✕</button>`;
+  d.onclick=()=>d.remove();
+  document.body.appendChild(d);
+}
+
 function showProd(id){
   const p=PRODS.find(x=>x.id===id);
   if(!p){ console.warn('showProd: mahsulot topilmadi:', id); return; }
@@ -4005,7 +4023,7 @@ function showProd(id){
   <div class="dc">
     <div class="dh">
       <div class="imb">
-        <div class="imm">
+        <div class="imm" ${img?`onclick="openImgViewer(getImg(selP), selP?.name)" style="cursor:zoom-in"`:''}>
           ${img?`<img src="${img}" alt="${p.name}">`:`<span class="imp">${p.em}</span>`}
         </div>
         <div class="iact">
@@ -4287,7 +4305,7 @@ function renderQ(){
       <td style="text-align:center">
         <input class="qi" type="number" min="0" max="100" step="0.5" value="${disc}"
           style="width:60px;text-align:center;color:${disc>0?'var(--amber)':'var(--text3)'}"
-          oninput="updDisc('${item.product.id}',this.value)" onchange="updDisc('${item.product.id}',this.value)"
+          oninput="updDisc('${item.product.id}',this.value)" onchange="_discRerender()"
           placeholder="0">
       </td>
       <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
@@ -4302,19 +4320,39 @@ function updDisc(id, val){
   const item=quote.find(q=>q.product.id===id);
   if(!item) return;
   const d=Math.max(0,Math.min(100,parseFloat(val)||0));
+  if(item.disc===d) return;
   item.disc=d;
   saveQ();
-  renderQ(); // narx ko'rsatkichlari yangilanishi uchun
+  // Fokus yo'qolmasligi uchun butun jadvalni qayta qurmaymiz —
+  // faqat shu qator JAMIsini va umumiy summani yangilaymiz
+  updTotal();
+  const idx=quote.indexOf(item);
+  const rows=document.querySelectorAll('#qBody tr');
+  const row=rows[idx];
+  if(row){
+    const tds=row.querySelectorAll('td');
+    const totalTd=tds[tds.length-2]; // oxirgidan oldingi = Jami
+    if(totalTd){
+      const p=getPrice(item.product)||0;
+      const net=p*(1-d/100)*(item.qty||1);
+      totalTd.innerHTML=`<strong>${fmtP(net)}</strong>${d>0?`<div style="font-size:9px;color:var(--amber)">-${d}%</div>`:''}`;
+    }
+  }
 }
+function _discRerender(){ renderQ(); }
 
 // Hammaga umumiy chegirma
-function applyGlobalDiscount(val){
+function applyGlobalDiscount(val, final){
   const d=Math.max(0,Math.min(100,parseFloat(val)||0));
   quote.forEach(item=>{ item.disc=d; });
   saveQ();
-  renderQ();
-  const _L=LANG||'uz';
-  if(d>0) showToast(_L==='ru'?`💸 Скидка ${d}% применена ко всем`:_L==='en'?`💸 ${d}% discount applied to all`:`💸 Hammaga ${d}% chegirma qo'llandi`, 2000);
+  if(final){
+    renderQ(); // yozish tugagach to'liq yangilash
+    const _L=LANG||'uz';
+    if(d>0) showToast(_L==='ru'?`💸 Скидка ${d}% применена ко всем`:_L==='en'?`💸 ${d}% discount applied to all`:`💸 Hammaga ${d}% chegirma qo'llandi`, 2000);
+  } else {
+    updTotal(); // yozish davomida faqat jami summa
+  }
 }
 function updQty(id,val){
   const item=quote.find(q=>q.product.id===id);
@@ -6108,6 +6146,10 @@ const I18N = {
     btn_announcements: "E'lonlar",
     fb_tab: "Shikoyat yoki takliflaringiz?",
     menu_push: "Bildirishnoma",
+    menu_cloud_status: "Cloud holati",
+    menu_analytics: "Tahlil",
+    menu_requests: "Mahsulot so'rovlari",
+    menu_install: "Ilovani o'rnatish",
     stat_suppliers_short: 'ta supplier',
     stat_prices_short: 'ta narx',
     h_supplier_label: 'Supplier nomi:',
@@ -6310,6 +6352,10 @@ const I18N = {
     btn_announcements: 'Объявления',
     fb_tab: 'Жалобы или предложения?',
     menu_push: 'Уведомления',
+    menu_cloud_status: 'Облако: статус',
+    menu_analytics: 'Аналитика',
+    menu_requests: 'Запросы товаров',
+    menu_install: 'Установить приложение',
     stat_suppliers_short: 'поставщиков',
     stat_prices_short: 'цен',
     h_supplier_label: 'Название поставщика:',
@@ -6483,6 +6529,10 @@ const I18N = {
     btn_announcements: 'News',
     fb_tab: 'Complaints or suggestions?',
     menu_push: 'Notifications',
+    menu_cloud_status: 'Cloud status',
+    menu_analytics: 'Analytics',
+    menu_requests: 'Product requests',
+    menu_install: 'Install app',
     stat_suppliers_short: 'suppliers',
     stat_prices_short: 'prices',
     h_supplier_label: 'Supplier name:',
