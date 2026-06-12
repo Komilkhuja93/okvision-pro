@@ -1638,8 +1638,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       <div class="qtw"><table class="qt"><thead><tr>
         <th>#</th><th></th><th id="thModel">Model</th><th id="thKat">Kat.</th><th id="thQty">Miqdor</th><th style="text-align:right" id="thPrice">Narx</th><th style="text-align:center" id="thDisc">Chegirma %</th><th style="text-align:right" id="thTotal">Jami</th><th></th>
       </tr></thead><tbody id="qBody"></tbody></table></div>
-      <div class="tb"><div style="text-align:right">
+      <div class="tb" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none">
+          <input type="checkbox" id="qqsSwitch" onchange="setQQS(this.checked)" style="width:17px;height:17px;accent-color:var(--amber);cursor:pointer">
+          <span><span data-i18n="qqs_toggle">QQS 12% qo'shish</span> <span style="color:var(--text3);font-size:11px" data-i18n="qqs_hint">(B2B / pul o'tkazma)</span></span>
+        </label>
+        <div style="text-align:right">
         <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label"><span data-i18n="q_total_label">Jami summa</span></div>
+        <div id="tQqsLine" style="display:none;font-size:11px;color:var(--amber);margin:2px 0"></div>
         <div class="ta" id="tAmt">$0</div>
         <div class="talt" id="tAlt"></div>
       </div></div>
@@ -2079,7 +2085,13 @@ function getQuoteSummary(){
     ...(prodLines.length?[`📦 ${_prod}:`,...prodLines,'']:[]),
     ...(svcLines.length?[`🔧 ${_svc}:`,...svcLines,'']:[]),
     ...(mqLines.length?[`📝 ${_extra}:`,...mqLines,'']:[]),
-    `💰 ${_total}: ${fmtP(grandTotal)}`,
+    ...(QQS_ON?[
+      `${L==='ru'?'Итого (без НДС)':L==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)'}: ${fmtP(grandTotal)}`,
+      `QQS (12%): ${fmtP(grandTotal*QQS_RATE/100)}`,
+      `💰 ${L==='ru'?'ИТОГО (с НДС)':L==='en'?'TOTAL (incl. VAT)':'JAMI (QQS bilan)'}: ${fmtP(grandTotal*(1+QQS_RATE/100))}`
+    ]:[
+      `💰 ${_total}: ${fmtP(grandTotal)}`
+    ]),
     clientAddr?`📍 ${clientAddr}`:'',
     clientPhone?`📞 ${clientPhone}`:'',
     `📅 ${dt}`,
@@ -4048,7 +4060,7 @@ function showProd(id){
         ${pr
           ?`<div class="dpr">
               <span class="pm">${fmtP(pr)}</span>
-              <span class="pa">${cur==='USD'?'≈ '+fmtUZS(pr*RATE)+' '+_lSom:'= $'+pr.toLocaleString()}</span>
+              <span class="pa">${cur==='USD'?'≈ '+fmtUZS(pr*RATE):'= $'+pr.toLocaleString()}</span>
               ${p._vat?`<span style="font-size:11px;background:rgba(255,193,7,.1);color:var(--amber);border:1px solid rgba(255,193,7,.25);border-radius:5px;padding:1px 8px">${_lVat}: ${p._vat.toLocaleString()} ${_lSom}</span>`:''}
             </div>
             ${(()=>{
@@ -4140,7 +4152,7 @@ function showMobProdSheet(p){
   const priceHtml = pr
     ? `<div style="font-size:22px;font-weight:800;color:var(--text)">${fmtP(pr)}
         <span style="font-size:13px;font-weight:400;color:var(--text3)">
-          ≈ ${fmtUZS(pr*RATE)} ${_somLbl}
+          ≈ ${fmtUZS(pr*RATE)}
         </span>
        </div>
        ${p._vat?`<div style="font-size:12px;color:var(--amber)">${_vatLbl}: ${p._vat.toLocaleString()} ${_somLbl}</div>`:''}`
@@ -4374,6 +4386,22 @@ function updQty(id,val){
     }
   }
 }
+// ── QQS (12%) — Naqd / B2B to'lov turi ──────────────────────────────────────
+const QQS_RATE=12;
+let QQS_ON = localStorage.getItem('okvQQS')==='1';
+function setQQS(on){
+  QQS_ON=!!on;
+  localStorage.setItem('okvQQS', QQS_ON?'1':'0');
+  const sw=document.getElementById('qqsSwitch'); if(sw) sw.checked=QQS_ON;
+  updTotal(); updGrandTotal();
+  // Preview ochiq bo'lsa — qayta qurish
+  if(document.getElementById('pg-preview')?.classList.contains('active') && typeof buildPreview==='function') buildPreview();
+  const _L=LANG||'uz';
+  showToast(QQS_ON
+    ? (_L==='ru'?'✅ НДС 12% включён (B2B)':_L==='en'?'✅ VAT 12% on (B2B)':"✅ QQS 12% yoqildi (B2B)")
+    : (_L==='ru'?'Наличный расчёт — без НДС':_L==='en'?'Cash — no VAT':"Naqd — QQSsiz"), 1800);
+}
+
 function updTotal(){
   let t=0, saved=0;
   quote.forEach(item=>{
@@ -4385,11 +4413,21 @@ function updTotal(){
       saved+=(pr-discPr)*item.qty;
     }
   });
-  document.getElementById('tAmt').textContent=fmtP(t);
+  document.getElementById('tAmt').textContent=fmtP(QQS_ON?t*(1+QQS_RATE/100):t);
+  // QQS taqsimoti
+  const qqsLine=document.getElementById('tQqsLine');
+  if(qqsLine){
+    if(QQS_ON&&t>0){
+      const _L=LANG||'uz';
+      qqsLine.style.display='block';
+      qqsLine.textContent=(_L==='ru'?'Без НДС: ':_L==='en'?'Excl. VAT: ':'QQSsiz: ')+fmtP(t)+'  ·  QQS 12%: '+fmtP(t*QQS_RATE/100);
+    } else qqsLine.style.display='none';
+  }
   // Tejalgan summa ko'rsatish
   const tAltEl=document.getElementById('tAlt');
   window._totalSaved=saved;
-  document.getElementById('tAlt').textContent=cur==='USD'?'≈ '+fmtUZS(t*RATE):'= $'+t.toLocaleString();
+  const _tFinal=QQS_ON?t*(1+QQS_RATE/100):t;
+  document.getElementById('tAlt').textContent=cur==='USD'?'≈ '+fmtUZS(_tFinal*RATE):'= $'+_tFinal.toLocaleString();
   updSvcTotal();
 }
 
@@ -4728,10 +4766,27 @@ function buildPreview(){
   ${(quote.length||mqValid.length)?`<table class="ptbl"><thead><tr><th>#</th><th></th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product':'Mahsulot'}</th><th>${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Miqdor'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th>${hasDisc?`<th class="nr">${LANG==='ru'?'Скидка':LANG==='en'?'Disc.':'Chegirma'}</th>`:''}<th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead><tbody>${rows}</tbody><tfoot><tr class="ptr"><td colspan="${hasDisc?6:5}">${LANG==='ru'?'ИТОГО ТОВАРЫ':LANG==='en'?'PRODUCTS TOTAL':'MAHSULOTLAR JAMI'}</td><td class="nr">${fmtP(total)}</td></tr>${cur==='USD'?`<tr><td colspan="${hasDisc?6:5}" style="font-size:11px;color:#777;text-align:right;padding:5px 12px">${LANG==='ru'?'Эквивалент в сумах':LANG==='en'?'Equivalent in UZS':"So'mga ekvivalent"}</td><td class="nr" style="font-size:11px;color:#777;padding:5px 12px">${fmtUZS(total*RATE)}</td></tr>`:''}</tfoot></table>`:'<div style="text-align:center;padding:28px;color:#999">'+(LANG==="ru"?"Товары не добавлены":LANG==="en"?"No products added":"Mahsulot qo\'shilmagan")+"</div>"}
   ${mqHtml}
   ${svcHtml}
-  ${grandPreview>total&&(svcTotal2>0||mqTotal2>0)?`<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-    <div style="font-size:13px;font-weight:600" id="grandTotalLabel">${LANG==='ru'?'ИТОГО':LANG==='en'?'GRAND TOTAL':'UMUMIY JAMI'}</div>
-    <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
-  </div>${cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(grandPreview*RATE)} ${LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm"}</div>`:''}`:''}
+  ${(()=>{
+    const _hasExtra=grandPreview>total&&(svcTotal2>0||mqTotal2>0);
+    if(!QQS_ON&&!_hasExtra) return '';
+    const _qqs=QQS_ON?grandPreview*QQS_RATE/100:0;
+    const _final=grandPreview+_qqs;
+    const _somEq=cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(_final*RATE)}</div>`:'';
+    if(QQS_ON){
+      const _noQ=LANG==='ru'?'Итого (без НДС)':LANG==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)';
+      const _qL=LANG==='ru'?'НДС (12%)':LANG==='en'?'VAT (12%)':'QQS (12%)';
+      const _wQ=LANG==='ru'?'ИТОГО (с НДС)':LANG==='en'?'GRAND TOTAL (incl. VAT)':'UMUMIY JAMI (QQS bilan)';
+      return `<div style="margin-top:10px;border:1px solid #e3e8f0;border-radius:8px;overflow:hidden">
+        <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:13px;color:#555;background:#f8fafc"><span>${_noQ}</span><strong>${fmtP(grandPreview)}</strong></div>
+        <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:13px;color:#9a6b00;background:#fffaf0;border-top:1px solid #f0e6d0"><span>${_qL}</span><strong>${fmtP(_qqs)}</strong></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0a0c10;color:#fff"><span style="font-size:13px;font-weight:600">${_wQ}</span><span style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(_final)}</span></div>
+      </div>${_somEq}`;
+    }
+    return `<div style="margin-top:10px;background:#0a0c10;color:#fff;border-radius:8px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
+      <div style="font-size:13px;font-weight:600" id="grandTotalLabel">${LANG==='ru'?'ИТОГО':LANG==='en'?'GRAND TOTAL':'UMUMIY JAMI'}</div>
+      <div style="font-family:'Inter',sans-serif;font-size:22px;font-weight:800;color:#00d4ff">${fmtP(grandPreview)}</div>
+    </div>${_somEq}`;
+  })()}
   ${hddSec}
   ${warranty||quoteValidity||terms?`
   <div style="margin-top:14px;padding:12px 14px;background:#f8fafc;border-radius:8px;border:1px solid #e8ecf4;font-size:12px;color:#555">
@@ -5199,13 +5254,18 @@ function updGrandTotal(){
   if(gtEl){
     const hasExtra=(st>0&&services.length)||(mt>0&&mqItems.length);
     gtEl.style.display=(hasExtra&&grand>0)?'block':'none';
-    if(gtVal)gtVal.textContent=fmtP(grand);
-    if(gtAlt)gtAlt.textContent=cur==='USD'?'≈ '+fmtUZS(grand*RATE):'';
+    const _gFinal=QQS_ON?grand*(1+QQS_RATE/100):grand;
+    if(gtVal)gtVal.textContent=fmtP(_gFinal);
+    if(gtAlt){
+      const _L=LANG||'uz';
+      const qqsTxt=QQS_ON?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(grand)+' + QQS 12%: '+fmtP(grand*QQS_RATE/100)+(cur==='USD'?' · ':'')):'';
+      gtAlt.textContent=qqsTxt+(cur==='USD'?'≈ '+fmtUZS(_gFinal*RATE):'');
+    }
   }
 }
 // Init manual quote items on load
 document.addEventListener('DOMContentLoaded',()=>{renderMqRows();renderSvcRows();
-
+  const _qs=document.getElementById('qqsSwitch'); if(_qs) _qs.checked=QQS_ON;
 });
 
 // ══ AI SMART SEARCH ════════════════════════════════════════════════════════
@@ -5704,6 +5764,36 @@ function sendAiChat(){
 }
 
 // ── OKVISION Pro bilim bazasi (AI maslahatchi uchun) ───────────────────────
+// ── Universal AI so'rov: avval o'z serverimiz (/api/chat — bepul Gemini yoki
+//    Claude), ishlamasa to'g'ridan Anthropic (preview muhiti uchun) ──────────
+async function aiFetch(payload){
+  // 1) O'z serverimiz (Vercel) — kalit serverda, bepul Gemini bilan ishlaydi
+  try{
+    const r=await fetch('/api/chat',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    if(r.ok) return await r.json();
+    if(r.status!==404){
+      const e=await r.json().catch(()=>({}));
+      if(e&&e.error) return {error:{message:e.error}};
+    }
+    // 404 = server funksiyasi yo'q (lokal fayl/preview) → fallback
+  }catch(e){ /* tarmoq xatosi → fallback */ }
+  // 2) Fallback: to'g'ridan Anthropic (claude.ai preview da ishlaydi)
+  try{
+    const r2=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',...payload})
+    });
+    return await r2.json();
+  }catch(e){
+    return {error:{message:String(e&&e.message||e)}};
+  }
+}
+
 function okvisionKB(_L){
   const head = _L==='ru'
     ? "Ты — AI-консультант платформы OKVISION Pro. Отвечай на русском."
@@ -5771,17 +5861,11 @@ Qisqa, foydali va texnik aniq javob ber. Mahsulot nomi bilan maslahat ber.
 Narx so'ralsa — dollar ($) va so'mda (${Math.round(RATE).toLocaleString()} so'm/$ kurs) ko'rsat.
 Platforma (OKVISION Pro) haqida so'rasa — yuqoridagi ma'lumot asosida to'liq tushuntir.`;
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:800,
-        system:systemPrompt,
-        messages:aiChatHistory.slice(-12)
-      })
+    const data=await aiFetch({
+      max_tokens:800,
+      system:systemPrompt,
+      messages:aiChatHistory.slice(-12)
     });
-    const data=await resp.json();
     if(loadingDiv) loadingDiv.remove();
 
     if(data.error){
@@ -6146,6 +6230,8 @@ const I18N = {
     btn_announcements: "E'lonlar",
     fb_tab: "Shikoyat yoki takliflaringiz?",
     menu_push: "Bildirishnoma",
+    qqs_toggle: "QQS 12% qo'shish",
+    qqs_hint: "(B2B / pul o'tkazma)",
     menu_cloud_status: "Cloud holati",
     menu_analytics: "Tahlil",
     menu_requests: "Mahsulot so'rovlari",
@@ -6352,6 +6438,8 @@ const I18N = {
     btn_announcements: 'Объявления',
     fb_tab: 'Жалобы или предложения?',
     menu_push: 'Уведомления',
+    qqs_toggle: 'Добавить НДС 12%',
+    qqs_hint: '(B2B / перечисление)',
     menu_cloud_status: 'Облако: статус',
     menu_analytics: 'Аналитика',
     menu_requests: 'Запросы товаров',
@@ -6529,6 +6617,8 @@ const I18N = {
     btn_announcements: 'News',
     fb_tab: 'Complaints or suggestions?',
     menu_push: 'Notifications',
+    qqs_toggle: 'Add VAT 12%',
+    qqs_hint: '(B2B / bank transfer)',
     menu_cloud_status: 'Cloud status',
     menu_analytics: 'Analytics',
     menu_requests: 'Product requests',
@@ -9606,20 +9696,14 @@ Qisqa, aniq va foydali maslahatlar ber. Texnik savollarga to'liq javob ber.
 Platforma (OKVISION Pro) imkoniyatlari, o'rnatish yoki ishlatish haqida so'rasa — yuqoridagi ma'lumot asosida to'liq tushuntir.
 Taklif yoki narx haqida savol bo'lsa — platformadagi mahsulotlardan foydalanishni tavsiya et.`;
 
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:CLAUDE_MODEL,
-        max_tokens:1000,
-        system:systemPrompt,
-        messages:_aiHistory.slice(-10)
-      })
+    const data=await aiFetch({
+      max_tokens:1000,
+      system:systemPrompt,
+      messages:_aiHistory.slice(-10)
     });
-    const data=await resp.json();
     loadDiv.remove();
 
-    const aiText=data.content?.[0]?.text||(_L==='ru'?'Ошибка API':_L==='en'?'API error':'API xatosi');
+    const aiText=data.content?.[0]?.text||(data.error?.message?('⚠️ '+String(data.error.message).slice(0,120)):(_L==='ru'?'Ошибка API':_L==='en'?'API error':'API xatosi'));
     _aiHistory.push({role:'assistant',content:aiText});
     appendAiMsg('assistant',aiText);
 
