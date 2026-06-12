@@ -220,7 +220,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .mq-hd{background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .mq-ht{font-family:var(--fh);font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
 .mq-body{padding:12px 14px;display:flex;flex-direction:column;gap:7px}
-.mq-row{display:grid;grid-template-columns:1fr 110px 55px 90px 72px 34px;gap:6px;align-items:center}
+.mq-row{display:grid;grid-template-columns:1fr 100px 52px 78px 64px 46px 34px;gap:6px;align-items:center}
+@media(max-width:768px){.mq-row{grid-template-columns:1fr 78px 46px 58px 52px 38px 30px;gap:4px}}
 .mq-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
 .mq-inp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:100%;transition:.15s}
 .mq-inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,193,7,.1)}
@@ -244,7 +245,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .svc-presets{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:4px}
 .svc-preset{padding:4px 10px;border-radius:6px;background:var(--surface3);border:1px solid var(--border2);color:var(--text2);font-size:11px;cursor:pointer;transition:.12s}
 .svc-preset:hover{border-color:var(--green);color:var(--green);background:rgba(0,229,160,.07)}
-.svc-row{display:grid;grid-template-columns:1fr 120px 90px 34px;gap:6px;align-items:center}
+.svc-row{display:grid;grid-template-columns:1fr 105px 64px 64px 46px 34px;gap:6px;align-items:center}
+@media(max-width:768px){.svc-row{grid-template-columns:1fr 80px 52px 54px 38px 30px;gap:4px}}
 .svc-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
 .svc-desc,.mq-desc{background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:5px 10px;color:var(--text2);font-family:var(--fb);font-size:11px;outline:none;width:100%;resize:vertical;min-height:30px}
 .svc-inp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:100%;transition:.15s}
@@ -1633,17 +1635,18 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           style="font-size:11px;padding:5px 10px;border-radius:7px;background:var(--surface2);border:1px solid var(--border);color:var(--text3);cursor:pointer" id="globalDiscReset">
           Tozalash
         </button>
+        <span style="width:1px;height:20px;background:var(--border2)"></span>
+        <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
+          <input type="checkbox" id="qqsSwitch" onchange="setQQS(this.checked)" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer">
+          <span style="font-size:13px;font-weight:600;color:var(--amber)">🧾 QQS 12%</span>
+          <span style="font-size:11px;color:var(--text3)" id="qqsAllHint">hammaga</span>
+        </label>
         <span style="font-size:11px;color:var(--text3)" id="globalDiscHint">Har bir mahsulotni alohida ham o'zgartirish mumkin</span>
       </div>
       <div class="qtw"><table class="qt"><thead><tr>
-        <th>#</th><th></th><th id="thModel">Model</th><th id="thKat">Kat.</th><th id="thQty">Miqdor</th><th style="text-align:right" id="thPrice">Narx</th><th style="text-align:center" id="thDisc">Chegirma %</th><th style="text-align:right" id="thTotal">Jami</th><th></th>
+        <th>#</th><th></th><th id="thModel">Model</th><th id="thKat">Kat.</th><th id="thQty">Miqdor</th><th style="text-align:right" id="thPrice">Narx</th><th style="text-align:center" id="thDisc">Chegirma %</th><th style="text-align:center" id="thQqs">QQS</th><th style="text-align:right" id="thTotal">Jami</th><th></th>
       </tr></thead><tbody id="qBody"></tbody></table></div>
-      <div class="tb" style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--text2);user-select:none">
-          <input type="checkbox" id="qqsSwitch" onchange="setQQS(this.checked)" style="width:17px;height:17px;accent-color:var(--amber);cursor:pointer">
-          <span><span data-i18n="qqs_toggle">QQS 12% qo'shish</span> <span style="color:var(--text3);font-size:11px" data-i18n="qqs_hint">(B2B / pul o'tkazma)</span></span>
-        </label>
-        <div style="text-align:right">
+      <div class="tb"><div style="text-align:right">
         <div style="font-size:12px;color:var(--text2)" data-i18n="q_total_label"><span data-i18n="q_total_label">Jami summa</span></div>
         <div id="tQqsLine" style="display:none;font-size:11px;color:var(--amber);margin:2px 0"></div>
         <div class="ta" id="tAmt">$0</div>
@@ -2085,13 +2088,15 @@ function getQuoteSummary(){
     ...(prodLines.length?[`📦 ${_prod}:`,...prodLines,'']:[]),
     ...(svcLines.length?[`🔧 ${_svc}:`,...svcLines,'']:[]),
     ...(mqLines.length?[`📝 ${_extra}:`,...mqLines,'']:[]),
-    ...(QQS_ON?[
-      `${L==='ru'?'Итого (без НДС)':L==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)'}: ${fmtP(grandTotal)}`,
-      `QQS (12%): ${fmtP(grandTotal*QQS_RATE/100)}`,
-      `💰 ${L==='ru'?'ИТОГО (с НДС)':L==='en'?'TOTAL (incl. VAT)':'JAMI (QQS bilan)'}: ${fmtP(grandTotal*(1+QQS_RATE/100))}`
-    ]:[
-      `💰 ${_total}: ${fmtP(grandTotal)}`
-    ]),
+    ...(()=>{
+      const {net,qqs}=calcAllTotals();
+      if(qqs>0) return [
+        `${L==='ru'?'Итого (без НДС)':L==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)'}: ${fmtP(net)}`,
+        `QQS (12%): ${fmtP(qqs)}`,
+        `💰 ${L==='ru'?'ИТОГО':L==='en'?'TOTAL':'JAMI'}: ${fmtP(net+qqs)}`
+      ];
+      return [`💰 ${_total}: ${fmtP(grandTotal)}`];
+    })(),
     clientAddr?`📍 ${clientAddr}`:'',
     clientPhone?`📞 ${clientPhone}`:'',
     `📅 ${dt}`,
@@ -4320,6 +4325,7 @@ function renderQ(){
           oninput="updDisc('${item.product.id}',this.value)" onchange="_discRerender()"
           placeholder="0">
       </td>
+      <td style="text-align:center"><input type="checkbox" ${item.qqs?'checked':''} onchange="updItemQqs('${item.product.id}',this.checked)" title="QQS 12%" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer"></td>
       <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
       <td><button class="rb" onclick="removeFromQ('${item.product.id}')">✕</button></td>
     </tr>`;
@@ -4386,20 +4392,58 @@ function updQty(id,val){
     }
   }
 }
-// ── QQS (12%) — Naqd / B2B to'lov turi ──────────────────────────────────────
+// ── QQS (12%) — har bir pozitsiya uchun alohida (ayrim tovarlar QQS bilan,
+//    ayrimlari QQSsiz sotiladi). Bardagi checkbox = hammaga qo'llash ─────────
 const QQS_RATE=12;
-let QQS_ON = localStorage.getItem('okvQQS')==='1';
 function setQQS(on){
-  QQS_ON=!!on;
-  localStorage.setItem('okvQQS', QQS_ON?'1':'0');
-  const sw=document.getElementById('qqsSwitch'); if(sw) sw.checked=QQS_ON;
-  updTotal(); updGrandTotal();
-  // Preview ochiq bo'lsa — qayta qurish
+  on=!!on;
+  quote.forEach(i=>{ i.qqs=on; });
+  services.forEach(s=>{ s.qqs=on; });
+  mqItems.forEach(m=>{ m.qqs=on; });
+  saveQ(); saveSvc(); saveMQ();
+  renderQ(); renderSvcRows(); renderMqRows();
+  updGrandTotal();
   if(document.getElementById('pg-preview')?.classList.contains('active') && typeof buildPreview==='function') buildPreview();
   const _L=LANG||'uz';
-  showToast(QQS_ON
-    ? (_L==='ru'?'✅ НДС 12% включён (B2B)':_L==='en'?'✅ VAT 12% on (B2B)':"✅ QQS 12% yoqildi (B2B)")
-    : (_L==='ru'?'Наличный расчёт — без НДС':_L==='en'?'Cash — no VAT':"Naqd — QQSsiz"), 1800);
+  showToast(on
+    ? (_L==='ru'?'🧾 НДС 12% — для всех позиций':_L==='en'?'🧾 VAT 12% applied to all':"🧾 QQS 12% — hammaga qo'llandi")
+    : (_L==='ru'?'НДС снят со всех':_L==='en'?'VAT removed from all':"QQS hammadan olib tashlandi"), 1800);
+}
+// Mahsulot qatoridagi QQS checkbox
+function updItemQqs(id,on){
+  const item=quote.find(q=>q.product.id===id);
+  if(!item) return;
+  item.qqs=!!on;
+  saveQ(); _syncQqsSwitch(); updTotal(); updGrandTotal();
+}
+// Bar checkbox holatini sinxronlash (hammasi belgilangan bo'lsa ✓)
+function _syncQqsSwitch(){
+  const sw=document.getElementById('qqsSwitch'); if(!sw) return;
+  const all=[...quote.map(i=>!!i.qqs),
+    ...services.filter(s=>s.name&&parseFloat(s.price)>0).map(s=>!!s.qqs),
+    ...mqItems.filter(m=>m.name&&parseFloat(m.price)>0).map(m=>!!m.qqs)];
+  sw.checked = all.length>0 && all.every(Boolean);
+}
+// Barcha bo'limlar bo'yicha: {net, qqs} (chegirmadan keyin)
+function calcAllTotals(){
+  let net=0, qqs=0;
+  quote.forEach(it=>{
+    const pr=getPrice(it.product); if(!pr) return;
+    const n=pr*(1-(it.disc||0)/100)*(it.qty||1);
+    net+=n; if(it.qqs) qqs+=n*QQS_RATE/100;
+  });
+  services.forEach(s=>{
+    const p=parseFloat(s.price)||0; if(!s.name||p<=0) return;
+    const n=p*(1-(s.disc||0)/100)*(parseInt(s.qty)||1);
+    net+=n; if(s.qqs) qqs+=n*QQS_RATE/100;
+  });
+  mqItems.forEach(m=>{
+    const p=parseFloat(m.price)||0; if(!m.name||p<=0) return;
+    const usd=m.cur==='uzs'?p/RATE:p;
+    const n=usd*(parseFloat(m.qty)||1);
+    net+=n; if(m.qqs) qqs+=n*QQS_RATE/100;
+  });
+  return {net, qqs};
 }
 
 function updTotal(){
@@ -4413,20 +4457,26 @@ function updTotal(){
       saved+=(pr-discPr)*item.qty;
     }
   });
-  document.getElementById('tAmt').textContent=fmtP(QQS_ON?t*(1+QQS_RATE/100):t);
-  // QQS taqsimoti
+  // Mahsulotlar QQS si (belgilanganlar)
+  let qqsP=0;
+  quote.forEach(item=>{
+    if(!item.qqs) return;
+    const pr=getPrice(item.product); if(!pr) return;
+    qqsP+=pr*(1-(item.disc||0)/100)*(item.qty||1)*QQS_RATE/100;
+  });
+  const _tFinal=t+qqsP;
+  document.getElementById('tAmt').textContent=fmtP(_tFinal);
   const qqsLine=document.getElementById('tQqsLine');
   if(qqsLine){
-    if(QQS_ON&&t>0){
+    if(qqsP>0){
       const _L=LANG||'uz';
       qqsLine.style.display='block';
-      qqsLine.textContent=(_L==='ru'?'Без НДС: ':_L==='en'?'Excl. VAT: ':'QQSsiz: ')+fmtP(t)+'  ·  QQS 12%: '+fmtP(t*QQS_RATE/100);
+      qqsLine.textContent=(_L==='ru'?'Без НДС: ':_L==='en'?'Excl. VAT: ':'QQSsiz: ')+fmtP(t)+'  ·  QQS 12%: '+fmtP(qqsP);
     } else qqsLine.style.display='none';
   }
   // Tejalgan summa ko'rsatish
   const tAltEl=document.getElementById('tAlt');
   window._totalSaved=saved;
-  const _tFinal=QQS_ON?t*(1+QQS_RATE/100):t;
   document.getElementById('tAlt').textContent=cur==='USD'?'≈ '+fmtUZS(_tFinal*RATE):'= $'+_tFinal.toLocaleString();
   updSvcTotal();
 }
@@ -4448,6 +4498,11 @@ function renderSvcRows(){
         <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
         <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
         <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
+        <input class="svc-inp" type="number" min="0" max="100" step="0.5" placeholder="0%" title="${LANG==='ru'?'Скидка %':LANG==='en'?'Discount %':'Chegirma %'}" value="${s.disc||''}" oninput="updSvcField(${i},'disc',this.value)" style="text-align:center;color:${(s.disc||0)>0?'var(--amber)':'var(--text3)'}">
+        <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="QQS 12%">
+          <input type="checkbox" ${s.qqs?'checked':''} onchange="updSvcField(${i},'qqs',this.checked)" style="width:14px;height:14px;accent-color:var(--amber);cursor:pointer">
+          <span style="font-size:9px;color:var(--text3)">QQS</span>
+        </label>
         <button class="svc-del" onclick="delSvc(${i})">✕</button>
       </div>
       <textarea class="svc-desc" placeholder="${LANG==='ru'?'Описание (необязательно)':LANG==='en'?'Description (optional)':'Tavsif (ixtiyoriy)'}" oninput="updSvcField(${i},'desc',this.value)">${(s.desc||'').replace(/</g,'&lt;')}</textarea>
@@ -4557,14 +4612,16 @@ function updSvcField(i,field,val){
   if(field==='price')services[i].price=parseFloat(val)||'';
   else if(field==='qty')services[i].qty=Math.max(1,parseInt(val)||1);
   else if(field==='desc')services[i].desc=val;
+  else if(field==='disc')services[i].disc=Math.max(0,Math.min(100,parseFloat(val)||0));
+  else if(field==='qqs'){services[i].qqs=!!val;_syncQqsSwitch();}
   else services[i].name=val;
-  saveSvc();updSvcTotal();
+  saveSvc();updSvcTotal();updGrandTotal();
 }
 function svcTotal(){
   return services.reduce((s,sv)=>{
     const p=parseFloat(sv.price)||0;
     const q=parseInt(sv.qty)||1;
-    return s+p*q;
+    return s+p*(1-(sv.disc||0)/100)*q;
   },0);
 }
 function updSvcTotal(){
@@ -4677,7 +4734,7 @@ function buildPreview(){
     return`<tr>
       <td>${i+1}</td>
       <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
-      <td><strong>${item.product?.name||''}</strong><br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
+      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${priceCell}</td>
       ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
@@ -4709,7 +4766,7 @@ function buildPreview(){
     </div>
     <table class="ptbl ptbl-svc">
       <thead><tr><th style="width:5%">#</th><th style="width:55%">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th style="width:12%">${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const lt=p*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';const dsc=(s.desc||'').trim();return`<tr><td>${i+1}</td><td><strong>${s.name}</strong>${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${qLabel}</td><td class="nr">${fmtP(p)}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const d=s.disc||0;const lt=p*(1-d/100)*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';const dsc=(s.desc||'').trim();const qqsB=s.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:'';const pCell=d>0?`<span style="text-decoration:line-through;color:#999;font-size:10px">${fmtP(p)}</span><br><span style="color:#15803d;font-weight:700">${fmtP(p*(1-d/100))}</span>`:fmtP(p);return`<tr><td>${i+1}</td><td><strong>${s.name}</strong>${qqsB}${d>0?`<span style="font-size:10px;color:#d97706;margin-left:6px">−${d}%</span>`:''}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${qLabel}</td><td class="nr">${pCell}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#f0f9f4"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#15803d">${LANG==='ru'?'ИТОГО УСЛУГИ':LANG==='en'?'SERVICES TOTAL':'XIZMATLAR JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -4724,7 +4781,7 @@ function buildPreview(){
     </div>
     <table class="ptbl">
       <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:'';return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -4768,14 +4825,18 @@ function buildPreview(){
   ${svcHtml}
   ${(()=>{
     const _hasExtra=grandPreview>total&&(svcTotal2>0||mqTotal2>0);
-    if(!QQS_ON&&!_hasExtra) return '';
-    const _qqs=QQS_ON?grandPreview*QQS_RATE/100:0;
+    // Belgilangan pozitsiyalar QQS si
+    let _qqs=0;
+    quote.forEach(it=>{const pr=getPrice(it.product);if(pr&&it.qqs)_qqs+=pr*(1-(it.disc||0)/100)*(it.qty||1)*QQS_RATE/100;});
+    svcRows.forEach(s=>{const p=parseFloat(s.price)||0;if(p>0&&s.qqs)_qqs+=p*(1-(s.disc||0)/100)*(parseInt(s.qty)||1)*QQS_RATE/100;});
+    mqValid.forEach(m=>{const p=parseFloat(m.price)||0;if(p>0&&m.qqs){const usd=m.cur==='uzs'?p/RATE:p;_qqs+=usd*(parseFloat(m.qty)||1)*QQS_RATE/100;}});
+    if(_qqs<=0&&!_hasExtra) return '';
     const _final=grandPreview+_qqs;
     const _somEq=cur==='USD'?`<div style="text-align:right;font-size:11px;color:#8892a4;margin-top:4px">≈ ${fmtUZS(_final*RATE)}</div>`:'';
-    if(QQS_ON){
+    if(_qqs>0){
       const _noQ=LANG==='ru'?'Итого (без НДС)':LANG==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)';
       const _qL=LANG==='ru'?'НДС (12%)':LANG==='en'?'VAT (12%)':'QQS (12%)';
-      const _wQ=LANG==='ru'?'ИТОГО (с НДС)':LANG==='en'?'GRAND TOTAL (incl. VAT)':'UMUMIY JAMI (QQS bilan)';
+      const _wQ=LANG==='ru'?'ИТОГО':LANG==='en'?'GRAND TOTAL':'UMUMIY JAMI';
       return `<div style="margin-top:10px;border:1px solid #e3e8f0;border-radius:8px;overflow:hidden">
         <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:13px;color:#555;background:#f8fafc"><span>${_noQ}</span><strong>${fmtP(grandPreview)}</strong></div>
         <div style="display:flex;justify-content:space-between;padding:9px 16px;font-size:13px;color:#9a6b00;background:#fffaf0;border-top:1px solid #f0e6d0"><span>${_qL}</span><strong>${fmtP(_qqs)}</strong></div>
@@ -5196,6 +5257,10 @@ function renderMqRows(){
       <select class="mq-inp" onchange="updMqField(${i},'unit',this.value)" style="padding:5px 4px;text-align:center;cursor:pointer">
         ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${u}</option>`).join('')}
       </select>
+      <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="QQS 12%">
+        <input type="checkbox" ${m.qqs?'checked':''} onchange="updMqField(${i},'qqs',this.checked)" style="width:14px;height:14px;accent-color:var(--amber);cursor:pointer">
+        <span style="font-size:9px;color:var(--text3)">QQS</span>
+      </label>
       <button class="mq-del" onclick="delMq(${i})">✕</button>
       </div>
       <textarea class="mq-desc" placeholder="${LANG==='ru'?'Описание (необязательно)':LANG==='en'?'Description (optional)':'Tavsif (ixtiyoriy)'}" oninput="updMqField(${i},'desc',this.value)">${(m.desc||'').replace(/</g,'&lt;')}</textarea>
@@ -5219,8 +5284,9 @@ function updMqField(i,field,val){
   else if(field==='unit') mqItems[i].unit=val;
   else if(field==='cur'){mqItems[i].cur=val;renderMqRows();return;}
   else if(field==='desc') mqItems[i].desc=val;
+  else if(field==='qqs'){mqItems[i].qqs=!!val;_syncQqsSwitch();}
   else mqItems[i].name=val;
-  saveMQ();updMqTotal();
+  saveMQ();updMqTotal();updGrandTotal();
 }
 function mqTotal(){
   return mqItems.reduce((s,m)=>{
@@ -5253,19 +5319,20 @@ function updGrandTotal(){
   const gtAlt=document.getElementById('grandTotalAlt');
   if(gtEl){
     const hasExtra=(st>0&&services.length)||(mt>0&&mqItems.length);
-    gtEl.style.display=(hasExtra&&grand>0)?'block':'none';
-    const _gFinal=QQS_ON?grand*(1+QQS_RATE/100):grand;
+    const {net,qqs}=calcAllTotals();
+    const _gFinal=net+qqs;
+    gtEl.style.display=((hasExtra&&grand>0)||qqs>0)?'block':'none';
     if(gtVal)gtVal.textContent=fmtP(_gFinal);
     if(gtAlt){
       const _L=LANG||'uz';
-      const qqsTxt=QQS_ON?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(grand)+' + QQS 12%: '+fmtP(grand*QQS_RATE/100)+(cur==='USD'?' · ':'')):'';
+      const qqsTxt=qqs>0?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(net)+' + QQS 12%: '+fmtP(qqs)+(cur==='USD'?' · ':'')):'';
       gtAlt.textContent=qqsTxt+(cur==='USD'?'≈ '+fmtUZS(_gFinal*RATE):'');
     }
   }
 }
 // Init manual quote items on load
 document.addEventListener('DOMContentLoaded',()=>{renderMqRows();renderSvcRows();
-  const _qs=document.getElementById('qqsSwitch'); if(_qs) _qs.checked=QQS_ON;
+  if(typeof _syncQqsSwitch==='function') _syncQqsSwitch();
 });
 
 // ══ AI SMART SEARCH ════════════════════════════════════════════════════════
@@ -6844,6 +6911,8 @@ function setLang(lang) {
   _setEl('globalDiscReset', _isRu?'Сброс':_isEn?'Reset':'Tozalash');
   _setEl('globalDiscHint', _isRu?'Каждый товар можно изменить отдельно':_isEn?'Each product can be changed separately':"Har birini alohida o'zgartirish mumkin");
   _setEl('thDisc', _isRu?'Скидка %':_isEn?'Discount %':'Chegirma %');
+  _setEl('thQqs', _isRu?'НДС':_isEn?'VAT':'QQS');
+  _setEl('qqsAllHint', _isRu?'всем':_isEn?'all':'hammaga');
   _setEl('thModel', _isRu?'Модель':_isEn?'Model':'Model');
   _setEl('thKat', _isRu?'Кат.':_isEn?'Cat.':'Kat.');
   _setEl('thQty', _isRu?'Кол-во':_isEn?'Qty':'Miqdor');
@@ -8489,6 +8558,7 @@ async function saveQuoteToCloud(customName){
       unit: 'dona',
       price_usd: pr,               // BAZA narx
       discount: disc,              // chegirma %
+      qqs: !!q.qqs,
       orig_currency: 'usd',
       total_usd: pr*(1-disc/100)*(q.qty||1),
       sort_order: i,
@@ -8509,6 +8579,7 @@ async function saveQuoteToCloud(customName){
       price_usd: pUsd,
       orig_currency: curr,
       discount: 0,
+      qqs: !!m.qqs,
       description: m.desc||'',
       total_usd: pUsd*(parseFloat(m.qty)||1),
       sort_order: quote.length+i,
@@ -8526,7 +8597,8 @@ async function saveQuoteToCloud(customName){
       unit: 'xizmat',
       price_usd: p,
       orig_currency: 'usd',
-      discount: 0,
+      discount: s.disc||0,
+      qqs: !!s.qqs,
       description: s.desc||'',
       total_usd: p*(parseFloat(s.qty)||1),
       sort_order: quote.length+(mqItems?.length||0)+i,
@@ -8541,7 +8613,7 @@ async function saveQuoteToCloud(customName){
       const stripped = items.map(it=>{
         const c={...it};
         delete c.item_type; delete c.image_url; delete c.orig_currency;
-        delete c.brand; delete c.discount; delete c.description;
+        delete c.brand; delete c.discount; delete c.description; delete c.qqs;
         return c;
       });
       const r2 = await sb.from('quote_items').insert(stripped);
@@ -10053,6 +10125,8 @@ async function loadQuoteFromCloud(quoteId){
           name: item.product_name||'',
           price: item.price_usd||0,
           qty: item.qty||1,
+          disc: item.discount||0,
+          qqs: !!item.qqs,
           desc: item.description||''
         });
       } else if(type==='manual'){
@@ -10065,6 +10139,7 @@ async function loadQuoteFromCloud(quoteId){
           qty: item.qty||1,
           unit: item.unit||'dona',
           cur: cur,
+          qqs: !!item.qqs,
           desc: item.description||''
         });
       } else {
@@ -10089,7 +10164,7 @@ async function loadQuoteFromCloud(quoteId){
           prod._imgUrl = item.image_url;
           images[prod.id] = item.image_url;
         }
-        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0 });
+        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs });
       }
     });
 
