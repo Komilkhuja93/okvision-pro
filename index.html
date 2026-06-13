@@ -1838,6 +1838,16 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           <span style="font-size:11px;color:var(--text3)">▼</span>
         </div>
         <div class="guide-body" style="display:none;padding:14px 16px">
+          <div style="background:linear-gradient(135deg,rgba(255,170,0,.12),rgba(0,212,255,.08));border:1px solid rgba(255,170,0,.3);border-radius:10px;padding:13px 15px;margin-bottom:14px">
+            <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:6px">💱 <span data-i18n="guide_cur_title">Narx valyutasi — MUHIM!</span></div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+              Fayl yuklashdan OLDIN yuqoridagi "💱 Narx valyutasi" ni to'g'ri tanlang:<br>
+              • Fayldagi narxlar <strong>so'mda</strong> bo'lsa → <strong>"so'm (UZS)"</strong> ni tanlang<br>
+              • Narxlar <strong>dollarda</strong> bo'lsa → <strong>"$ USD"</strong> ni tanlang<br>
+              • Ishonchingiz komil bo'lmasa → <strong>"🔄 Avtomatik"</strong> (tizim o'zi taxmin qiladi)<br>
+              <span style="color:var(--text3)">⚠️ Avtomatik rejim ba'zan adashishi mumkin — shuning uchun so'm fayllar uchun "so'm" ni qo'lda tanlash ishonchliroq.</span>
+            </div>
+          </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
             <div style="background:var(--bg);border-radius:8px;padding:12px">
               <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:6px">1️⃣ <span data-i18n="guide_hik_title">Hikvision / KSS / OKVISION</span></div>
@@ -3110,6 +3120,17 @@ async function extractExcelImages(arrayBuffer) {
   return result;
 }
 
+// ── Global import valyuta yordamchilari (barcha importerlar uchun) ──────────
+function getImportCurrencyGlobal(){
+  return (document.getElementById('importCurrency')||{}).value || 'auto';
+}
+function decideSomGlobal(maxVal){
+  const mode=getImportCurrencyGlobal();
+  if(mode==='uzs') return true;
+  if(mode==='usd') return false;
+  return maxVal>5000; // avtomatik: eng katta narx 5000 dan oshsa — so'm
+}
+
 function importUniversal(wb, fileName, supplierHint, sheetImages={}){
   let importedProds=[];
 
@@ -3692,12 +3713,22 @@ function importSimple(wb, supplierHint, sheetImages={}){
   const sImgs = sheetImages[sheetName] || {};
   const hasImages = Object.keys(sImgs).length > 0;
 
+  // Ustun bo'yicha valyutani aniqlash (har bir narxni alohida emas)
+  let _simpMax=0;
+  if(priceCol>=0){
+    rows.slice(headerIdx+1).forEach(row=>{
+      const raw=String(row[priceCol]||'').replace(/\s/g,'').replace(/[^0-9.,]/g,'').replace(/,/g,'');
+      const v=parseFloat(raw); if(!isNaN(v)&&v>_simpMax) _simpMax=v;
+    });
+  }
+  const _simpIsSom = decideSomGlobal(_simpMax);
+
   rows.slice(headerIdx+1).forEach((row, relIdx)=>{
     const absIdx = headerIdx + 1 + relIdx;
     if(!row[namCol]) return;
     const name = String(row[namCol]).trim();
     if(name.length<3) return;
-    // Narx — so'm/dollar avtomatik aniqlash
+    // Narx
     const priceRaw = priceCol>=0 ? String(row[priceCol]||'') : '';
     let _clean=priceRaw.replace(/\s/g,'').replace(/[^0-9.,]/g,'');
     const _cc=(_clean.match(/,/g)||[]).length, _dc=(_clean.match(/\./g)||[]).length;
@@ -3709,8 +3740,8 @@ function importSimple(wb, supplierHint, sheetImages={}){
     if(_dc>1) _clean=_clean.replace(/\./g,'');
     let usd=parseFloat(_clean);
     if(!usd||usd<=0) return;
-    // 50000+ → so'm, dollarga aylantirish
-    if(usd>=50000) usd=Math.round(usd/RATE*100)/100;
+    // Ustun bo'yicha valyuta (import oynasidagi tanlov + avtomatik)
+    if(_simpIsSom) usd=Math.round(usd/RATE*100)/100;
     // Desc
     const desc = specCol>=0 ? String(row[specCol]||'').replace(/&gt;/g,'>').replace(/[\r\n]+/g,' ').trim() : '';
     // Image — qator bo'yicha, ustundan qat'i nazar (0/1-based)
@@ -6411,6 +6442,7 @@ const I18N = {
     btn_clear_all: "Barcha ma'lumotlarni tozalash",
     btn_manage_imports: "Import qilinganlar",
     import_guide_title: "Import qilish yo'riqnomasi",
+    guide_cur_title: "Narx valyutasi — MUHIM!",
     cat_desc_ip: "DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn va shunga o'xshash seriyalar",
     cat_desc_analog: "2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD seriyalari",
     cat_desc_nvr: "NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx seriyalari, registratorlar",
@@ -6621,6 +6653,7 @@ const I18N = {
     btn_clear_all: 'Очистить все данные',
     btn_manage_imports: 'Импорты',
     import_guide_title: 'Инструкция по импорту',
+    guide_cur_title: 'Валюта цен — ВАЖНО!',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn и похожие серии',
     cat_desc_analog: '2CE, 2CS, HDTVI, AHD, CVI, CVBS, серии Turbo HD',
     cat_desc_nvr: 'NVR, DVR, XVR, HGHI, HQHI, HUHI, серии DS-7xxx, регистраторы',
@@ -6802,6 +6835,7 @@ const I18N = {
     btn_clear_all: 'Clear all data',
     btn_manage_imports: 'Imports',
     import_guide_title: 'Import guide',
+    guide_cur_title: 'Price currency — IMPORTANT!',
     cat_desc_ip: 'DS-2CD, IPC-, 2TD, ColorVu, AcuSense, DeepIn and similar series',
     cat_desc_analog: '2CE, 2CS, HDTVI, AHD, CVI, CVBS, Turbo HD series',
     cat_desc_nvr: 'NVR, DVR, XVR, HGHI, HQHI, HUHI, DS-7xxx series, recorders',
@@ -7479,12 +7513,19 @@ async function deleteImportedSupplier(name){
   const cloudNote=currentUser?(_L==='ru'?' (и из облака)':_L==='en'?' (and cloud)':" (bulutdan ham)"):'';
   const msg=_L==='ru'?`Удалить "${name}" — ${cnt} товаров${cloudNote}?`:_L==='en'?`Delete "${name}" — ${cnt} products${cloudNote}?`:`"${name}" — ${cnt} ta mahsulot o'chirilsinmi${cloudNote}?`;
   if(!confirm(msg)) return;
-  // 1. Lokal o'chirish
-  const removed=PRODS.filter(p=>((p._parentSupplier||p._supplier||p.brand||'').split(/\s*›\s*/)[0].trim())===name);
-  PRODS=PRODS.filter(p=>((p._parentSupplier||p._supplier||p.brand||'').split(/\s*›\s*/)[0].trim())!==name);
+  // 1. Lokal o'chirish (PRODS const — joyida o'zgartiramiz)
+  const _key=p=>((p._parentSupplier||p._supplier||p.brand||'').split(/\s*›\s*/)[0].trim());
+  const removed=PRODS.filter(p=>_key(p)===name);
+  const keep=PRODS.filter(p=>_key(p)!==name);
+  PRODS.length=0; keep.forEach(p=>PRODS.push(p));
   // narx va supplierPrices tozalash
   removed.forEach(p=>{ const nm=(p.name||'').toLowerCase(); delete prices[nm]; });
-  if(window.supplierPrices) delete window.supplierPrices[name];
+  // supplierPrices — shu nom bilan boshlanadigan barcha kalitlarni o'chirish
+  if(window.supplierPrices){
+    Object.keys(window.supplierPrices).forEach(k=>{
+      if(k===name || k.split(/\s*›\s*/)[0].trim()===name) delete window.supplierPrices[k];
+    });
+  }
   // 2. Saqlash
   savePRODS();
   try{ localStorage.setItem('cqP2',JSON.stringify(prices)); }catch(e){}
