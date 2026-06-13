@@ -220,6 +220,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .mq-hd{background:var(--surface2);padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .mq-ht{font-family:var(--fh);font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
 .mq-body{padding:12px 14px;display:flex;flex-direction:column;gap:7px}
+.curseg.active{background:var(--accent)!important;color:#0a0c10!important}
 .mq-row{display:grid;grid-template-columns:1fr 100px 52px 78px 64px 46px 34px;gap:6px;align-items:center}
 @media(max-width:768px){.mq-row{grid-template-columns:1fr 78px 46px 58px 52px 38px 30px;gap:4px}}
 .mq-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
@@ -1267,8 +1268,8 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
     <span style="font-size:11px;color:var(--text3)" class="som-label" data-i18n="cur_som">so'm</span>
   </div>
   <div class="cs">
-    <button class="cb active" onclick="setCur('USD')">$ USD</button>
-    <button class="cb" onclick="setCur('UZS')">so'm</button>
+    <button class="cb active" data-cur="USD" onclick="setCur('USD')">$ USD</button>
+    <button class="cb" data-cur="UZS" onclick="setCur('UZS')">so'm</button>
   </div>
   <!-- Chat icon — faqat login bo'lganda ko'rinadi -->
   <!-- Mahsulot so'rovlari (savdo lentasi) -->
@@ -1489,8 +1490,15 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
             </select>
           </div>
           <div>
-            <div class="mf-label" id="lbl_np_price">Narx (USD)</div>
-            <input class="mf-inp" id="np_price" type="number" min="0" placeholder="0.00">
+            <div class="mf-label" id="lbl_np_price">Narx</div>
+            <div style="display:flex;gap:6px">
+              <input class="mf-inp" id="np_price" type="number" min="0" placeholder="0.00" style="flex:1">
+              <select class="mf-inp" id="np_price_cur" style="width:80px;cursor:pointer;font-weight:600" onchange="updateNpPriceHint()">
+                <option value="usd">$ USD</option>
+                <option value="uzs">so'm</option>
+              </select>
+            </div>
+            <div id="np_price_hint" style="font-size:10px;color:var(--text3);margin-top:3px"></div>
           </div>
           <div class="mf-full">
             <div class="mf-label" id="lbl_np_desc">Tavsif</div>
@@ -1641,6 +1649,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           <span style="font-size:13px;font-weight:600;color:var(--amber)" id="qqsBarLbl">🧾 QQS 12%</span>
           <span style="font-size:11px;color:var(--text3)" id="qqsAllHint">hammaga</span>
         </label>
+        <span style="width:1px;height:20px;background:var(--border2)"></span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="font-size:12px;color:var(--text3)" id="curBarLbl">💱</span>
+          <div style="display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+            <button class="curseg active" data-cur="USD" onclick="setCur('USD')" style="border:none;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--text2)">$ USD</button>
+            <button class="curseg" data-cur="UZS" onclick="setCur('UZS')" style="border:none;padding:6px 12px;font-size:12px;font-weight:600;cursor:pointer;background:none;color:var(--text2)">so'm</button>
+          </div>
+        </div>
         <span style="font-size:11px;color:var(--text3)" id="globalDiscHint">Har bir mahsulotni alohida ham o'zgartirish mumkin</span>
       </div>
       <div class="qtw"><table class="qt"><thead><tr>
@@ -3181,6 +3197,39 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     return cols;
   }
 
+  // Sarlavhada YONMA-YON bir nechta jadval bloklarini aniqlash
+  // (masalan: №|Наименование|Кол|Ед|Цена|Сумма  ...  №|Характеристика|Кол|Ед|Цена|Сумма)
+  function detectBlocks(headerRow){
+    const isName = h=>/наимен|модел|model|^name$|nomi|товар|product|характер/i.test(h);
+    const isPrice = h=>(/цена|price|narx/i.test(h)&&!h.includes('ндс')&&!h.includes('сумм')&&!h.includes('итог'));
+    const isQty = h=>/кол|qty|miqdor|soni|кол-во|кол\.во/i.test(h);
+    const isUnit = h=>/ед\.?изм|ед\.|unit|birlik|o['‘]?lchov/i.test(h);
+    const isVat = h=>/ндс|vat|qqs/i.test(h);
+    const isSpec = h=>/описан|характер|spec|tavs|desc/i.test(h);
+    // Nom ustunlarini topamiz
+    const nameCols=[];
+    headerRow.forEach((h,i)=>{ if(h&&isName(String(h).toLowerCase().trim())) nameCols.push(i); });
+    if(nameCols.length<2) return null; // bitta jadval — eski mantiq ishlasin
+    // Har bir nom ustunidan keyingi narx ustunini topamiz (shu blok ichida)
+    const blocks=[];
+    nameCols.forEach((nc,bi)=>{
+      const nextName = nameCols[bi+1]!==undefined ? nameCols[bi+1] : headerRow.length;
+      const blk={name:nc, price:-1, qty:-1, unit:-1, vat:-1, spec:-1};
+      for(let c=nc+1;c<nextName;c++){
+        const h=String(headerRow[c]||'').toLowerCase().trim();
+        if(!h) continue;
+        if(blk.price<0&&isPrice(h)) blk.price=c;
+        else if(blk.qty<0&&isQty(h)) blk.qty=c;
+        else if(blk.unit<0&&isUnit(h)) blk.unit=c;
+        else if(blk.vat<0&&isVat(h)) blk.vat=c;
+        else if(blk.spec<0&&isSpec(h)&&c!==nc) blk.spec=c;
+      }
+      if(blk.price>=0) blocks.push(blk);
+    });
+    return blocks.length>=2 ? blocks : null;
+  }
+
+
   const skipSheets=['Короткий прайс','Прайс','Содержание','Index','Cover'];
   const productSheets=wb.SheetNames.filter(n=>!skipSheets.some(s=>n.toLowerCase().includes(s.toLowerCase())));
 
@@ -3196,6 +3245,52 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
       const c=detectColumns(rows[i]);
       if(c.name>=0){cols=c;headerRowIdx=i;break}
     }
+
+    // ── YONMA-YON BIR NECHTA JADVAL? (Запрос №1 | Запрос №2 kabi) ──
+    const blocks = cols ? detectBlocks(rows[headerRowIdx]) : null;
+    if(blocks){
+      const brand=sheetName.trim();
+      const sheetSupplier=supplierName+' › '+brand;
+      const sheetDefaultCat=catMap[sheetName.trim()]||smartCat(sheetName,'','Aksessuar');
+      blocks.forEach(blk=>{
+        const dataRows=rows.slice(headerRowIdx+1);
+        // 1-bosqich: narxlarni yig'ib, valyutani aniqlash (so'm yoki dollar)
+        const parsePrice=(raw)=>{
+          let cleaned=String(raw||'').replace(/\s/g,'').replace(/[^0-9.,]/g,'');
+          const cc=(cleaned.match(/,/g)||[]).length, dc=(cleaned.match(/\./g)||[]).length;
+          if(cc>1) cleaned=cleaned.replace(/,/g,'');
+          else if(cc===1&&dc===0){ const a=cleaned.split(',')[1]||''; cleaned=a.length===3?cleaned.replace(',',''):cleaned.replace(',','.'); }
+          if(dc>1) cleaned=cleaned.replace(/\./g,'');
+          const v=parseFloat(cleaned); return isNaN(v)?0:v;
+        };
+        const vals=[];
+        dataRows.forEach(row=>{ const v=parsePrice(row[blk.price]); if(v>0) vals.push(v); });
+        if(!vals.length) return;
+        // Eng katta narx 5000 dan oshsa — butun ustun SO'M deb hisoblanadi
+        const maxV=Math.max(...vals);
+        const isSom = maxV>5000;
+        // 2-bosqich: import
+        dataRows.forEach(row=>{
+          const name=String(row[blk.name]||'').trim();
+          if(!name||name.length<3) return;
+          if(/^наимен|^характер|^модел|^name$|^товар/i.test(name)) return; // takror sarlavha
+          const v=parsePrice(row[blk.price]);
+          if(v<=0) return;
+          const usd = isSom ? Math.round(v/RATE*100)/100 : v;
+          const spec=blk.spec>=0?String(row[blk.spec]||'').trim():'';
+          const finalCat=smartCat(name, spec, sheetDefaultCat);
+          const pid='imp_'+name.toLowerCase().replace(/[^a-z0-9]/g,'_').slice(0,28)+'_'+Math.abs(hashStr(name+blk.name));
+          importedProds.push({
+            id:pid, name, cat:finalCat, em:catEmoji(finalCat), brand,
+            specs:parseSpec(spec), desc:spec.slice(0,150)||name,
+            _usd:usd, _vat:Math.round(usd*13000), _sheet:sheetName,
+            _supplier:sheetSupplier, _parentSupplier:supplierName
+          });
+        });
+      });
+      return; // bu sheet blok rejimida o'qildi
+    }
+
     // Fallback: scan first 5 rows to find header
     if(!cols){
       // Try to find name by looking for longest text column in data
@@ -4953,7 +5048,17 @@ ${total&&cur==='USD'?'≈ '+fmtUZS(total*RATE):''}`;
   const encoded=encodeURIComponent(msg);
   window.open('https://t.me/Komilkhuja?text='+encoded,'_blank');
 }
-function setCur(c){cur=c;document.querySelectorAll('.cb').forEach((b,i)=>b.classList.toggle('active',i===(c==='USD'?0:1)));renderList();filterP();if(selP)showProd(selP.id);renderQ();renderSvcRows();}
+function setCur(c){
+  cur=c;
+  // Barcha valyuta tugmalarini sinxronlash (yuqori panel + taklif bo'limi)
+  document.querySelectorAll('[data-cur]').forEach(b=>b.classList.toggle('active', b.getAttribute('data-cur')===c));
+  // Eski .cb tugmalari (data-cur siz bo'lsa) — indeks bo'yicha
+  document.querySelectorAll('.cb:not([data-cur])').forEach((b,i)=>b.classList.toggle('active',i===(c==='USD'?0:1)));
+  renderList();filterP();if(selP)showProd(selP.id);renderQ();renderSvcRows();
+  if(typeof renderMqRows==='function') renderMqRows();
+  if(typeof updGrandTotal==='function') updGrandTotal();
+  if(document.getElementById('pg-preview')?.classList.contains('active') && typeof buildPreview==='function') buildPreview();
+}
 function sF(){const d={};['oCo','oAd','oPh','oEm','clN','clA','clP','qDt'].forEach(k=>{d[k]=(document.getElementById(k)||{}).value||''});try{localStorage.setItem('cqF2',JSON.stringify(d))}catch(e){}}
 // Valyuta birligi — til bo'yicha
 function _curUnit(){
@@ -5078,6 +5183,9 @@ function openAddProdModal(){
   const _urlInp=document.getElementById('np_imgurl');
   if(_urlInp) _urlInp.placeholder=_isRu2?'или URL изображения: https://...':_isEn2?'or image URL: https://...':'yoki rasm URL: https://...';
 
+  _setT('lbl_np_price', _isRu2?'Цена':_isEn2?'Price':'Narx');
+  if(typeof updateNpPriceHint==='function') updateNpPriceHint();
+
   document.getElementById('addProdModal').style.display='flex';
 
   // Qoralamani tiklash
@@ -5091,7 +5199,7 @@ function openAddProdModal(){
   ['np_name','np_brand','np_price','np_desc','np_spec'].forEach(id=>{
     const el=document.getElementById(id);
     if(el && !el._draftBound){
-      el.addEventListener('input', ()=>{ saveNpDraft(); });
+      el.addEventListener('input', ()=>{ saveNpDraft(); if(id==='np_price') updateNpPriceHint(); });
       el._draftBound=true;
     }
   });
@@ -5156,12 +5264,28 @@ function loadNpDraft(){
     return !!(d.name||d.brand||d.price||d.desc||d.img);
   }catch(e){ return false; }
 }
+// Narx valyutasi tanlanганда — ekvivalentni ko'rsatish
+function updateNpPriceHint(){
+  const cur=(document.getElementById('np_price_cur')||{}).value||'usd';
+  const val=parseFloat((document.getElementById('np_price')||{}).value||'');
+  const hint=document.getElementById('np_price_hint'); if(!hint) return;
+  const _L=LANG||'uz';
+  if(isNaN(val)||val<=0){ hint.textContent=_L==='ru'?'Цена в '+(cur==='uzs'?'сумах':'долларах'):_L==='en'?'Price in '+(cur==='uzs'?'UZS':'USD'):'Narx '+(cur==='uzs'?"so'mda":'dollarda'); return; }
+  if(cur==='uzs'){ hint.textContent='≈ $'+(val/RATE).toFixed(2); }
+  else { hint.textContent='≈ '+Math.round(val*RATE).toLocaleString('ru')+" so'm"; }
+}
+
 function saveNewProduct(addToQuote){
   const name=(document.getElementById('np_name')||{}).value.trim();
   if(!name){showToast('❌ '+(LANG==='ru'?'Введите название модели':LANG==='en'?'Enter model name':'Model nomini kiriting'));document.getElementById('np_name').focus();return}
   const brand=(document.getElementById('np_brand')||{}).value.trim()||'Noma\'lum';
   const cat=(document.getElementById('np_cat')||{}).value||'IP Kamera';
-  const priceVal=parseFloat((document.getElementById('np_price')||{}).value||'');
+  const priceCur=(document.getElementById('np_price_cur')||{}).value||'usd';
+  let priceVal=parseFloat((document.getElementById('np_price')||{}).value||'');
+  // So'mda kiritilgan bo'lsa — dollarga aylantirish (baza USD da saqlanadi)
+  if(!isNaN(priceVal)&&priceVal>0&&priceCur==='uzs'){
+    priceVal=Math.round(priceVal/RATE*100)/100;
+  }
   const desc=(document.getElementById('np_desc')||{}).value.trim()||'';
   const specStr=(document.getElementById('np_spec')||{}).value.trim();
   // Build specs obj
