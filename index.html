@@ -9359,10 +9359,11 @@ async function openChat(targetUserId=null, targetName=''){
   // Realtime + Polling
   if(!_pollInterval) _startPolling();
 
-  // Realtime subscription
+  // Realtime subscription + Presence (online sanash)
   if(_chatSub) sb.removeChannel(_chatSub);
   if(_chatSub){ try{sb.removeChannel(_chatSub);}catch(e){} }
-  _chatSub = sb.channel('chat:'+_chatRoom)
+  const _myName=currentProfile?.full_name||currentUser?.email?.split('@')[0]||'User';
+  _chatSub = sb.channel('chat:'+_chatRoom, { config:{ presence:{ key: currentUser?.id||('u'+Date.now()) } } })
     .on('postgres_changes',{event:'INSERT',schema:'public',table:'messages',
       filter:`room_id=eq.${_chatRoom}`},
       payload => {
@@ -9381,16 +9382,41 @@ async function openChat(targetUserId=null, targetName=''){
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',
       filter:`room_id=eq.${_chatRoom}`},
       payload => { updateChatMsgInUI(payload.new); })
-    .subscribe(status=>{
-      const statusEl=document.getElementById('chatStatus');
-      if(statusEl){
-        const _L=LANG||'uz';
-        statusEl.textContent=status==='SUBSCRIBED'
-          ?(_L==='ru'?'● Онлайн':_L==='en'?'● Online':'● Onlayn')
-          :(_L==='ru'?'Подключение...':_L==='en'?'Connecting...':'Ulanmoqda...');
-        statusEl.style.color=status==='SUBSCRIBED'?'var(--green)':'var(--amber)';
+    .on('presence',{event:'sync'},()=>{ _updateOnlineCount(); })
+    .on('presence',{event:'join'},()=>{ _updateOnlineCount(); })
+    .on('presence',{event:'leave'},()=>{ _updateOnlineCount(); })
+    .subscribe(async status=>{
+      if(status==='SUBSCRIBED'){
+        try{ await _chatSub.track({ name:_myName, id:currentUser?.id, online_at:new Date().toISOString() }); }catch(e){}
+        _updateOnlineCount();
+      } else {
+        const statusEl=document.getElementById('chatStatus');
+        if(statusEl){
+          const _L=LANG||'uz';
+          statusEl.textContent=(_L==='ru'?'Подключение...':_L==='en'?'Connecting...':'Ulanmoqda...');
+          statusEl.style.color='var(--amber)';
+        }
       }
     });
+}
+
+// Online odamlar sonini hisoblab, chat sarlavhasida ko'rsatish
+function _updateOnlineCount(){
+  const statusEl=document.getElementById('chatStatus');
+  if(!statusEl||!_chatSub) return;
+  const _L=LANG||'uz';
+  let n=0, names=[];
+  try{
+    const state=_chatSub.presenceState();
+    const ids=Object.keys(state||{});
+    n=ids.length;
+    ids.forEach(k=>{ const arr=state[k]; if(arr&&arr[0]&&arr[0].name) names.push(arr[0].name); });
+  }catch(e){}
+  const onWord=_L==='ru'?'онлайн':_L==='en'?'online':'onlayn';
+  statusEl.innerHTML=`<span style="color:var(--green)">●</span> ${n} ${onWord}`;
+  statusEl.style.color='var(--green)';
+  statusEl.title=names.join(', ');
+  statusEl.style.cursor=names.length?'help':'default';
 }
 
 async function loadChatMessages(){
