@@ -1638,7 +1638,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <span style="width:1px;height:20px;background:var(--border2)"></span>
         <label style="display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none">
           <input type="checkbox" id="qqsSwitch" onchange="setQQS(this.checked)" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer">
-          <span style="font-size:13px;font-weight:600;color:var(--amber)">🧾 QQS 12%</span>
+          <span style="font-size:13px;font-weight:600;color:var(--amber)" id="qqsBarLbl">🧾 QQS 12%</span>
           <span style="font-size:11px;color:var(--text3)" id="qqsAllHint">hammaga</span>
         </label>
         <span style="font-size:11px;color:var(--text3)" id="globalDiscHint">Har bir mahsulotni alohida ham o'zgartirish mumkin</span>
@@ -2092,7 +2092,7 @@ function getQuoteSummary(){
       const {net,qqs}=calcAllTotals();
       if(qqs>0) return [
         `${L==='ru'?'Итого (без НДС)':L==='en'?'Subtotal (excl. VAT)':'Jami (QQSsiz)'}: ${fmtP(net)}`,
-        `QQS (12%): ${fmtP(qqs)}`,
+        `${qqsLbl()} (12%): ${fmtP(qqs)}`,
         `💰 ${L==='ru'?'ИТОГО':L==='en'?'TOTAL':'JAMI'}: ${fmtP(net+qqs)}`
       ];
       return [`💰 ${_total}: ${fmtP(grandTotal)}`];
@@ -4325,7 +4325,7 @@ function renderQ(){
           oninput="updDisc('${item.product.id}',this.value)" onchange="_discRerender()"
           placeholder="0">
       </td>
-      <td style="text-align:center"><input type="checkbox" ${item.qqs?'checked':''} onchange="updItemQqs('${item.product.id}',this.checked)" title="QQS 12%" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer"></td>
+      <td style="text-align:center"><input type="checkbox" ${item.qqs?'checked':''} onchange="updItemQqs('${item.product.id}',this.checked)" title="${qqsLbl()} 12%" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer"></td>
       <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
       <td><button class="rb" onclick="removeFromQ('${item.product.id}')">✕</button></td>
     </tr>`;
@@ -4395,6 +4395,7 @@ function updQty(id,val){
 // ── QQS (12%) — har bir pozitsiya uchun alohida (ayrim tovarlar QQS bilan,
 //    ayrimlari QQSsiz sotiladi). Bardagi checkbox = hammaga qo'llash ─────────
 const QQS_RATE=12;
+function qqsLbl(){const L=LANG||'uz';return L==='ru'?'НДС':L==='en'?'VAT':'QQS';}
 function setQQS(on){
   on=!!on;
   quote.forEach(i=>{ i.qqs=on; });
@@ -4471,7 +4472,7 @@ function updTotal(){
     if(qqsP>0){
       const _L=LANG||'uz';
       qqsLine.style.display='block';
-      qqsLine.textContent=(_L==='ru'?'Без НДС: ':_L==='en'?'Excl. VAT: ':'QQSsiz: ')+fmtP(t)+'  ·  QQS 12%: '+fmtP(qqsP);
+      qqsLine.textContent=(_L==='ru'?'Без НДС: ':_L==='en'?'Excl. VAT: ':'QQSsiz: ')+fmtP(t)+'  ·  '+qqsLbl()+' 12%: '+fmtP(qqsP);
     } else qqsLine.style.display='none';
   }
   // Tejalgan summa ko'rsatish
@@ -4499,9 +4500,9 @@ function renderSvcRows(){
         <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
         <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
         <input class="svc-inp" type="number" min="0" max="100" step="0.5" placeholder="0%" title="${LANG==='ru'?'Скидка %':LANG==='en'?'Discount %':'Chegirma %'}" value="${s.disc||''}" oninput="updSvcField(${i},'disc',this.value)" style="text-align:center;color:${(s.disc||0)>0?'var(--amber)':'var(--text3)'}">
-        <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="QQS 12%">
+        <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="${qqsLbl()} 12%">
           <input type="checkbox" ${s.qqs?'checked':''} onchange="updSvcField(${i},'qqs',this.checked)" style="width:14px;height:14px;accent-color:var(--amber);cursor:pointer">
-          <span style="font-size:9px;color:var(--text3)">QQS</span>
+          <span style="font-size:9px;color:var(--text3)">${qqsLbl()}</span>
         </label>
         <button class="svc-del" onclick="delSvc(${i})">✕</button>
       </div>
@@ -4734,7 +4735,7 @@ function buildPreview(){
     return`<tr>
       <td>${i+1}</td>
       <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
-      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
+      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${priceCell}</td>
       ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
@@ -4766,7 +4767,7 @@ function buildPreview(){
     </div>
     <table class="ptbl ptbl-svc">
       <thead><tr><th style="width:5%">#</th><th style="width:55%">${LANG==='ru'?'Услуга':LANG==='en'?'Service':'Xizmat nomi'}</th><th style="width:12%">${LANG==='ru'?'Кол-во':LANG==='en'?'Qty':'Soni'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr" style="width:14%">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const d=s.disc||0;const lt=p*(1-d/100)*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';const dsc=(s.desc||'').trim();const qqsB=s.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:'';const pCell=d>0?`<span style="text-decoration:line-through;color:#999;font-size:10px">${fmtP(p)}</span><br><span style="color:#15803d;font-weight:700">${fmtP(p*(1-d/100))}</span>`:fmtP(p);return`<tr><td>${i+1}</td><td><strong>${s.name}</strong>${qqsB}${d>0?`<span style="font-size:10px;color:#d97706;margin-left:6px">−${d}%</span>`:''}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${qLabel}</td><td class="nr">${pCell}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${svcRows.map((s,i)=>{const p=parseFloat(s.price)||0;const q=parseInt(s.qty)||1;const d=s.disc||0;const lt=p*(1-d/100)*q;svcTotal2+=lt;const qLabel=LANG==='ru'?q+' шт':LANG==='en'?q+' pcs':q+' ta';const dsc=(s.desc||'').trim();const qqsB=s.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';const pCell=d>0?`<span style="text-decoration:line-through;color:#999;font-size:10px">${fmtP(p)}</span><br><span style="color:#15803d;font-weight:700">${fmtP(p*(1-d/100))}</span>`:fmtP(p);return`<tr><td>${i+1}</td><td><strong>${s.name}</strong>${qqsB}${d>0?`<span style="font-size:10px;color:#d97706;margin-left:6px">−${d}%</span>`:''}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${qLabel}</td><td class="nr">${pCell}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#f0f9f4"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#15803d">${LANG==='ru'?'ИТОГО УСЛУГИ':LANG==='en'?'SERVICES TOTAL':'XIZMATLAR JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#15803d">${fmtP(svcTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -4781,7 +4782,7 @@ function buildPreview(){
     </div>
     <table class="ptbl">
       <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">QQS</span>`:'';return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -5257,9 +5258,9 @@ function renderMqRows(){
       <select class="mq-inp" onchange="updMqField(${i},'unit',this.value)" style="padding:5px 4px;text-align:center;cursor:pointer">
         ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${u}</option>`).join('')}
       </select>
-      <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="QQS 12%">
+      <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="${qqsLbl()} 12%">
         <input type="checkbox" ${m.qqs?'checked':''} onchange="updMqField(${i},'qqs',this.checked)" style="width:14px;height:14px;accent-color:var(--amber);cursor:pointer">
-        <span style="font-size:9px;color:var(--text3)">QQS</span>
+        <span style="font-size:9px;color:var(--text3)">${qqsLbl()}</span>
       </label>
       <button class="mq-del" onclick="delMq(${i})">✕</button>
       </div>
@@ -5325,7 +5326,7 @@ function updGrandTotal(){
     if(gtVal)gtVal.textContent=fmtP(_gFinal);
     if(gtAlt){
       const _L=LANG||'uz';
-      const qqsTxt=qqs>0?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(net)+' + QQS 12%: '+fmtP(qqs)+(cur==='USD'?' · ':'')):'';
+      const qqsTxt=qqs>0?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(net)+' + '+qqsLbl()+' 12%: '+fmtP(qqs)+(cur==='USD'?' · ':'')):'';
       gtAlt.textContent=qqsTxt+(cur==='USD'?'≈ '+fmtUZS(_gFinal*RATE):'');
     }
   }
@@ -6912,6 +6913,7 @@ function setLang(lang) {
   _setEl('globalDiscHint', _isRu?'Каждый товар можно изменить отдельно':_isEn?'Each product can be changed separately':"Har birini alohida o'zgartirish mumkin");
   _setEl('thDisc', _isRu?'Скидка %':_isEn?'Discount %':'Chegirma %');
   _setEl('thQqs', _isRu?'НДС':_isEn?'VAT':'QQS');
+  _setEl('qqsBarLbl', '🧾 '+(_isRu?'НДС':_isEn?'VAT':'QQS')+' 12%');
   _setEl('qqsAllHint', _isRu?'всем':_isEn?'all':'hammaga');
   _setEl('thModel', _isRu?'Модель':_isEn?'Model':'Model');
   _setEl('thKat', _isRu?'Кат.':_isEn?'Cat.':'Kat.');
@@ -6922,6 +6924,10 @@ function setLang(lang) {
   if(typeof updateEditingBanner==='function' && window._editingQuoteId) updateEditingBanner();
   // Taklif jadvali va preview ni qayta render (valyuta/til yangilanishi uchun)
   if(typeof renderQ==='function' && quote.length) renderQ();
+  if(typeof renderSvcRows==='function') renderSvcRows();
+  if(typeof renderMqRows==='function') renderMqRows();
+  if(typeof updTotal==='function') updTotal();
+  if(typeof updGrandTotal==='function') updGrandTotal();
   // Chat ochiq bo'lsa — yangi tilda qayta qurish
   if(document.getElementById('chatPanel') && typeof openChat==='function'){
     const _tid = (typeof _chatTargetId!=='undefined') ? _chatTargetId : null;
