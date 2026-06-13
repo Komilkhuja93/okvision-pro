@@ -10626,17 +10626,41 @@ function openAnnouncementsList(){
 // E'lon videosini ko'rsatish — YouTube embed yoki to'g'ridan video
 function annVideoEmbed(url){
   if(!url) return '';
-  const yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{6,})/);
+  url=url.trim();
+  // 1) YouTube — ichida o'ynaydi
+  const yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([A-Za-z0-9_-]{6,})/);
   if(yt){
     return `<div style="position:relative;padding-bottom:56.25%;height:0;border-radius:8px;overflow:hidden;margin-bottom:8px">
       <iframe src="https://www.youtube.com/embed/${yt[1]}" frameborder="0" allowfullscreen
         style="position:absolute;top:0;left:0;width:100%;height:100%"></iframe></div>`;
   }
+  // 2) To'g'ridan video fayl — ichida o'ynaydi
   if(/\.(mp4|webm|ogg|ogv|mov|m4v)(\?|$)/i.test(url)){
     return `<video src="${url}" controls style="max-width:100%;border-radius:8px;margin-bottom:8px"></video>`;
   }
-  // Boshqa havola — tugma
-  return `<a href="${url}" target="_blank" style="display:inline-block;margin-bottom:8px;color:var(--accent);font-size:13px;text-decoration:none">🎬 Videoni ochish →</a>`;
+  // 3) Boshqa platformalar — taniladigan tugma
+  return annLinkBtn(url);
+}
+
+// Havolani platformaga qarab chiroyli tugma qiladi
+function annLinkBtn(url){
+  if(!url) return '';
+  url=url.trim();
+  let icon='🔗', label='Havolani ochish', bg='linear-gradient(135deg,#6366f1,#06b6d4)';
+  const L=LANG||'uz';
+  const open=L==='ru'?'Открыть':L==='en'?'Open':'Ochish';
+  if(/instagram\.com/i.test(url)){ icon='📸'; label='Instagram'; bg='linear-gradient(135deg,#f58529,#dd2a7b,#8134af)'; }
+  else if(/(?:t\.me|telegram\.me|telegram\.org)/i.test(url)){ icon='✈️'; label='Telegram'; bg='linear-gradient(135deg,#2AABEE,#229ED9)'; }
+  else if(/(?:wa\.me|whatsapp\.com|api\.whatsapp)/i.test(url)){ icon='💬'; label='WhatsApp'; bg='linear-gradient(135deg,#25D366,#128C7E)'; }
+  else if(/(?:weixin|wechat|u\.wechat)/i.test(url)){ icon='💚'; label='WeChat'; bg='linear-gradient(135deg,#09B83E,#06992f)'; }
+  else if(/(?:facebook\.com|fb\.com|fb\.watch)/i.test(url)){ icon='👍'; label='Facebook'; bg='linear-gradient(135deg,#1877F2,#0d5fc0)'; }
+  else if(/(?:tiktok\.com)/i.test(url)){ icon='🎵'; label='TikTok'; bg='linear-gradient(135deg,#000,#25F4EE,#FE2C55)'; }
+  else { // oddiy web — domen nomini ko'rsatamiz
+    try{ label=new URL(url).hostname.replace(/^www\./,''); }catch(e){ label='Havola'; }
+  }
+  const safe=url.replace(/"/g,'&quot;');
+  return `<a href="${safe}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:9px;margin:2px 0 10px;padding:9px 16px;border-radius:10px;background:${bg};color:#fff;font-size:13px;font-weight:600;text-decoration:none;box-shadow:0 3px 10px rgba(0,0,0,.25)">
+    <span style="font-size:16px">${icon}</span><span>${label}</span><span style="opacity:.8">${open} →</span></a>`;
 }
 
 function openAnnouncementForm(){
@@ -10673,10 +10697,10 @@ function openAnnouncementForm(){
       <input id="annImgUrl" placeholder="${_L==='ru'?'или ссылка на картинку':_L==='en'?'or paste image URL':'yoki rasm havolasi'}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-size:12px">
     </div>
     <div style="border:1px dashed var(--border2);border-radius:10px;padding:10px;margin-bottom:12px">
-      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">🎬 ${_L==='ru'?'Видео — загрузите файл или вставьте ссылку':_L==='en'?'Video — upload a file or paste a link':"Video — fayl yuklang yoki havola joylang"}</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:6px">🎬 ${_L==='ru'?'Видео / ссылка — файл, YouTube, Instagram, Telegram, WhatsApp, сайт...':_L==='en'?'Video / link — file, YouTube, Instagram, Telegram, WhatsApp, website...':"Video / havola — fayl, YouTube, Instagram, Telegram, WhatsApp, sayt..."}</div>
       <input id="annVideoFile" type="file" accept="video/*" onchange="annPickVideo(this)" style="width:100%;font-size:12px;color:var(--text2);margin-bottom:6px">
       <div id="annVideoPreview" style="font-size:11px;color:var(--accent2);margin-bottom:6px"></div>
-      <input id="annVideoUrl" placeholder="${_L==='ru'?'или YouTube / прямая ссылка':_L==='en'?'or YouTube / direct link':"yoki YouTube / to'g'ridan havola"}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-size:12px">
+      <input id="annVideoUrl" placeholder="${_L==='ru'?'или вставьте любую ссылку':_L==='en'?'or paste any link':"yoki istalgan havolani joylang"}" style="width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px;color:var(--text);font-size:12px">
       <div style="font-size:10px;color:var(--text3);margin-top:5px">💡 ${_L==='ru'?'Файл до 50 МБ. Для длинных видео лучше YouTube.':_L==='en'?'File up to 50MB. For long videos use YouTube.':"Fayl 50MB gacha. Uzun video uchun YouTube yaxshiroq."}</div>
     </div>
     <div style="display:flex;gap:8px">
