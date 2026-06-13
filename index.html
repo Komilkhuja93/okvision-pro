@@ -9155,7 +9155,81 @@ async function markMessagesRead(roomId){
     await sb.from('messages').update({read:true})
       .eq('receiver_id',currentUser.id).eq('room_id',roomId).eq('read',false);
   }catch(e){}
+  touchRoomRead(roomId);
   computeUnread();
+}
+
+// ── Telegram ✓✓ — kim o'qigani ──────────────────────────────────────────────
+let _roomReads = {};   // room_id -> [{user_id,user_name,last_read_at}]
+let _readsSub = null;
+
+// O'z o'qigan vaqtimni serverga yozish (upsert)
+async function touchRoomRead(roomId){
+  const sb=getSB(); if(!sb||!currentUser||!roomId) return;
+  try{
+    await sb.from('chat_reads').upsert({
+      room_id:roomId, user_id:currentUser.id,
+      user_name:currentProfile?.full_name||currentUser.email?.split('@')[0]||'User',
+      last_read_at:new Date().toISOString()
+    }, { onConflict:'room_id,user_id' });
+  }catch(e){ /* jadval yo'q bo'lsa jim */ }
+}
+
+// Xonadagi barcha o'qish holatlarini yuklash
+async function loadRoomReads(roomId){
+  const sb=getSB(); if(!sb||!roomId) return;
+  try{
+    const {data,error}=await sb.from('chat_reads').select('*').eq('room_id',roomId);
+    if(error) return;
+    _roomReads[roomId]=data||[];
+    renderReadTicks();
+  }catch(e){}
+}
+
+// Bitta xabar uchun: nechta odam o'qigan + kimlar (o'zimdan boshqa)
+function readersOf(roomId, msgTimeIso){
+  const list=_roomReads[roomId]||[];
+  const res=[];
+  list.forEach(r=>{
+    if(r.user_id===currentUser?.id) return;          // o'zim emas
+    if(r.last_read_at && r.last_read_at >= msgTimeIso) res.push(r.user_name||'—');
+  });
+  return res;
+}
+
+// Barcha o'z xabarlarim yonidagi ✓/✓✓ ni yangilash
+function renderReadTicks(){
+  const msgEl=document.getElementById('chatMessages'); if(!msgEl) return;
+  msgEl.querySelectorAll('[data-tick]').forEach(span=>{
+    const t=span.getAttribute('data-time'); if(!t) return;
+    const readers=readersOf(_chatRoom, t);
+    if(readers.length>0){
+      const isGlobal=_chatRoom==='global';
+      span.innerHTML = isGlobal
+        ? `<span style="color:#34b7f1">✓✓</span> ${readers.length}`
+        : `<span style="color:#34b7f1">✓✓</span>`;
+      span.style.cursor=isGlobal?'pointer':'default';
+      span.title=readers.join(', ');
+      span.onclick = isGlobal ? ()=>showReaders(readers) : null;
+    } else {
+      span.innerHTML = `<span style="opacity:.55">✓</span>`;  // yuborilgan, hali o'qilmagan
+      span.title=''; span.onclick=null; span.style.cursor='default';
+    }
+  });
+}
+function showReaders(names){
+  const _L=LANG||'uz';
+  alert((_L==='ru'?'Прочитали':_L==='en'?'Read by':"O'qiganlar")+' ('+names.length+'):\n'+names.join(', '));
+}
+
+// chat_reads o'zgarsa — ✓✓ ni darhol yangilash
+function subscribeReads(roomId){
+  const sb=getSB(); if(!sb||!roomId) return;
+  if(_readsSub){ try{sb.removeChannel(_readsSub);}catch(e){} }
+  _readsSub=sb.channel('reads:'+roomId+':'+Date.now())
+    .on('postgres_changes',{event:'*',schema:'public',table:'chat_reads',filter:`room_id=eq.${roomId}`},
+      ()=>{ loadRoomReads(roomId); })
+    .subscribe();
 }
 
 // ── Status yangilash ──────────────────────────────────────────────────────
@@ -9356,6 +9430,10 @@ async function openChat(targetUserId=null, targetName=''){
   _lastMsgTime = null;
   // Bu xonani "o'qilgan" deb belgilash (Telegram kabi badge tushadi)
   loadLastSeen(); markRoomSeen(_chatRoom);
+  // Telegram ✓✓ — o'z o'qiganimni yozish + boshqalarning o'qishini yuklash/kuzatish
+  touchRoomRead(_chatRoom);
+  loadRoomReads(_chatRoom);
+  subscribeReads(_chatRoom);
   // Realtime + Polling
   if(!_pollInterval) _startPolling();
 
@@ -9375,8 +9453,9 @@ async function openChat(targetUserId=null, targetName=''){
         }
         // O'qilgan deb belgilash (chat ochiq bo'lsa)
         const chatEl=document.getElementById('chatPanel');
-        if(chatEl && msg.receiver_id===currentUser?.id){
-          markMessagesRead(_chatRoom);
+        if(chatEl && msg.sender_id!==currentUser?.id){
+          touchRoomRead(_chatRoom);   // Telegram ✓✓ — darhol o'qildi
+          if(msg.receiver_id===currentUser?.id) markMessagesRead(_chatRoom);
         }
       })
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'messages',
@@ -9532,10 +9611,11 @@ function appendChatMsg(msg, scroll=true){
       font-size:13px;line-height:1.4;${msg._pending?'opacity:.7':''}">
       <span class="msg-text">${esc}</span>
     </div>
-    <div style="font-size:9px;color:var(--text3);margin-top:2px">${time}${editedMark}${msg._pending?' ⏳':''}</div>
+    <div style="font-size:9px;color:var(--text3);margin-top:2px">${time}${editedMark}${msg._pending?' ⏳':''}${(isMe&&msg.id&&!msg._pending)?` <span data-tick="${msg.id}" data-time="${msg.created_at}"><span style="opacity:.55">✓</span></span>`:''}</div>
     ${actions}`;
   msgEl.appendChild(div);
   if(scroll) msgEl.scrollTop=msgEl.scrollHeight;
+  if(isMe && msg.id && !msg._pending) renderReadTicks();
 }
 
 // Xabarni tahrirlash
