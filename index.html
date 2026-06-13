@@ -1895,6 +1895,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           style="flex:1;min-width:180px;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text);outline:none"
           onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border2)'">
         <div style="font-size:11px;color:var(--text3)"><span data-i18n="import_auto_hint">Fayl nomidan avtomatik aniqlanadi (ixtiyoriy)</span></div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <span style="font-size:12px;color:var(--text3)" id="impCurLbl" data-i18n="imp_cur">💱 Narx valyutasi:</span>
+          <select id="importCurrency" style="background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:7px 10px;font-size:13px;color:var(--text);cursor:pointer;font-weight:600">
+            <option value="auto">🔄 Avtomatik</option>
+            <option value="uzs">so'm (UZS)</option>
+            <option value="usd">$ USD</option>
+          </select>
+        </div>
       </div>
 
       <!-- ── IMPORT PROGRESS / STATUS ── -->
@@ -3230,6 +3238,18 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
   }
 
 
+  // Import oynasidagi valyuta tanlovi: 'auto' | 'uzs' | 'usd'
+  function getImportCurrency(){
+    return (document.getElementById('importCurrency')||{}).value || 'auto';
+  }
+  // Ustun/blok bo'yicha: narxlar so'mmi? (mode + avtomatik evristika)
+  function decideSom(maxVal){
+    const mode=getImportCurrency();
+    if(mode==='uzs') return true;
+    if(mode==='usd') return false;
+    return maxVal>5000; // avtomatik: eng katta narx 5000 dan oshsa — so'm
+  }
+
   const skipSheets=['Короткий прайс','Прайс','Содержание','Index','Cover'];
   const productSheets=wb.SheetNames.filter(n=>!skipSheets.some(s=>n.toLowerCase().includes(s.toLowerCase())));
 
@@ -3268,7 +3288,7 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
         if(!vals.length) return;
         // Eng katta narx 5000 dan oshsa — butun ustun SO'M deb hisoblanadi
         const maxV=Math.max(...vals);
-        const isSom = maxV>5000;
+        const isSom = decideSom(maxV);
         // 2-bosqich: import
         dataRows.forEach(row=>{
           const name=String(row[blk.name]||'').trim();
@@ -3358,6 +3378,13 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     });
 
     let sectionCat=sheetDefaultCat;
+    // Ustun bo'yicha valyutani aniqlash (har bir narxni alohida emas)
+    let _colMax=0;
+    rows.slice(headerRowIdx+1).forEach(row=>{
+      const raw=String(row[cols.price]||'').replace(/\s/g,'').replace(/[^0-9.,]/g,'').replace(/,/g,'');
+      const v=parseFloat(raw); if(!isNaN(v)&&v>_colMax) _colMax=v;
+    });
+    const _colIsSom = decideSom(_colMax);
     rows.slice(headerRowIdx+1).forEach((row, rowRelIdx)=>{
       const rowAbsIdx = headerRowIdx + 1 + rowRelIdx;
       const name=String(row[cols.name]||'').trim();
@@ -3398,8 +3425,8 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
         if(dotCount>1){ cleaned=cleaned.replace(/\./g,''); } // 2.702.000 → 2702000
         const v=parseFloat(cleaned);
         if(!isNaN(v)&&v>0){
-          // Narx 50000 dan katta bo'lsa — bu SO'M, dollarga aylantirish
-          if(v>=50000){
+          // Ustun bo'yicha aniqlangan valyuta (import oynasidagi tanlov + avtomatik)
+          if(_colIsSom){
             usd=Math.round(v/RATE*100)/100; // so'm → dollar
           } else {
             usd=v; // allaqachon dollar
@@ -6423,6 +6450,7 @@ const I18N = {
     fb_tab: "Shikoyat yoki takliflaringiz?",
     menu_push: "Bildirishnoma",
     qqs_toggle: "QQS 12% qo'shish",
+    imp_cur: "💱 Narx valyutasi:",
     qqs_hint: "(B2B / pul o'tkazma)",
     menu_cloud_status: "Cloud holati",
     menu_analytics: "Tahlil",
@@ -6631,6 +6659,7 @@ const I18N = {
     fb_tab: 'Жалобы или предложения?',
     menu_push: 'Уведомления',
     qqs_toggle: 'Добавить НДС 12%',
+    imp_cur: '💱 Валюта цен:',
     qqs_hint: '(B2B / перечисление)',
     menu_cloud_status: 'Облако: статус',
     menu_analytics: 'Аналитика',
@@ -6810,6 +6839,7 @@ const I18N = {
     fb_tab: 'Complaints or suggestions?',
     menu_push: 'Notifications',
     qqs_toggle: 'Add VAT 12%',
+    imp_cur: '💱 Price currency:',
     qqs_hint: '(B2B / bank transfer)',
     menu_cloud_status: 'Cloud status',
     menu_analytics: 'Analytics',
