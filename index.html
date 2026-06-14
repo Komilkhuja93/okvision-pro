@@ -4919,7 +4919,7 @@ function buildPreview(){
     return`<tr>
       <td>${i+1}</td>
       <td style="width:46px;padding:8px 10px"><div class="pimgbox" style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
-      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
+      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${priceCell}</td>
       ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
@@ -10466,12 +10466,38 @@ async function printAndSaveQuote(){
   // Print — rasmlar to'liq yuklanishini kutamiz
   // 1) Lazy rasmlarni majburan yuklash
   try{ quote.forEach(it=>{ if(typeof getImg==='function') getImg(it.product); }); }catch(e){}
-  await new Promise(r=>setTimeout(r,450));
-  // 2) Preview ni yangi rasmlar bilan qayta qurish
+  await new Promise(r=>setTimeout(r,300));
+  // 2) Tashqi (http) rasmlarni base64 ga aylantirish — PDF da kafolatli chiqishi uchun
+  await preloadQuoteImagesAsBase64();
+  // 3) Preview ni yangi (base64) rasmlar bilan qayta qurish
   if(typeof buildPreview==='function') buildPreview();
-  // 3) Sahifadagi barcha <img> yuklanishini kutish (yoki 5s timeout)
-  await waitForImages(document.getElementById('pg-preview'), 5000);
+  // 4) Sahifadagi barcha <img> yuklanishini kutish (yoki 5s timeout)
+  await waitForImages(document.getElementById('pg-preview'), 6000);
   window.print();
+}
+
+// Taklif rasmlarini base64 ga aylantirish (tashqi URL/blob → inline data)
+async function preloadQuoteImagesAsBase64(){
+  if(!quote || !quote.length) return;
+  const tasks=quote.map(async it=>{
+    const p=it.product; if(!p) return;
+    let src=null;
+    try{ src=getImg(p); }catch(e){}
+    if(!src || src.startsWith('data:')) return; // allaqachon base64 yoki yo'q
+    try{
+      const resp=await fetch(src, {mode:'cors', cache:'force-cache'});
+      if(!resp.ok) return;
+      const blob=await resp.blob();
+      if(blob.size>4*1024*1024) return; // juda katta — o'tkazib yuboramiz
+      const b64=await new Promise((res,rej)=>{
+        const fr=new FileReader();
+        fr.onload=()=>res(fr.result); fr.onerror=rej;
+        fr.readAsDataURL(blob);
+      });
+      if(b64 && b64.startsWith('data:image')){ images[p.id]=b64; } // keshga — getImg endi base64 qaytaradi
+    }catch(e){ /* CORS/tarmoq — URL holicha qoladi */ }
+  });
+  try{ await Promise.all(tasks); }catch(e){}
 }
 
 // Berilgan konteynerdagi barcha rasmlar yuklanguncha kutadi (yoki timeout)
