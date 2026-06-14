@@ -1840,7 +1840,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <div class="guide-body" style="display:none;padding:14px 16px">
           <div style="background:linear-gradient(135deg,rgba(255,170,0,.12),rgba(0,212,255,.08));border:1px solid rgba(255,170,0,.3);border-radius:10px;padding:13px 15px;margin-bottom:14px">
             <div style="font-size:13px;font-weight:700;color:var(--amber);margin-bottom:6px">💱 <span data-i18n="guide_cur_title">Narx valyutasi — MUHIM!</span></div>
-            <div style="font-size:12px;color:var(--text2);line-height:1.7">
+            <div id="guideCurBody" style="font-size:12px;color:var(--text2);line-height:1.7">
               Fayl yuklashdan OLDIN yuqoridagi "💱 Narx valyutasi" ni to'g'ri tanlang:<br>
               • Fayldagi narxlar <strong>so'mda</strong> bo'lsa → <strong>"so'm (UZS)"</strong> ni tanlang<br>
               • Narxlar <strong>dollarda</strong> bo'lsa → <strong>"$ USD"</strong> ni tanlang<br>
@@ -1870,10 +1870,10 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
             <div style="background:var(--bg);border-radius:8px;padding:12px">
               <div style="font-size:12px;font-weight:700;color:var(--purple);margin-bottom:6px">3️⃣ <span data-i18n="guide_pdf_title">PDF prays-list</span></div>
               <div style="font-size:12px;color:var(--text2);line-height:1.6">
-                Faqat matnli PDF (skanerlangan emas).<br>
+                <span data-i18n="guide_pdf_sub">Faqat matnli PDF (skanerlangan emas).</span><br>
                 <span style="color:var(--green)">✓</span> <span data-i18n="guide_pdf_1">Nom va narx avtomatik topiladi</span><br>
                 <span style="color:var(--red)">✗</span> <span data-i18n="guide_pdf_2">Rasmlar chiqarilmaydi</span><br>
-                <span style="color:var(--text3)">Supplier nomini kiriting</span>
+                <span style="color:var(--text3)"><span data-i18n="guide_sup_hint">Supplier nomini kiriting</span></span>
               </div>
             </div>
             <div style="background:var(--bg);border-radius:8px;padding:12px">
@@ -6431,6 +6431,7 @@ const I18N = {
     guide_dah_2:'Narx va nom avtomatik',
     guide_sup_hint:'Supplier nomini kiriting',
     guide_pdf_title:'PDF prays-list',
+    guide_pdf_sub:'Faqat matnli PDF (skanerlangan emas).',
     guide_pdf_1:'Nom va narx avtomatik topiladi',
     guide_pdf_2:'Rasmlar chiqarilmaydi',
     guide_man_title:"Qo'lda qo'shish",
@@ -6642,6 +6643,7 @@ const I18N = {
     guide_dah_2:'Цена и наименование автоматически',
     guide_sup_hint:'Введите название поставщика',
     guide_pdf_title:'PDF прайс-лист',
+    guide_pdf_sub:'Только текстовый PDF (не скан).',
     guide_pdf_1:'Название и цена определяются автоматически',
     guide_pdf_2:'Изображения не извлекаются',
     guide_man_title:'Добавить вручную',
@@ -6824,6 +6826,7 @@ const I18N = {
     guide_dah_2:'Price and name auto-detected',
     guide_sup_hint:'Enter supplier name',
     guide_pdf_title:'PDF price list',
+    guide_pdf_sub:'Text-based PDF only (not scanned).',
     guide_pdf_1:'Name and price found automatically',
     guide_pdf_2:'Images not extracted',
     guide_man_title:'Add manually',
@@ -6965,6 +6968,31 @@ function t(key) {
   return (I18N[LANG] && I18N[LANG][key]) || (I18N.uz && I18N.uz[key]) || key;
 }
 
+// Import valyuta yo'riqnomasi (HTML — 3 til)
+function updateGuideCurBody(){
+  const el=document.getElementById('guideCurBody'); if(!el) return;
+  const L=LANG||'uz';
+  if(L==='ru'){
+    el.innerHTML=`Перед загрузкой файла выберите вверху правильную "💱 Валюта цен":<br>
+      • Если цены в файле в <strong>сумах</strong> → выберите <strong>"so'm (UZS)"</strong><br>
+      • Если цены в <strong>долларах</strong> → выберите <strong>"$ USD"</strong><br>
+      • Если не уверены → <strong>"🔄 Автоматически"</strong> (система определит сама)<br>
+      <span style="color:var(--text3)">⚠️ Авто-режим иногда ошибается — для файлов в сумах надёжнее выбрать "so'm" вручную.</span>`;
+  } else if(L==='en'){
+    el.innerHTML=`Before uploading, select the correct "💱 Price currency" above:<br>
+      • If prices in the file are in <strong>so'm</strong> → choose <strong>"so'm (UZS)"</strong><br>
+      • If prices are in <strong>dollars</strong> → choose <strong>"$ USD"</strong><br>
+      • If unsure → <strong>"🔄 Auto"</strong> (system will guess)<br>
+      <span style="color:var(--text3)">⚠️ Auto mode can sometimes be wrong — for so'm files, choosing "so'm" manually is safer.</span>`;
+  } else {
+    el.innerHTML=`Fayl yuklashdan OLDIN yuqoridagi "💱 Narx valyutasi" ni to'g'ri tanlang:<br>
+      • Fayldagi narxlar <strong>so'mda</strong> bo'lsa → <strong>"so'm (UZS)"</strong> ni tanlang<br>
+      • Narxlar <strong>dollarda</strong> bo'lsa → <strong>"$ USD"</strong> ni tanlang<br>
+      • Ishonchingiz komil bo'lmasa → <strong>"🔄 Avtomatik"</strong> (tizim o'zi taxmin qiladi)<br>
+      <span style="color:var(--text3)">⚠️ Avtomatik rejim ba'zan adashishi mumkin — shuning uchun so'm fayllar uchun "so'm" ni qo'lda tanlash ishonchliroq.</span>`;
+  }
+}
+
 function setLang(lang) {
   LANG = lang;
   localStorage.setItem('okvLang', lang);
@@ -6988,6 +7016,7 @@ function setLang(lang) {
     const val = t(el.getAttribute('data-i18n'));
     if(val) el.textContent = val;
   });
+  if(typeof updateGuideCurBody==='function') updateGuideCurBody();
 
   // 3. Placeholder lar
   document.querySelectorAll('[data-i18n-ph]').forEach(el => {
