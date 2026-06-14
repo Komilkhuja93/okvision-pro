@@ -335,15 +335,25 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     .ptbl{font-size:9px!important}
     .ptbl th,.ptbl td{padding:4px 5px!important}
     .ptbl-svc th:nth-child(2),.ptbl-svc td:nth-child(2){width:50%!important}
-    /* Telefonda rasm ustunini yashirish — joy tejash */
+    /* Telefonda rasm ustunini kichraytirish (yashirmaymiz) */
     .ptbl:not(.ptbl-svc) th:nth-child(2),
-    .ptbl:not(.ptbl-svc) td:nth-child(2){display:none!important}
+    .ptbl:not(.ptbl-svc) td:nth-child(2){width:9%!important}
     .ptbl:not(.ptbl-svc) th:nth-child(3),
     .ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
     .pt2{flex-direction:column!important;gap:6px!important}
     .pmt{grid-template-columns:1fr!important}
     .phddg{grid-template-columns:repeat(3,1fr)!important}
   }
+  /* Mahsulot rasmlari — print da albatta ko'rinsin */
+  .ptbl td img{
+    display:inline-block!important;
+    max-width:100%!important;
+    max-height:34px!important;
+    object-fit:contain!important;
+    -webkit-print-color-adjust:exact!important;
+    print-color-adjust:exact!important;
+  }
+  .ptbl td .pimgbox{overflow:visible!important}
   /* Mahsulotlar jadvali: #, img, Product, Qty, Price, Total */
   .ptbl:not(.ptbl-svc) th:nth-child(1),.ptbl:not(.ptbl-svc) td:nth-child(1){width:4%!important}
   .ptbl:not(.ptbl-svc) th:nth-child(2),.ptbl:not(.ptbl-svc) td:nth-child(2){width:7%!important}
@@ -4488,6 +4498,14 @@ function renderQ(){
       <td style="text-align:center"><input type="checkbox" ${item.qqs?'checked':''} onchange="updItemQqs('${item.product.id}',this.checked)" title="${qqsLbl()} 12%" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer"></td>
       <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
       <td><button class="rb" onclick="removeFromQ('${item.product.id}')">✕</button></td>
+    </tr>
+    <tr class="qdesc-row">
+      <td></td><td></td>
+      <td colspan="7" style="padding:0 12px 8px">
+        <textarea class="q-desc" placeholder="📝 ${LANG==='ru'?'Характеристики / примечание (необязательно)':LANG==='en'?'Specs / note (optional)':'Xususiyat / izoh (ixtiyoriy)'}"
+          oninput="updQDesc('${item.product.id}',this.value)"
+          style="width:100%;background:var(--surface2);border:1px dashed var(--border2);border-radius:7px;padding:6px 10px;color:var(--text2);font-size:11px;resize:vertical;min-height:28px;font-family:inherit">${(item.desc||'').replace(/</g,'&lt;')}</textarea>
+      </td>
     </tr>`;
   }).join('');
   updTotal();
@@ -4518,6 +4536,12 @@ function updDisc(id, val){
   }
 }
 function _discRerender(){ renderQ(); }
+function updQDesc(id, val){
+  const item=quote.find(q=>q.product.id===id);
+  if(!item) return;
+  item.desc=val;
+  saveQ();
+}
 
 // Hammaga umumiy chegirma
 function applyGlobalDiscount(val, final){
@@ -4894,8 +4918,8 @@ function buildPreview(){
       : '—';
     return`<tr>
       <td>${i+1}</td>
-      <td style="width:46px;padding:8px 10px"><div style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
-      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
+      <td style="width:46px;padding:8px 10px"><div class="pimgbox" style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
+      <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${(item.product?._parentSupplier||item.product?._supplier||item.product?.brand||'').replace(/@[^\s›>]+/g,'').replace(/^\s*[›>]\s*/,'').trim()} · ${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${priceCell}</td>
       ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
@@ -8887,6 +8911,7 @@ async function saveQuoteToCloud(customName){
       price_usd: pr,               // BAZA narx
       discount: disc,              // chegirma %
       qqs: !!q.qqs,
+      description: q.desc||'',
       orig_currency: 'usd',
       total_usd: pr*(1-disc/100)*(q.qty||1),
       sort_order: i,
@@ -10624,7 +10649,7 @@ async function loadQuoteFromCloud(quoteId){
           prod._imgUrl = item.image_url;
           images[prod.id] = item.image_url;
         }
-        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs });
+        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs, desc: item.description||'' });
       }
     });
 
