@@ -10438,9 +10438,35 @@ async function printAndSaveQuote(){
     });
   }
 
-  // Print
-  await new Promise(r=>setTimeout(r,350));
+  // Print — rasmlar to'liq yuklanishini kutamiz
+  // 1) Lazy rasmlarni majburan yuklash
+  try{ quote.forEach(it=>{ if(typeof getImg==='function') getImg(it.product); }); }catch(e){}
+  await new Promise(r=>setTimeout(r,450));
+  // 2) Preview ni yangi rasmlar bilan qayta qurish
+  if(typeof buildPreview==='function') buildPreview();
+  // 3) Sahifadagi barcha <img> yuklanishini kutish (yoki 5s timeout)
+  await waitForImages(document.getElementById('pg-preview'), 5000);
   window.print();
+}
+
+// Berilgan konteynerdagi barcha rasmlar yuklanguncha kutadi (yoki timeout)
+function waitForImages(container, timeoutMs){
+  return new Promise(resolve=>{
+    if(!container){ resolve(); return; }
+    const imgs=Array.from(container.querySelectorAll('img'));
+    if(!imgs.length){ resolve(); return; }
+    let done=0, finished=false;
+    const check=()=>{ done++; if(done>=imgs.length && !finished){ finished=true; resolve(); } };
+    imgs.forEach(img=>{
+      if(img.complete && img.naturalWidth>0){ check(); }
+      else {
+        img.addEventListener('load', check, {once:true});
+        img.addEventListener('error', check, {once:true}); // xato bo'lsa ham davom
+      }
+    });
+    // Xavfsizlik — timeout
+    setTimeout(()=>{ if(!finished){ finished=true; resolve(); } }, timeoutMs||5000);
+  });
 }
 
 // Taklifni bulutdan yuklash va redaktorga ochish
