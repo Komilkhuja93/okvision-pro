@@ -4674,6 +4674,7 @@ function renderSvcRows(){
   const cont=document.getElementById('svcRows');
   const emp=document.getElementById('svcEmpty');
   if(!cont)return;
+  _backfillSvcDesc();
   if(!services.length){cont.innerHTML='';emp.style.display='block';updSvcTotal();return}
   emp.style.display='none';
   cont.innerHTML=services.map((s,i)=>`
@@ -4747,41 +4748,62 @@ function transWarranty(val){
 }
 
 // Xizmat nomi — til bo'yicha
+const SVC_PRESET_NAMES = {
+  uz: {
+    svc_cam:"Videokamera o'rnatish xizmati",
+    svc_intercom:"Domofon o'rnatish xizmati",
+    svc_faceid:"Face ID o'rnatish xizmati",
+    svc_ivms:'iVMS 4200 sozlamasi',
+    svc_hikcentral:'HikCentral sozlamalari xizmati',
+    svc_server:"Server ko'tarish xizmati",
+    svc_videowall:"VideoWall o'rnatish xizmati",
+    svc_parking:'Pullik avtoturargoh xizmati',
+  },
+  ru: {
+    svc_cam:'Монтаж видеокамер',
+    svc_intercom:'Монтаж домофона',
+    svc_faceid:'Монтаж Face ID',
+    svc_ivms:'Настройка iVMS 4200',
+    svc_hikcentral:'Настройка HikCentral',
+    svc_server:'Монтаж сервера',
+    svc_videowall:'Монтаж VideoWall',
+    svc_parking:'Платная парковка',
+  },
+  en: {
+    svc_cam:'Camera installation',
+    svc_intercom:'Intercom installation',
+    svc_faceid:'Face ID installation',
+    svc_ivms:'iVMS 4200 setup',
+    svc_hikcentral:'HikCentral setup',
+    svc_server:'Server setup',
+    svc_videowall:'VideoWall installation',
+    svc_parking:'Paid parking service',
+  }
+};
 function getSvcName(key){
-  const names = {
-    uz: {
-      svc_cam:"Videokamera o'rnatish xizmati",
-      svc_intercom:"Domofon o'rnatish xizmati",
-      svc_faceid:"Face ID o'rnatish xizmati",
-      svc_ivms:'iVMS 4200 sozlamasi',
-      svc_hikcentral:'HikCentral sozlamalari xizmati',
-      svc_server:"Server ko'tarish xizmati",
-      svc_videowall:"VideoWall o'rnatish xizmati",
-      svc_parking:'Pullik avtoturargoh xizmati',
-    },
-    ru: {
-      svc_cam:'Монтаж видеокамер',
-      svc_intercom:'Монтаж домофона',
-      svc_faceid:'Монтаж Face ID',
-      svc_ivms:'Настройка iVMS 4200',
-      svc_hikcentral:'Настройка HikCentral',
-      svc_server:'Монтаж сервера',
-      svc_videowall:'Монтаж VideoWall',
-      svc_parking:'Платная парковка',
-    },
-    en: {
-      svc_cam:'Camera installation',
-      svc_intercom:'Intercom installation',
-      svc_faceid:'Face ID installation',
-      svc_ivms:'iVMS 4200 setup',
-      svc_hikcentral:'HikCentral setup',
-      svc_server:'Server setup',
-      svc_videowall:'VideoWall installation',
-      svc_parking:'Paid parking service',
-    }
-  };
   const lang = typeof LANG !== 'undefined' ? LANG : 'uz';
-  return (names[lang]||names.uz)[key]||(names.uz)[key]||key;
+  return (SVC_PRESET_NAMES[lang]||SVC_PRESET_NAMES.uz)[key]||(SVC_PRESET_NAMES.uz)[key]||key;
+}
+// Xizmat nomi -> preset kaliti (barcha tillarda qidiradi)
+function _svcKeyByName(name){
+  if(!name) return null;
+  const n=String(name).trim().toLowerCase();
+  for(const lg of Object.keys(SVC_PRESET_NAMES)){
+    const m=SVC_PRESET_NAMES[lg];
+    for(const k of Object.keys(m)){ if((m[k]||'').trim().toLowerCase()===n) return k; }
+  }
+  return null;
+}
+// Avval qo'shilgan (preset nomli, tavsifsiz) xizmatlarga standart tavsifni to'ldirish
+function _backfillSvcDesc(){
+  let changed=false;
+  (services||[]).forEach(s=>{
+    if(s && !((s.desc||'').trim())){
+      const k=_svcKeyByName(s.name);
+      if(k){ const d=getSvcDesc(k); if(d){ s.desc=d; changed=true; } }
+    }
+  });
+  if(changed){ try{saveSvc();}catch(e){} }
 }
 
 function getSvcDesc(key){
@@ -4826,7 +4848,12 @@ function addSvcPreset(key){
   const name = getSvcName(key);
   const dsc  = getSvcDesc(key);
   const idx=services.findIndex(s=>s.name===name);
-  if(idx>=0){const el=document.getElementById('svcRow_'+idx);if(el)el.scrollIntoView({behavior:'smooth'});return}
+  if(idx>=0){
+    // Mavjud xizmat tavsifsiz bo'lsa — to'ldiramiz
+    if(dsc && !((services[idx].desc||'').trim())){ services[idx].desc=dsc; saveSvc(); renderSvcRows(); }
+    const el=document.getElementById('svcRow_'+idx);if(el)el.scrollIntoView({behavior:'smooth'});
+    return;
+  }
   addSvcRow(name,dsc);
 }
 function delSvc(i){services.splice(i,1);saveSvc();renderSvcRows()}
@@ -4980,6 +5007,7 @@ function buildPreview(){
   const hddSec=cams>0?`<div class="phdd"><div class="phddt">${LANG==='ru'?'💾 Рекомендация HDD':LANG==='en'?'💾 HDD Recommendation':'💾 HDD Tavsiyasi'}</div><div class="phddg"><div class="phddi"><div class="phddil">${_hCam}</div><div class="phddiv">${cams} ${_hPcs}</div></div><div class="phddi"><div class="phddil">${_hMonth}</div><div class="phddiv">${tbMonth.toFixed(1)} TB</div></div><div class="phddi"><div class="phddil">${_hArch}</div><div class="phddiv">${tbTotal.toFixed(1)} TB</div></div></div></div>`:'';
 
   // Services
+  if(typeof _backfillSvcDesc==='function') _backfillSvcDesc();
   const svcRows=(services||[]).filter(s=>s.name&&(parseFloat(s.price)||0)>0);
   let svcTotal2=0;
   const svcHtml=svcRows.length?`
