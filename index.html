@@ -2431,7 +2431,7 @@ function loadPRODS(){
 function updateRate(v){
   const n=parseInt(v)||12700;
   RATE=Math.max(1000,Math.min(99999,n));
-  renderList();filterP();if(selP)showProd(selP.id);renderQ();
+  renderList();filterP();if(selP)showProd(selP.id,true);renderQ();
   try{localStorage.setItem('cqRate',RATE)}catch(e){}
 }
 
@@ -4177,11 +4177,11 @@ function openImgViewer(src, name){
   document.body.appendChild(d);
 }
 
-function showProd(id){
+function showProd(id, noSwitch){
   const p=PRODS.find(x=>x.id===id);
   if(!p){ console.warn('showProd: mahsulot topilmadi:', id); return; }
   selP=p;
-  switchTab('catalog');
+  if(!noSwitch) switchTab('catalog');
   const pr=getPrice(p);
   const inq=quote.some(q=>q.product&&q.product.id===p.id);
   let img=null;
@@ -4496,7 +4496,7 @@ function renderQ(){
           placeholder="0">
       </td>
       <td style="text-align:center"><input type="checkbox" ${item.qqs?'checked':''} onchange="updItemQqs('${item.product.id}',this.checked)" title="${qqsLbl()} 12%" style="width:15px;height:15px;accent-color:var(--amber);cursor:pointer"></td>
-      <td style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
+      <td id="qtot_${item.product.id}" style="text-align:right;font-weight:600;color:${lt?'#d4eef7':'var(--text3)'}">${lt?fmtP(lt):'—'}</td>
       <td><button class="rb" onclick="removeFromQ('${item.product.id}')">✕</button></td>
     </tr>
     <tr class="qdesc-row">
@@ -4563,16 +4563,15 @@ function updQty(id,val){
     if(item.qty===n) return; // o'zgarmagan
     item.qty=n;
     saveQ();
-    // Faqat jami va shu qator JAMIsini yangilaymiz (renderQ chaqirmay)
+    // Faqat jami va shu qator JAMIsini yangilaymiz (renderQ chaqirmay — fokus saqlanadi)
     updTotal();
-    // Shu qator JAMI katakchasini yangilash
-    const rows=document.querySelectorAll('#qBody tr');
-    const idx=quote.indexOf(item);
-    if(rows[idx]){
-      const pr=getPrice(item.product);
-      const lt=pr?pr*n:null;
-      const cells=rows[idx].querySelectorAll('td');
-      if(cells[6]) cells[6].textContent=lt?fmtP(lt):'—';
+    updGrandTotal();
+    const pr=getPrice(item.product);
+    const lt=pr?pr*n:null;
+    const cell=document.getElementById('qtot_'+id);
+    if(cell){
+      cell.textContent=lt?fmtP(lt):'—';
+      cell.style.color=lt?'#d4eef7':'var(--text3)';
     }
   }
 }
@@ -5143,7 +5142,7 @@ function setCur(c){
   document.querySelectorAll('[data-cur]').forEach(b=>b.classList.toggle('active', b.getAttribute('data-cur')===c));
   // Eski .cb tugmalari (data-cur siz bo'lsa) — indeks bo'yicha
   document.querySelectorAll('.cb:not([data-cur])').forEach((b,i)=>b.classList.toggle('active',i===(c==='USD'?0:1)));
-  renderList();filterP();if(selP)showProd(selP.id);renderQ();renderSvcRows();
+  renderList();filterP();if(selP)showProd(selP.id,true);renderQ();renderSvcRows();
   if(typeof renderMqRows==='function') renderMqRows();
   if(typeof updGrandTotal==='function') updGrandTotal();
   if(document.getElementById('pg-preview')?.classList.contains('active') && typeof buildPreview==='function') buildPreview();
