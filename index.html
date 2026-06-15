@@ -340,7 +340,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
     .ptbl:not(.ptbl-svc) td:nth-child(2){width:9%!important}
     .ptbl:not(.ptbl-svc) th:nth-child(3),
     .ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
-    .pt2{flex-direction:column!important;gap:6px!important}
+    .pt2{flex-direction:row!important;gap:10px!important;align-items:flex-start!important}
     .pmt{grid-template-columns:1fr!important}
     .phddg{grid-template-columns:repeat(3,1fr)!important}
   }
@@ -508,7 +508,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .hb{grid-template-columns:1fr!important}
 
   /* Preview mobilda ham to'liq ko'rinsin */
-  .pt2{flex-direction:column!important;gap:8px}
+  .pt2{flex-direction:row!important;gap:10px;align-items:flex-start}
   .pw{padding:10px 8px!important;font-size:12px!important}
   .pin{padding:0!important}
   .ptbl{font-size:10px!important}
@@ -1714,14 +1714,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       <div class="svc-body">
         <div style="font-size:11px;color:var(--text3);margin-bottom:2px" data-i18n="svc_quick">Tez tanlash:</div>
         <div class="svc-presets">
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_cam'))">📷 <span data-i18n="svc_cam">Kamera o'rnatish</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_intercom'))">🔔 <span data-i18n="svc_intercom">Domofon o'rnatish</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_faceid'))">🪪 <span data-i18n="svc_faceid">Face ID o'rnatish</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_ivms'))">🖥 <span data-i18n="svc_ivms">iVMS 4200</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_hikcentral'))">⚙️ <span data-i18n="svc_hikcentral">HikCentral</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_server'))">🖧 <span data-i18n="svc_server">Server ko'tarish</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_videowall'))">📺 <span data-i18n="svc_videowall">VideoWall</span></span>
-          <span class="svc-preset" onclick="addSvcPreset(getSvcName('svc_parking'))">🅿️ <span data-i18n="svc_parking">Avtoturargoh</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_cam')">📷 <span data-i18n="svc_cam">Kamera o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_intercom')">🔔 <span data-i18n="svc_intercom">Domofon o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_faceid')">🪪 <span data-i18n="svc_faceid">Face ID o'rnatish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_ivms')">🖥 <span data-i18n="svc_ivms">iVMS 4200</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_hikcentral')">⚙️ <span data-i18n="svc_hikcentral">HikCentral</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_server')">🖧 <span data-i18n="svc_server">Server ko'tarish</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_videowall')">📺 <span data-i18n="svc_videowall">VideoWall</span></span>
+          <span class="svc-preset" onclick="addSvcPreset('svc_parking')">🅿️ <span data-i18n="svc_parking">Avtoturargoh</span></span>
         </div>
         <div id="svcRows" style="display:flex;flex-direction:column;gap:6px"></div>
         <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px" data-i18n="svc_empty_hint">Xizmat qo'shing yoki yuqoridan tanlang</div>
@@ -4693,8 +4693,8 @@ function renderSvcRows(){
     </div>`).join('');
   updSvcTotal();
 }
-function addSvcRow(name=''){
-  services.push({name,price:'',qty:1});
+function addSvcRow(name='',desc=''){
+  services.push({name,price:'',qty:1,desc});
   saveSvc();renderSvcRows();
   // focus last name input
   setTimeout(()=>{const rows=document.querySelectorAll('.svc-row');if(rows.length){const inp=rows[rows.length-1].querySelector('input');if(inp)inp.focus()}},50);
@@ -4784,11 +4784,50 @@ function getSvcName(key){
   return (names[lang]||names.uz)[key]||(names.uz)[key]||key;
 }
 
-function addSvcPreset(name){
-  // if already exists, just focus it
+function getSvcDesc(key){
+  const desc = {
+    uz: {
+      svc_cam:"Kameralarni belgilangan nuqtalarga o'rnatish, kabel-kanal tortish, NVR/DVR ga ulash, fokus va rakursni sozlash, tizimni ishga tushirish va sinash.",
+      svc_intercom:"Domofon panel va monitorni o'rnatish, kabel tortish, qulf/elektromagnit bilan ulash, audio va videoni sozlash, sinovdan o'tkazish.",
+      svc_faceid:"Face ID terminalini o'rnatish va ulash, foydalanuvchilarni ro'yxatga olish, kirish nazorati (ACS) sozlamalari, ish vaqtini hisobga olishni moslash.",
+      svc_ivms:"iVMS-4200 dasturini o'rnatish, qurilmalarni qo'shish, jonli ko'rish va arxivni sozlash, foydalanuvchi huquqlarini belgilash.",
+      svc_hikcentral:"HikCentral serverini o'rnatish va litsenziyalash, qurilma hamda kameralarni integratsiya qilish, hodisalar va hisobotlarni sozlash.",
+      svc_server:"Server/NVR ni o'rnatish, disklarni RAID ga sozlash, tarmoq va yozib olish parametrlarini moslash, uzluksiz ishlashni ta'minlash.",
+      svc_videowall:"Videodevor monitorlarini montaj qilish, kontroller va kabellarni ulash, ekranlarni kalibrlash va tartibga keltirish.",
+      svc_parking:"Avtoturargoh nazorat tizimini (shlagbaum, raqam tanish kamerasi, to'lov terminali) o'rnatish, ulash va sozlash.",
+    },
+    ru: {
+      svc_cam:"Установка камер в указанных точках, прокладка кабель-канала, подключение к NVR/DVR, настройка фокуса и ракурса, запуск и проверка системы.",
+      svc_intercom:"Установка панели домофона и монитора, прокладка кабеля, подключение замка/электромагнита, настройка аудио и видео, тестирование.",
+      svc_faceid:"Установка и подключение терминала Face ID, регистрация пользователей, настройка СКУД, конфигурация учёта рабочего времени.",
+      svc_ivms:"Установка ПО iVMS-4200, добавление устройств, настройка живого просмотра и архива, назначение прав пользователей.",
+      svc_hikcentral:"Установка и лицензирование сервера HikCentral, интеграция устройств и камер, настройка событий и отчётов.",
+      svc_server:"Установка сервера/NVR, настройка дисков в RAID, конфигурация сети и параметров записи, обеспечение бесперебойной работы.",
+      svc_videowall:"Монтаж мониторов видеостены, подключение контроллера и кабелей, калибровка и компоновка экранов.",
+      svc_parking:"Установка системы контроля парковки (шлагбаум, камера распознавания номеров, платёжный терминал), подключение и настройка.",
+    },
+    en: {
+      svc_cam:"Installing cameras at designated points, laying cable trunking, connecting to the NVR/DVR, adjusting focus and angle, system startup and testing.",
+      svc_intercom:"Installing the intercom panel and monitor, cabling, connecting the lock/electromagnet, audio and video setup, testing.",
+      svc_faceid:"Installing and connecting the Face ID terminal, enrolling users, access-control (ACS) configuration, time-attendance setup.",
+      svc_ivms:"Installing iVMS-4200 software, adding devices, configuring live view and archive, setting user permissions.",
+      svc_hikcentral:"Installing and licensing the HikCentral server, integrating devices and cameras, configuring events and reports.",
+      svc_server:"Installing the server/NVR, configuring disks in RAID, network and recording setup, ensuring continuous operation.",
+      svc_videowall:"Mounting video-wall displays, connecting the controller and cables, calibrating and arranging the screens.",
+      svc_parking:"Installing the parking-control system (barrier, plate-recognition camera, payment terminal), connection and setup.",
+    }
+  };
+  const lang = typeof LANG !== 'undefined' ? LANG : 'uz';
+  return (desc[lang]||desc.uz)[key]||(desc.uz)[key]||'';
+}
+
+function addSvcPreset(key){
+  // Kalit (svc_cam) bo'lsa nom+tavsifni oladi; aks holda nomning o'zi sifatida ishlatiladi
+  const name = getSvcName(key);
+  const dsc  = getSvcDesc(key);
   const idx=services.findIndex(s=>s.name===name);
   if(idx>=0){const el=document.getElementById('svcRow_'+idx);if(el)el.scrollIntoView({behavior:'smooth'});return}
-  addSvcRow(name);
+  addSvcRow(name,dsc);
 }
 function delSvc(i){services.splice(i,1);saveSvc();renderSvcRows()}
 function updSvcField(i,field,val){
