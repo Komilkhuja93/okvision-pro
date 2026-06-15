@@ -394,7 +394,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 }
 
 /* ═══ MOBILE ══════════════════════════════════════════════════════════════ */
-@media(max-width:768px){
+@media screen and (max-width:768px){
   /* Eski topbar — yashirish */
   .topbar{display:none!important}
   .sidebar{display:none!important}
@@ -513,8 +513,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .pin{padding:0!important}
   .ptbl{font-size:10px!important}
   .ptbl th,.ptbl td{padding:5px 6px!important}
-  .ptbl th:nth-child(2){display:none!important}
-  .ptbl td:nth-child(2){display:none!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(2){display:none!important}
+  .ptbl:not(.ptbl-svc) td:nth-child(2){display:none!important}
   .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
   .phdd{padding:10px 12px!important}
   .phddg{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
