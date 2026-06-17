@@ -2080,6 +2080,9 @@ const PRODS=[];
 window.supplierPrices={}
 
 let prices={}, images={}, quote=[], cur='USD', selP=null, actCat='all', actSupplier='';
+// Foydalanuvchi tahrirlagan narxlar (override) — qayta yuklash/cloud sync'dan keyin ham saqlanadi
+let priceOv={}; try{ priceOv=JSON.parse(localStorage.getItem('cqPriceOv')||'{}')||{}; }catch(e){ priceOv={}; }
+function applyPriceOv(){ try{ for(const k in priceOv){ const v=priceOv[k]; if(v!=null && v>0) prices[k]=v; } }catch(e){} }
 let RATE=12700;
 
 // ── MAHSULOTLARNI SAQLASH / YUKLASH ──────────────────────────────────────
@@ -2482,6 +2485,11 @@ document.addEventListener('DOMContentLoaded',()=>{
     // Agar Supabase session bo'lmasa — offline rejim uchun yuklaymiz
     // loadPRODS har doim chaqirilsin — login bo'lmasa ham localStorage dan yuklash
     loadPRODS();
+    applyPriceOv();   // tahrirlangan narxlarni qayta qo'llash (reconstruct ustidan)
+    // IndexedDB dagi base64 rasmlarni cache ga yuklash (tizimga kirmagan holatda ham)
+    if(typeof idbGetAllImgs==='function'){
+      idbGetAllImgs().then(idb=>{ if(idb){ Object.assign(images, idb); if(typeof renderList==='function') renderList(); } }).catch(()=>{});
+    }
     // Tahrirlash rejimini tiklash
     try{
       const ed=localStorage.getItem('editingQuote');
@@ -2936,6 +2944,7 @@ function applyProds(importedProds, supplierName){
     }
   });
 
+  applyPriceOv();   // import'dan keyin ham foydalanuvchi tahrirlagan narxlar saqlanadi
   try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
   savePRODS();
   saveIM();
@@ -3895,7 +3904,17 @@ async function _persistImageToCloud(id, base64){
     }
   }catch(e){ console.warn('_persistImageToCloud:', e.message); }
 }
-function removeImg(id){delete images[id];saveIM();showProd(id);renderList();showToast('🗑 Rasm o\'chirildi')}
+function removeImg(id){
+  delete images[id];
+  const p=PRODS.find(x=>x.id===id);
+  if(p){ delete p._imgUrl; delete p._imgData; delete p._imgRef; }  // mahsulotdan ham o'chirish (aks holda getImg qaytaradi)
+  try{ if(typeof idbDelImg==='function') idbDelImg(id); }catch(e){}  // IndexedDB dan
+  saveIM();
+  if(typeof savePRODS==='function') savePRODS();
+  if(typeof saveCustomProds==='function') saveCustomProds();
+  if(typeof _clearImageInCloud==='function') _clearImageInCloud(id);  // cloud'dan ham
+  showProd(id);renderList();showToast('🗑 Rasm o\'chirildi');
+}
 function saveIM(){
   try{
     // localStorage ga FAQAT URL larni saqlaymiz (base64 5MB limitdan oshadi)
@@ -3936,6 +3955,26 @@ async function idbSetImg(id, data){
       tx.onerror = ()=>resolve(false);
     });
   }catch(e){ return false; }
+}
+async function idbDelImg(id){
+  try{
+    const db = await openImgDB();
+    return new Promise((resolve)=>{
+      const tx = db.transaction('images','readwrite');
+      tx.objectStore('images').delete(id);
+      tx.oncomplete = ()=>resolve(true);
+      tx.onerror = ()=>resolve(false);
+    });
+  }catch(e){ return false; }
+}
+// Cloud (Supabase) dagi mahsulot rasmini tozalash
+async function _clearImageInCloud(id){
+  try{
+    if(typeof currentUser==='undefined' || !currentUser) return;
+    const sb = (typeof getSB==='function') ? getSB() : null;
+    if(!sb) return;
+    await sb.from('products').update({image_url:null}).eq('id',id).eq('user_id',currentUser.id);
+  }catch(e){ /* offline yoki ruxsat yo'q — e'tiborsiz */ }
 }
 async function idbGetImg(id){
   try{
@@ -4028,8 +4067,11 @@ function savePiEdit(id){
   const val=parseFloat((document.getElementById('pEd_'+id)||{}).value||'');
   if(isNaN(val)||val<=0){showToast('❌ To\'g\'ri narx kiriting ($)');return}
   const p=PRODS.find(x=>x.id===id);if(!p)return;
-  prices[p.name.toLowerCase()]=val;
+  const _k=p.name.toLowerCase();
+  prices[_k]=val;
+  priceOv[_k]=val;                 // override — qayta yuklashda yo'qolmaydi
   try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
+  try{localStorage.setItem('cqPriceOv',JSON.stringify(priceOv))}catch(e){}
   updPC();showProd(id);renderList();renderQ();
   showToast('✅ Narx saqlandi: $'+val);
 }
@@ -11684,6 +11726,7 @@ async function onUserLogin(user){
   } else {
     // Bir xil foydalanuvchi YOKI yangi qurilma — localStorage dan tez yuklash
     loadPRODS();
+    applyPriceOv();
   }
 
   // Bu foydalanuvchi ID ni saqlash
@@ -11986,6 +12029,7 @@ async function loadFromCloud(){
     });
     // Chunked saqlash — barcha mahsulotlar
     savePRODS();
+    applyPriceOv();   // foydalanuvchi tahrirlagan narxlarni cloud narxi ustidan qayta qo'llash
     renderCats(); renderList(); filterP();
     console.log(`☁️ ${allData.length} cloud → ${PRODS.length} PRODS (${localImportedNotInCloud.length} local-only)`);
     showToast(`✅ ${allData.length} ta mahsulot yuklandi`, 2000);
