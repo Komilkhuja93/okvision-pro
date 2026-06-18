@@ -3850,6 +3850,8 @@ function updPC(){
 }
 function getPrice(p){
   const k=p.name.toLowerCase();
+  // 0. Foydalanuvchi tahrirlagan narx (override) — HAR DOIM ustun turadi
+  if(priceOv[k]!=null&&priceOv[k]>0) return priceOv[k];
   // prices[k] aniq tekshiruv: null/undefined emas, 0 dan katta
   if(prices[k]!=null&&prices[k]>0) return prices[k];
   // _usd
@@ -4142,6 +4144,7 @@ function deleteSupplier(s){
     Object.entries(window.supplierPrices||{}).forEach(([sup,pm])=>{
       Object.entries(pm).forEach(([k,v])=>{if(!prices[k]||v<prices[k])prices[k]=v;});
     });
+    applyPriceOv();
     if(actSupplier===s)actSupplier='';
     try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
     updPC();renderCats();renderList();filterP();
