@@ -4952,7 +4952,20 @@ document.addEventListener('DOMContentLoaded',()=>{renderSvcRows()});
 function updBdg(){const el=document.getElementById('qbdg');quote.length?(el.style.display='inline',el.textContent=quote.length):el.style.display='none'}
 
 // HDD
-function camCount(){return quote.filter(i=>i.product.cat==='IP Kamera'||i.product.cat==='PTZ Kamera').reduce((s,i)=>s+i.qty,0)}
+function camCount(){
+  const isCam=p=>{
+    if(!p) return false;
+    const cat=(p.cat||''), nm=(p.name||'');
+    // Toifa bo'yicha — har qanday kamera toifasi (IP/PTZ/Analog), uz/ru/en
+    if(/kamera|камер|camera/i.test(cat)) return true;
+    // Nomida "kamera/camera/камера" so'zi bo'lsa
+    if(/kamera|камер|camera/i.test(nm)) return true;
+    // Keng tarqalgan kamera model prefikslari (noto'g'ri toifalangan kameralar uchun)
+    if(/\b(ds-?2cd|ds-?2ce|ds-?2de|ds-?2df|ipc[-_]|dh-ipc|hac-)/i.test(nm)) return true;
+    return false;
+  };
+  return quote.filter(i=>isCam(i.product)).reduce((s,i)=>s+(parseFloat(i.qty)||0),0);
+}
 function updHDDCams(){
   const n=camCount();
   const camTxt = LANG==='ru'?'IP/PTZ камеры из КП: ':LANG==='en'?'IP/PTZ cameras from proposal: ':'Taklifdagi IP/PTZ kameralar: ';
@@ -5934,6 +5947,65 @@ function collapseProdRow(){
     try{localStorage.setItem('prodRowH','108')}catch(e){}
   }
 }
+// ══ Til-aro qidiruv sinonimlari (UZ · RU · EN) ════════════════════════════
+// Bir so'z qidirilsa, boshqa tildagi ekvivalentlari ham mos keladi.
+const SEARCH_SYNONYMS=[
+  ['kamera','kameralar','камера','камеры','камер','camera','cameras'],
+  ['tashqi','уличная','уличный','уличное','наружная','outdoor','outdoors','street'],
+  ['ichki','внутренняя','внутренний','внутреннее','indoor'],
+  ['rangli','цветная','цветной','цветное','color','colour'],
+  ['kuzatuv','наблюдение','видеонаблюдение','surveillance','cctv'],
+  ['kabel','кабель','кабели','cable','cables','wire'],
+  ['xotira','память','диск','диски','disk','diski','жесткий','жёсткий','jestkiy','storage','memory','hdd','hard'],
+  ['tarmoq','сеть','сетевой','сетевое','network'],
+  ['kommutator','коммутатор','свитч','svitch','switch','switches'],
+  ['registrator','регистратор','видеорегистратор','recorder','nvr','dvr'],
+  ['mikrofon','микрофон','microphone','mic','audio','ovoz','звук','sound'],
+  ['quvvat','питание','poe','power'],
+  ['tungi','ночная','ночное','ночной','night','ик','ir'],
+  ['harakat','движение','motion','detection'],
+  ['kupol','купольная','купольный','dome'],
+  ['silindr','цилиндрическая','цилиндр','bullet'],
+  ['signalizatsiya','сигнализация','ogohlantirish','оповещение','alarm','siren','sirena','сирена'],
+  ['domofon','домофон','intercom'],
+  ['kalit','замок','qulf','lock','access','доступ','kirish'],
+  ['ekran','монитор','monitor','display','displey'],
+  ['quvur','кронштейн','кронштейны','bracket','mount','tutqich'],
+  ['blok','блок','adapter','адаптер','bp','psu'],
+  ['router','роутер','роутеры','маршрутизатор','marshrutizator'],
+  ['simsiz','беспроводная','беспроводной','wireless','wifi','wi-fi','вайфай'],
+  ['antenna','антенна','антенны','antena'],
+  ['video','видео','видеокамера'],
+  ['analog','аналоговая','аналоговый','аналог','ahd','tvi','cvi'],
+  ['povorotnaya','поворотная','поворотный','ptz','speed'],
+  ['zoom','зум','zum','fokus','фокус','объектив','linza','lens','obyektiv','varifokal','варифокальный'],
+  ["yong'in",'yongin','пожарная','пожарный','пожар','fire','tutun','дым','smoke'],
+  ['datchik','датчик','датчики','sensor','sensors'],
+  ['harorat','температура','тепловизор','thermal','temperature','termal'],
+  ['nomer','номер','номерной','plate','license','распознавание','recognition'],
+  ['shlagbaum','шлагбаум','barrier'],
+  ['turniket','турникет','turnstile'],
+  ['yuz','лицо','лиц','face','litso'],
+  ['barmoq','отпечаток','fingerprint','biometr','биометрия','biometric','биометрический'],
+  ['karta','карта','card','rfid','mifare'],
+  ['kontroller','контроллер','контроллеры','controller'],
+  ['klaviatura','клавиатура','keypad','keyboard'],
+  ['ups','ибп','бесперебойник'],
+  ['konnektor','коннектор','connector','rj45','bnc','разъем','разъём'],
+  ['optik','оптический','optical','optika','optic','волокно','fiber','fibre'],
+  ['yoritgich','прожектор','projector','floodlight','подсветка','illuminator','svet','свет'],
+];
+function _expandSearchWord(w){
+  w=(w||'').toLowerCase();
+  for(const grp of SEARCH_SYNONYMS){
+    for(const term of grp){
+      if(term===w || (w.length>=3 && (term.startsWith(w)||w.startsWith(term)))){
+        return grp;
+      }
+    }
+  }
+  return [w];
+}
 function filterP(){
   const q=(document.getElementById('srch')||{}).value||'';
   const ql=q.toLowerCase().trim();
@@ -5985,8 +6057,11 @@ function filterP(){
       return true;
     }
 
-    // Har bir so'z full matnda bo'lishi kerak (AND)
-    return words.every(w => full.includes(w) || fullN.includes(w.replace(/\s+/g,'')));
+    // Har bir so'z (yoki uning boshqa tildagi sinonimi) full matnda bo'lishi kerak (AND)
+    return words.every(w => {
+      const variants = _expandSearchWord(w);
+      return variants.some(v => full.includes(v) || fullN.includes(v.replace(/[\s\-_]/g,'')));
+    });
   });
 
   renderList(list);
@@ -7306,6 +7381,10 @@ function setLang(lang) {
   if(typeof renderMqRows==='function') renderMqRows();
   if(typeof updTotal==='function') updTotal();
   if(typeof updGrandTotal==='function') updGrandTotal();
+  // Katalog, qidiruv natijalari va kategoriya chiplarini yangi tilda yangilash
+  // (joriy qidiruv matni va kategoriya filtri saqlanadi — filterP 'srch' ni o'qiydi)
+  if(typeof renderCats==='function') renderCats();
+  if(typeof filterP==='function') filterP();
   // Chat ochiq bo'lsa — yangi tilda qayta qurish
   if(document.getElementById('chatPanel') && typeof openChat==='function'){
     const _tid = (typeof _chatTargetId!=='undefined') ? _chatTargetId : null;
