@@ -179,7 +179,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .ptbl tr:last-child td{border-bottom:none}
 .nr{text-align:right}
 .ptr{background:#0a0c10;color:#fff}
-.ptr td{padding:12px;font-weight:700;font-size:15px}
+.ptr td{padding:12px;font-weight:700;font-size:15px;color:#fff}
+/* Qo'shimcha (qo'lda qo'shilgan) mahsulotlar jadvali — nom ustuni keng bo'lsin.
+   Yuqori spetsifikatsiya (table.ptbl.ptbl-mq) asosiy jadval qoidalarini (rasm-ustun 7%) yengadi, print va ekranda. */
+table.ptbl.ptbl-mq td:nth-child(1),table.ptbl.ptbl-mq th:nth-child(1){width:6%!important}
+table.ptbl.ptbl-mq td:nth-child(2),table.ptbl.ptbl-mq th:nth-child(2){width:54%!important;text-align:left!important;white-space:normal!important;word-break:break-word!important;overflow-wrap:break-word!important}
+table.ptbl.ptbl-mq td:nth-child(3),table.ptbl.ptbl-mq th:nth-child(3){width:14%!important;text-align:center!important}
+table.ptbl.ptbl-mq td:nth-child(4),table.ptbl.ptbl-mq th:nth-child(4){width:13%!important;text-align:right!important}
+table.ptbl.ptbl-mq td:nth-child(5),table.ptbl.ptbl-mq th:nth-child(5){width:13%!important;text-align:right!important}
 .phdd{background:#f8f5ff;border-radius:9px;padding:14px 18px;margin-top:18px;border-left:3px solid #7c3aed}
 .phddt{font-size:11px;font-weight:700;color:#5b21b6;text-transform:uppercase;letter-spacing:.06em;margin-bottom:9px}
 .phddg{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
@@ -479,7 +486,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .main-prod-name{font-size:13px;line-height:1.4;white-space:normal!important}
   .main-prod-sup{font-size:10px}
   .main-prod-pr{font-size:13px;font-weight:700}
-  .main-prod-item .pt{width:38px;height:38px;font-size:20px;flex-shrink:0}
+  /* Katalog/qidiruv kartochkalarida rasm mobilda kattaroq (ustalar aniq ko'rishi uchun) */
+  .main-prod-item .main-prod-thumb{width:58px!important;height:58px!important;font-size:26px;flex-shrink:0;border-radius:10px}
+  .main-prod-item .main-prod-thumb img{object-fit:contain!important;padding:3px}
   /* Mobil share bar ko'rsatish */
   #mobShareBar{display:flex!important}
   /* Desktop tugmalarni mobilda yashirish */
@@ -513,8 +522,10 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
   .pin{padding:0!important}
   .ptbl{font-size:10px!important}
   .ptbl th,.ptbl td{padding:5px 6px!important}
-  .ptbl:not(.ptbl-svc) th:nth-child(2){display:none!important}
-  .ptbl:not(.ptbl-svc) td:nth-child(2){display:none!important}
+  /* Taklif ko'rinishida mahsulot rasmi mobilda ham ko'rinsin (kichik) — ustalar joyda ko'rishi uchun */
+  .ptbl:not(.ptbl-svc) th:nth-child(2){width:34px!important;padding:5px 2px!important}
+  .ptbl:not(.ptbl-svc) td:nth-child(2){padding:5px 2px!important}
+  .ptbl:not(.ptbl-svc) td:nth-child(2) .pimgbox{width:30px!important;height:28px!important}
   .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:54%!important}
   .phdd{padding:10px 12px!important}
   .phddg{grid-template-columns:repeat(3,1fr)!important;gap:6px!important}
@@ -3886,8 +3897,13 @@ function setImgUrl(id){
   if(!url.trim()){showToast('❌ URL kiriting');return}
   images[id]=url.trim();saveIM();
   const p=PRODS.find(x=>x.id===id);
-  if(p){ p._imgUrl=url.trim(); saveCustomProds&&saveCustomProds(); }
-  showProd(id);renderList();showToast('🖼 URL saqlandi');
+  if(p){
+    p._imgUrl=url.trim();
+    saveCustomProds&&saveCustomProds();
+    // Cloud'ga ham yozish — boshqa qurilmalarda (usta telefonida) ko'rinishi uchun
+    if(typeof syncToCloud==='function') syncToCloud(true);
+  }
+  showProd(id);renderList();showToast('🖼 URL saqlandi — barcha qurilmalarda ko\'rinadi');
 }
 
 // Rasmni Supabase Storage ga yuklab, URL ni mahsulotga yozish (fon rejimda)
@@ -5075,10 +5091,10 @@ function buildPreview(){
     <div style="font-size:11px;font-weight:700;color:#555;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">
       <span style="background:#fff8e1;border-radius:5px;padding:2px 8px;color:#b45309;border:1px solid #fde68a">📦 ${LANG==='ru'?'Дополнительные товары':LANG==='en'?'Additional Products':"Qo'shimcha Mahsulotlar"}</span>
     </div>
-    <table class="ptbl">
-      <thead><tr><th>#</th><th colspan="2">${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';return`<tr><td>${i+1}</td><td colspan="2"><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
-      <tfoot><tr style="background:#fff8e1"><td colspan="5" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
+    <table class="ptbl ptbl-mq">
+      <thead><tr><th>#</th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';return`<tr><td>${i+1}</td><td><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tfoot><tr style="background:#fff8e1"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
 
