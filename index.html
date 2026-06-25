@@ -4252,6 +4252,7 @@ function showProd(id, noSwitch){
   const _lFile    = LANG==='ru'?'Файл':LANG==='en'?'File':'Fayl';
   const _lDel     = LANG==='ru'?'🗑 Удалить':LANG==='en'?'🗑 Delete':"🗑 O'chirish";
   const _lSave    = LANG==='ru'?'💾 Сохранить':LANG==='en'?'💾 Save':'💾 Saqlash';
+  const _lEdit    = LANG==='ru'?'✏️ Редактировать товар':LANG==='en'?'✏️ Edit product':'✏️ Mahsulotni tahrirlash';
   const _lPricePh = LANG==='ru'?'Цена $':LANG==='en'?'Price $':'Narx $';
   const _lPriceHint= LANG==='ru'?'введите цену напрямую':LANG==='en'?'enter price directly':"narxni to'g'ridan kiriting";
   const _lNoPr    = LANG==='ru'?'Цена не указана':LANG==='en'?'No price set':'Narx kiritilmagan';
@@ -4317,6 +4318,9 @@ function showProd(id, noSwitch){
           <input class="pei" type="number" id="pEd_${p.id}" placeholder="${_lPricePh}" value="${pr||''}">
           <button class="peb" onclick="savePiEdit('${p.id}')">${_lSave}</button>
           <span style="font-size:11px;color:var(--text3)">${_lPriceHint}</span>
+        </div>
+        <div style="margin-top:6px">
+          <button class="ibtn" style="width:100%;justify-content:center" onclick="editProduct('${p.id}')">${_lEdit}</button>
         </div>
         <div class="dac">
           ${inq
@@ -5309,6 +5313,7 @@ function fmtUZS(uzs){return uzs.toLocaleString('ru')+' '+_curUnit()}
 // ── ADD PRODUCT MODAL ───────────────────────────────────────────────────────
 // ══ YANGI MAHSULOT RASM — Copy-Paste / Drop / Fayl / URL ════════════════
 let _npImgData = null; // joriy rasm (base64 yoki URL)
+let _editingProdId = null; // tahrirlanayotgan mahsulot id (null = yangi qo'shish rejimi)
 
 function _setNpImg(dataUrl){
   _npImgData = dataUrl;
@@ -5391,7 +5396,9 @@ document.addEventListener('paste', e=>{
   }
 });
 
-function openAddProdModal(){
+function openAddProdModal(skipReset){
+  // Yangi qo'shish rejimida — tahrirlash holatini tozalash
+  if(!skipReset){ _editingProdId=null; if(typeof _setEditModeUI==='function') _setEditModeUI(false); }
   // Til bo'yicha placeholder larni yangilash
   const _isRu2=LANG==='ru',_isEn2=LANG==='en';
   const npDesc=document.getElementById('np_desc');
@@ -5417,11 +5424,13 @@ function openAddProdModal(){
 
   document.getElementById('addProdModal').style.display='flex';
 
-  // Qoralamani tiklash
-  const restored=loadNpDraft();
-  if(restored){
-    const _L=LANG||'uz';
-    showToast(_L==='ru'?'📝 Восстановлен черновик':_L==='en'?'📝 Draft restored':'📝 Qoralama tiklandi', 2500);
+  // Qoralamani tiklash (faqat yangi qo'shish rejimida)
+  if(!_editingProdId){
+    const restored=loadNpDraft();
+    if(restored){
+      const _L=LANG||'uz';
+      showToast(_L==='ru'?'📝 Восстановлен черновик':_L==='en'?'📝 Draft restored':'📝 Qoralama tiklandi', 2500);
+    }
   }
 
   // Auto-save — har bir o'zgarishda qoralama saqlash
@@ -5441,10 +5450,132 @@ function openAddProdModal(){
   setTimeout(()=>(document.getElementById('np_name')||{focus:()=>{}}).focus(),100);
 }
 function closeAddProdModal(){
-  // Yopishdan oldin qoralamani saqlash (adashib yopilsa ham yo'qolmaydi)
+  // Yopishdan oldin qoralamani saqlash (edit rejimida saqlanmaydi)
   saveNpDraft();
   document.getElementById('addProdModal').style.display='none';
+  // Tahrirlash rejimidan chiqish — holat va maydonlarni tozalash (qoralamaga tegmasdan)
+  if(_editingProdId){
+    _editingProdId=null;
+    if(typeof _setEditModeUI==='function') _setEditModeUI(false);
+    ['np_name','np_brand','np_price','np_desc','np_spec','np_imgurl'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    const _cs=document.getElementById('np_cat'); if(_cs) _cs.selectedIndex=0;
+    if(typeof _clearNpImg==='function') _clearNpImg();
+  }
   // Maydonlarni TOZALAMAYMIZ — qoralama qoladi, qayta ochilganda tiklanadi
+}
+
+// ── Mahsulot tahrirlash (import qilingan va qo'lda qo'shilgan — barchasi) ────────
+function _setEditModeUI(isEdit){
+  const _isRu=LANG==='ru',_isEn=LANG==='en';
+  const title=document.getElementById('addProdModalTitle');
+  if(title) title.textContent = isEdit
+    ? '✏️ '+(_isRu?'Редактировать товар':_isEn?'Edit product':'Mahsulotni tahrirlash')
+    : '➕ '+(_isRu?'Добавить товар':_isEn?'Add Product':"Yangi Mahsulot Qo'shish");
+  const saveBtn=document.getElementById('btn_addprod_save');
+  if(saveBtn) saveBtn.textContent = isEdit
+    ? '💾 '+(_isRu?'Сохранить изменения':_isEn?'Save changes':"O'zgarishlarni saqlash")
+    : '💾 '+(_isRu?'Сохранить':_isEn?'Save':'Saqlash');
+  const saveQBtn=document.getElementById('btn_addprod_saveq');
+  if(saveQBtn) saveQBtn.style.display = isEdit ? 'none' : '';
+}
+
+function editProduct(id){
+  const p=PRODS.find(x=>x.id===id);
+  if(!p){ showToast('❌ '+(LANG==='ru'?'Товар не найден':LANG==='en'?'Product not found':'Mahsulot topilmadi')); return; }
+  _editingProdId=id;
+  openAddProdModal(true);   // skipReset: edit holatini saqlaydi, qoralama yuklamaydi
+  const setV=(eid,v)=>{const e=document.getElementById(eid); if(e) e.value=(v==null?'':String(v));};
+  setV('np_name', p.name);
+  setV('np_brand', (p.brand && p.brand!=='Noma\'lum') ? p.brand : '');
+  const catSel=document.getElementById('np_cat'); if(catSel) catSel.value=p.cat||'';
+  setV('np_desc', p.desc||'');
+  // Specs → "kalit: qiymat, kalit" ko'rinishida (qiymatlar saqlanadi)
+  const specStr=Object.entries(p.specs||{}).map(([k,v])=> (v!==''&&v!=null) ? (k+': '+v) : k).join(', ');
+  setV('np_spec', specStr);
+  // Narx
+  const pr=getPrice(p);
+  setV('np_price', pr||'');
+  const curSel=document.getElementById('np_price_cur'); if(curSel) curSel.value='usd';
+  if(typeof updateNpPriceHint==='function') updateNpPriceHint();
+  // Rasm preview
+  let img=null; try{img=getImg(p);}catch(e){}
+  if(img && typeof _setNpImg==='function') _setNpImg(img);
+  else if(typeof _clearNpImg==='function') _clearNpImg();
+  _setEditModeUI(true);
+  setTimeout(()=>(document.getElementById('np_name')||{focus:()=>{}}).focus(),120);
+}
+
+function saveProductEdit(){
+  const p=PRODS.find(x=>x.id===_editingProdId);
+  if(!p){ _editingProdId=null; document.getElementById('addProdModal').style.display='none'; return; }
+  const name=(document.getElementById('np_name')||{}).value.trim();
+  if(!name){ showToast('❌ '+(LANG==='ru'?'Введите название модели':LANG==='en'?'Enter model name':'Model nomini kiriting')); const e=document.getElementById('np_name'); if(e) e.focus(); return; }
+  const brand=(document.getElementById('np_brand')||{}).value.trim()||'Noma\'lum';
+  const cat=(document.getElementById('np_cat')||{}).value||p.cat||'IP Kamera';
+  const desc=(document.getElementById('np_desc')||{}).value.trim()||'';
+  const specStr=(document.getElementById('np_spec')||{}).value.trim();
+  // Specs parse: "kalit: qiymat" yoki "kalit"
+  const specs={};
+  if(specStr){ specStr.split(',').forEach(s=>{ const t=s.trim(); if(!t) return; const ci=t.indexOf(':'); if(ci>0){ const k=t.slice(0,ci).trim(); if(k) specs[k]=t.slice(ci+1).trim(); } else { specs[t]=''; } }); }
+  // Narx
+  const priceCur=(document.getElementById('np_price_cur')||{}).value||'usd';
+  let priceVal=parseFloat((document.getElementById('np_price')||{}).value||'');
+  if(!isNaN(priceVal)&&priceVal>0&&priceCur==='uzs'){ priceVal=Math.round(priceVal/RATE*100)/100; }
+
+  const oldKey=p.name.toLowerCase();
+  const newKey=name.toLowerCase();
+
+  // Nom o'zgargan va boshqa mahsulotda shu nom bo'lsa — rad etish
+  if(newKey!==oldKey && PRODS.find(x=>x.id!==p.id && x.name.toLowerCase()===newKey)){
+    showToast('⚠️ '+(LANG==='ru'?'Такое название уже есть':LANG==='en'?'This name already exists':'Bu nom allaqachon bor')); return;
+  }
+
+  // === Nom o'zgarsa — narx/override/supplier kalitlarini XAVFSIZ ko'chirish ===
+  if(newKey!==oldKey){
+    if(prices[oldKey]!=null){ if(prices[newKey]==null) prices[newKey]=prices[oldKey]; delete prices[oldKey]; }
+    if(priceOv[oldKey]!=null){ if(priceOv[newKey]==null) priceOv[newKey]=priceOv[oldKey]; delete priceOv[oldKey]; }
+    const sp=window.supplierPrices||{};
+    Object.keys(sp).forEach(sup=>{ if(sp[sup] && sp[sup][oldKey]!=null){ if(sp[sup][newKey]==null) sp[sup][newKey]=sp[sup][oldKey]; delete sp[sup][oldKey]; } });
+  }
+
+  // Mahsulotni yangilash
+  p.name=name; p.brand=brand; p.cat=cat; p.desc=desc; p.specs=specs;
+  if(typeof catEmoji==='function') p.em=catEmoji(cat);
+
+  // Rasm (modalda o'zgartirilgan bo'lishi mumkin)
+  if(_npImgData){
+    if(_npImgData.startsWith('http')){ p._imgUrl=_npImgData; delete p._imgData; images[p.id]=_npImgData; }
+    else { p._imgData=_npImgData; images[p.id]=_npImgData; try{ idbSetImg(p.id,_npImgData); }catch(e){} }
+  }
+
+  // Narx kiritilgan bo'lsa — override sifatida (getPrice buni birinchi o'qiydi)
+  if(!isNaN(priceVal)&&priceVal>0){ prices[newKey]=priceVal; priceOv[newKey]=priceVal; }
+
+  // Saqlash
+  try{ localStorage.setItem('cqP2',JSON.stringify(prices)); }catch(e){}
+  try{ localStorage.setItem('cqPriceOv',JSON.stringify(priceOv)); }catch(e){}
+  if(typeof savePRODS==='function') savePRODS();
+  if(typeof saveCustomProds==='function') saveCustomProds();
+  if(typeof saveIM==='function') saveIM();
+  if(typeof syncToCloud==='function') syncToCloud(true);
+
+  // Taklifdagi havolani ham yangilash
+  quote.forEach(it=>{ if(it.product && it.product.id===p.id){ it.product=p; } });
+
+  _editingProdId=null;
+  _setEditModeUI(false);
+  document.getElementById('addProdModal').style.display='none';
+  ['np_name','np_brand','np_price','np_desc','np_spec','np_imgurl'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+  const _cs=document.getElementById('np_cat'); if(_cs) _cs.selectedIndex=0;
+  if(typeof _clearNpImg==='function') _clearNpImg();
+
+  showToast('✅ '+(LANG==='ru'?'Товар обновлён':LANG==='en'?'Product updated':'Mahsulot yangilandi'));
+  if(typeof updPC==='function') updPC();
+  if(typeof filterP==='function') filterP();
+  if(typeof renderList==='function') renderList();
+  if(typeof showProd==='function') showProd(p.id, true);
+  if(typeof renderQ==='function' && quote.length) renderQ();
+  if(typeof updTotal==='function') updTotal();
 }
 
 // Maydonlarni to'liq tozalash (faqat saqlanganda yoki "tozalash" bosilganda)
@@ -5460,6 +5591,7 @@ function clearNpFields(){
 
 // ── Qoralama saqlash/yuklash ──────────────────────────────────────────────
 function saveNpDraft(){
+  if(_editingProdId) return; // tahrirlash rejimida qoralama saqlanmaydi
   try{
     const draft={
       name: document.getElementById('np_name')?.value||'',
@@ -5505,6 +5637,7 @@ function updateNpPriceHint(){
 }
 
 function saveNewProduct(addToQuote){
+  if(_editingProdId){ return saveProductEdit(); }   // tahrirlash rejimi
   const name=(document.getElementById('np_name')||{}).value.trim();
   if(!name){showToast('❌ '+(LANG==='ru'?'Введите название модели':LANG==='en'?'Enter model name':'Model nomini kiriting'));document.getElementById('np_name').focus();return}
   const brand=(document.getElementById('np_brand')||{}).value.trim()||'Noma\'lum';
