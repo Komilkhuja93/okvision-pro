@@ -1150,9 +1150,8 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
     <span style="font-size:14px;opacity:.5" aria-hidden="true">🔍</span>
     <input id="mobSrch" type="search" placeholder="Model yoki tavsif..." data-i18n-ph="ph_search"
       name="okv-mob-search" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-      readonly onfocus="this.removeAttribute('readonly')"
       aria-label="Mahsulot qidirish"
-      oninput="onAiSearch(this.value);document.getElementById('srch').value=this.value"
+      oninput="document.getElementById('srch').value=this.value;onAiSearch(this.value)"
       onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
     <button id="mobSrchClear" onclick="mobClearSearch()" aria-label="Qidiruvni tozalash" style="display:none;background:none;border:none;color:var(--text3);font-size:16px;cursor:pointer;padding:0;line-height:1">✕</button>
   </div>
@@ -1389,7 +1388,6 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       <input class="ai-search-inp" type="search" id="srch"
         name="okv-product-search" autocomplete="off" autocorrect="off"
         autocapitalize="off" spellcheck="false" data-form-type="other"
-        readonly onfocus="this.removeAttribute('readonly')"
         aria-label="Mahsulot qidirish" placeholder="4MP rangli ko'cha kamera..."
         oninput="onAiSearch(this.value)"
         onkeydown="if(event.key==='Enter')doAiSearch(this.value)">
@@ -3901,24 +3899,28 @@ function setImgUrl(id){
     p._imgUrl=url.trim();
     saveCustomProds&&saveCustomProds();
     // Cloud'ga ham yozish — boshqa qurilmalarda (usta telefonida) ko'rinishi uchun
-    if(typeof syncToCloud==='function') syncToCloud(true);
+    if(typeof _syncImageToCloud==='function') _syncImageToCloud(id, url.trim());
   }
   showProd(id);renderList();showToast('🖼 URL saqlandi — barcha qurilmalarda ko\'rinadi');
 }
 
-// Rasmni Supabase Storage ga yuklab, URL ni mahsulotga yozish (fon rejimda)
+// Rasmni Supabase ga yozish (storage bo'lsa URL, bo'lmasa base64 — fon rejimda)
 async function _persistImageToCloud(id, base64){
   if(!base64 || !base64.startsWith('data:')) return;
-  if(typeof uploadImageToStorage!=='function' || !currentUser) return;
+  if(!currentUser) return;
   try{
-    const url=await uploadImageToStorage(id, base64);
+    let url=null;
+    if(typeof uploadImageToStorage==='function'){ url=await uploadImageToStorage(id, base64); }
     if(url){
       const p=PRODS.find(x=>x.id===id);
       if(p){ p._imgUrl=url; }
       images[id]=url;
       saveCustomProds&&saveCustomProds();
-      // Mahsulotni cloud products jadvalida ham yangilash
-      if(typeof syncToCloud==='function') syncToCloud(true);
+      await _syncImageToCloud(id, url);          // storage URL ni cloud bazaga (bitta yangilash)
+    } else {
+      // Storage bucket yo'q/ishlamadi — base64 ni to'g'ridan-to'g'ri cloud bazaga
+      // (boshqa qurilmalarda — usta telefonida — ko'rinishi uchun)
+      await _syncImageToCloud(id, base64);
     }
   }catch(e){ console.warn('_persistImageToCloud:', e.message); }
 }
@@ -3993,6 +3995,19 @@ async function _clearImageInCloud(id){
     if(!sb) return;
     await sb.from('products').update({image_url:null}).eq('id',id).eq('user_id',currentUser.id);
   }catch(e){ /* offline yoki ruxsat yo'q — e'tiborsiz */ }
+}
+// Bitta mahsulot rasmini cloud bazaga yozish (http URL yoki base64 — boshqa qurilmalarda ko'rinishi uchun)
+async function _syncImageToCloud(id, data){
+  try{
+    if(typeof currentUser==='undefined' || !currentUser || !data) return;
+    const sb = (typeof getSB==='function') ? getSB() : null;
+    if(!sb) return;
+    let val=null;
+    if(data.startsWith('http')) val=data;
+    else if(data.startsWith('data:') && data.length < 1200000) val=data; // ~850KB rasmgacha
+    if(!val) return;
+    await sb.from('products').update({image_url:val}).eq('id',id).eq('user_id',currentUser.id);
+  }catch(e){ console.warn('_syncImageToCloud:', e.message); }
 }
 async function idbGetImg(id){
   try{
@@ -4252,7 +4267,7 @@ function showProd(id, noSwitch){
   const _lFile    = LANG==='ru'?'Файл':LANG==='en'?'File':'Fayl';
   const _lDel     = LANG==='ru'?'🗑 Удалить':LANG==='en'?'🗑 Delete':"🗑 O'chirish";
   const _lSave    = LANG==='ru'?'💾 Сохранить':LANG==='en'?'💾 Save':'💾 Saqlash';
-  const _lEdit    = LANG==='ru'?'✏️ Редактировать товар':LANG==='en'?'✏️ Edit product':'✏️ Mahsulotni tahrirlash';
+  const _lEdit    = LANG==='ru'?'✏️ Изменить':LANG==='en'?'✏️ Edit':'✏️ Tahrirlash';
   const _lPricePh = LANG==='ru'?'Цена $':LANG==='en'?'Price $':'Narx $';
   const _lPriceHint= LANG==='ru'?'введите цену напрямую':LANG==='en'?'enter price directly':"narxni to'g'ridan kiriting";
   const _lNoPr    = LANG==='ru'?'Цена не указана':LANG==='en'?'No price set':'Narx kiritilmagan';
@@ -4319,14 +4334,12 @@ function showProd(id, noSwitch){
           <button class="peb" onclick="savePiEdit('${p.id}')">${_lSave}</button>
           <span style="font-size:11px;color:var(--text3)">${_lPriceHint}</span>
         </div>
-        <div style="margin-top:6px">
-          <button class="ibtn" style="width:100%;justify-content:center" onclick="editProduct('${p.id}')">${_lEdit}</button>
-        </div>
         <div class="dac">
           ${inq
             ?`<button class="btn bd" onclick="removeFromQ('${p.id}')">${_lRemoveQ}</button>`
             :`<button class="btn bp" onclick="addToQ('${p.id}');updateMobBadge()">${_lAddQ}</button>`}
           <button class="btn bs" onclick="switchTab('quote')">${_lViewQ}</button>
+          <button class="btn bs" onclick="editProduct('${p.id}')">${_lEdit}</button>
         </div>
         ${window&&window.innerWidth<=768?`
         <div style="margin-top:10px">
@@ -12129,9 +12142,9 @@ async function syncToCloud(silent=false){
         supplier: p._supplier||'',
         parent_supplier: p._parentSupplier||'',
         sheet_name: p._sheet||'',
-        source_file: p._sourceFile||'',
-        image_url: (p._imgUrl && p._imgUrl.startsWith('http')) ? p._imgUrl :
-                   (images[p.id] && images[p.id].startsWith('http')) ? images[p.id] : null
+        source_file: p._sourceFile||''
+        // image_url bulk'ga kiritilmaydi — rasmlar alohida (_syncImageToCloud) boshqariladi,
+        // shunda bulk sync mavjud rasmni o'chirmaydi va payload kichik qoladi
       }));
       let {error} = await sb.from('products').upsert(batch, {onConflict:'id'});
       // Agar source_file ustuni yo'q bo'lsa — usiz qayta urinib ko'ramiz
@@ -12229,6 +12242,7 @@ async function loadFromCloud(){
       return s;
     }
     // Barcha cloud mahsulotlarini yuklash (existingIds tekshirmasdan)
+    const _cloudImgIds = new Set();   // cloud'da rasmi bor mahsulotlar (auto-push uchun)
     allData.forEach(row=>{
       const rawSup=row.supplier||'';
       const rawParent=row.parent_supplier||'';
@@ -12241,11 +12255,12 @@ async function loadFromCloud(){
         _supplier:cleanedSup, _parentSupplier:cleanedParent,
         _sheet:row.sheet_name, _imported:true,
         _sourceFile:row.source_file||'',
-        _imgUrl:row.image_url||''
+        _imgUrl:(row.image_url&&row.image_url.startsWith('http'))?row.image_url:''
       };
-      if(row.image_url && row.image_url.startsWith('http')){
-        prod._imgUrl = row.image_url;
-        images[row.id] = row.image_url;
+      if(row.image_url){
+        _cloudImgIds.add(row.id);
+        if(row.image_url.startsWith('http')){ images[row.id] = row.image_url; }
+        else if(row.image_url.startsWith('data:')){ prod._imgData = row.image_url; images[row.id] = row.image_url; }
       }
       PRODS.push(prod);
       loaded++;
@@ -12264,6 +12279,30 @@ async function loadFromCloud(){
     renderCats(); renderList(); filterP();
     console.log(`☁️ ${allData.length} cloud → ${PRODS.length} PRODS (${localImportedNotInCloud.length} local-only)`);
     showToast(`✅ ${allData.length} ta mahsulot yuklandi`, 2000);
+
+    // Mavjud lokal rasmlarni (cloud'da hali yo'q) fon rejimda cloud bazaga yuklash —
+    // boshqa qurilmalarda (usta telefonida) ham ko'rinishi uchun. Bir martalik, o'zini cheklaydi.
+    if(currentUser){
+      setTimeout(()=>{
+        try{
+          const toPush = PRODS.filter(p => {
+            const d = images[p.id];
+            return d && typeof d==='string' && (d.startsWith('data:')||d.startsWith('http')) && !_cloudImgIds.has(p.id);
+          });
+          if(toPush.length){
+            console.log('🖼️ '+toPush.length+" ta lokal rasm cloud'ga yuklanmoqda...");
+            let _i=0;
+            const _pushNext=()=>{
+              if(_i>=toPush.length) return;
+              const p=toPush[_i++];
+              try{ if(typeof _syncImageToCloud==='function') _syncImageToCloud(p.id, images[p.id]); }catch(e){}
+              setTimeout(_pushNext, 180);
+            };
+            _pushNext();
+          }
+        }catch(e){ console.warn('img auto-push:', e.message); }
+      }, 2500);
+    }
 
     // Cloudda yo'q lekin local da bor import mahsulotlar — cloud ga yuklash
     if(localImportedNotInCloud.length>0){
