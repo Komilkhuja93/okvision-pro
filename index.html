@@ -2809,6 +2809,26 @@ function finishImport(importedProds, supplierName, fileName){
   } else {
     showImportResult(known, [], supplierName, fileName);
   }
+
+  // Fon rejimda: import qilingan BARCHA rasmlarni (_imgRef) Excel fayldan chiqarib,
+  // doimiy saqlash (IndexedDB) va cloud'ga yuborish — faqat ochilgan mahsulotlarni
+  // emas, hammasini. Shunda Android/boshqa qurilmalarda ham rasm chiqadi.
+  _bulkExtractImportedImages();
+}
+
+async function _bulkExtractImportedImages(){
+  if(!_excelZip) return;
+  const toLoad = PRODS.filter(p=>p._imgRef);
+  if(!toLoad.length) return;
+  console.log(`🖼️ ${toLoad.length} ta import rasmi fon rejimda chiqarilmoqda...`);
+  let _i=0;
+  const _step=async()=>{
+    if(_i>=toLoad.length || !_excelZip) return; // yangi import boshlansa to'xtaydi
+    const p=toLoad[_i++];
+    try{ await _loadLazyImg(p); }catch(e){}
+    setTimeout(_step, 40);
+  };
+  _step();
 }
 
 function showImportPreview(unknown, known, supplierName, fileName){
@@ -4075,6 +4095,10 @@ async function _loadLazyImg(p){
     _excelZipMediaCache[p._imgRef]=dataUrl;
     p._imgData=dataUrl; images[p.id]=dataUrl;
     delete p._imgRef;
+    // Muhim: Excel fayldan chiqarilgan rasmni DOIMIY saqlaymiz — aks holda sahifa
+    // yangilanганда (_excelZip yo'qolganda) va boshqa qurilmalarda (Android) rasm yo'qoladi.
+    try{ if(typeof idbSetImg==='function') idbSetImg(p.id, dataUrl); }catch(e){}
+    try{ if(typeof _persistImageToCloud==='function') _persistImageToCloud(p.id, dataUrl); }catch(e){}
     // showProd ni QAYTA chaqirmaymiz (loop oldini olish) — faqat rasmlarni yangilaymiz
     // 1. Detail panel rasmi
     if(selP&&selP.id===p.id){
