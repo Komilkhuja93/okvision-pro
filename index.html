@@ -355,7 +355,7 @@ table.ptbl.ptbl-mq td:nth-child(5),table.ptbl.ptbl-mq th:nth-child(5){width:13%!
   .ptbl td img{
     display:inline-block!important;
     max-width:100%!important;
-    max-height:34px!important;
+    max-height:56px!important;
     object-fit:contain!important;
     -webkit-print-color-adjust:exact!important;
     print-color-adjust:exact!important;
@@ -363,8 +363,8 @@ table.ptbl.ptbl-mq td:nth-child(5),table.ptbl.ptbl-mq th:nth-child(5){width:13%!
   .ptbl td .pimgbox{overflow:visible!important}
   /* Mahsulotlar jadvali: #, img, Product, Qty, Price, Total */
   .ptbl:not(.ptbl-svc) th:nth-child(1),.ptbl:not(.ptbl-svc) td:nth-child(1){width:4%!important}
-  .ptbl:not(.ptbl-svc) th:nth-child(2),.ptbl:not(.ptbl-svc) td:nth-child(2){width:7%!important}
-  .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:47%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(2),.ptbl:not(.ptbl-svc) td:nth-child(2){width:10%!important}
+  .ptbl:not(.ptbl-svc) th:nth-child(3),.ptbl:not(.ptbl-svc) td:nth-child(3){width:44%!important}
   .ptbl:not(.ptbl-svc) th:nth-child(4),.ptbl:not(.ptbl-svc) td:nth-child(4){width:10%!important}
   .ptbl:not(.ptbl-svc) th:nth-child(5),.ptbl:not(.ptbl-svc) td:nth-child(5){width:16%!important;text-align:right!important}
   .ptbl:not(.ptbl-svc) th:nth-child(6),.ptbl:not(.ptbl-svc) td:nth-child(6){width:16%!important;text-align:right!important}
@@ -5098,7 +5098,7 @@ function buildPreview(){
       : '—';
     return`<tr>
       <td>${i+1}</td>
-      <td style="width:46px;padding:8px 10px"><div class="pimgbox" style="width:40px;height:36px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:18px">${item.product?.em||'📦'}</span>`}</div></td>
+      <td style="width:72px;padding:8px 10px"><div class="pimgbox" style="width:64px;height:58px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:26px">${item.product?.em||'📦'}</span>`}</div></td>
       <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
       <td class="nr">${priceCell}</td>
