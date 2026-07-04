@@ -6090,8 +6090,14 @@ function doAiSearch(val){
     // Show supplier comparison
     if(cmpEl) cmpEl.innerHTML=buildComparison(scored);
 
-    // Render filtered results
-    renderList(scored.map(s=>s.p));
+    // Render: AI natijalari + to'g'ridan-to'g'ri (filterP) mosliklar BIRLASHTIRILADI —
+    // AI qidiruv foydalanuvchi topgan mahsulotni hech qachon yo'qotmasligi uchun
+    const direct=(typeof _filterMatches==='function')?_filterMatches():[];
+    const seen=new Set();
+    const merged=[];
+    scored.forEach(s=>{ if(s.p&&!seen.has(s.p.id)){ seen.add(s.p.id); merged.push(s.p); } });
+    direct.forEach(p=>{ if(!seen.has(p.id)){ seen.add(p.id); merged.push(p); } });
+    renderList(merged);
   }, 300);
 }
 
@@ -6176,7 +6182,7 @@ function _expandSearchWord(w){
   }
   return [w];
 }
-function filterP(){
+function _filterMatches(){
   const q=(document.getElementById('srch')||{}).value||'';
   const ql=q.toLowerCase().trim();
   let list=PRODS.filter(p=>actCat==='all'||p.cat===actCat);
@@ -6191,7 +6197,7 @@ function filterP(){
     });
   }
 
-  if(!ql){ renderList(list); return; }
+  if(!ql){ return list; }
 
   // So'zlarni ajratish — har bir so'z alohida qidiriladi (AND mantiq)
   const words = ql.split(/\s+/).filter(Boolean);
@@ -6234,7 +6240,11 @@ function filterP(){
     });
   });
 
-  renderList(list);
+  return list;
+}
+
+function filterP(){
+  renderList(_filterMatches());
 }
 
 function clearAiSearch(){
