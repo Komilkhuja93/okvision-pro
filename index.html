@@ -4559,7 +4559,7 @@ function clearQ(){
   showToast('🗑 Tozalandi');
   if(selP)showProd(selP.id);
 }
-function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();}
+function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
 function renderQ(){
   const em=document.getElementById('emQ'),wr=document.getElementById('qtW');
   if(!quote.length){
@@ -4771,7 +4771,7 @@ function updTotal(){
 let services=[];
 try{services=JSON.parse(localStorage.getItem('cqSvc2')||'[]')}catch(e){}
 
-function saveSvc(){try{localStorage.setItem('cqSvc2',JSON.stringify(services))}catch(e){}}
+function saveSvc(){try{localStorage.setItem('cqSvc2',JSON.stringify(services))}catch(e){}if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
 function renderSvcRows(){
   const cont=document.getElementById('svcRows');
   const emp=document.getElementById('svcEmpty');
@@ -5329,7 +5329,7 @@ function setCur(c){
   if(typeof updGrandTotal==='function') updGrandTotal();
   if(document.getElementById('pg-preview')?.classList.contains('active') && typeof buildPreview==='function') buildPreview();
 }
-function sF(){const d={};['oCo','oAd','oPh','oEm','clN','clA','clP','qDt'].forEach(k=>{d[k]=(document.getElementById(k)||{}).value||''});try{localStorage.setItem('cqF2',JSON.stringify(d))}catch(e){}}
+function sF(){const d={};['oCo','oAd','oPh','oEm','clN','clA','clP','qDt'].forEach(k=>{d[k]=(document.getElementById(k)||{}).value||''});try{localStorage.setItem('cqF2',JSON.stringify(d))}catch(e){}if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
 // Valyuta birligi — til bo'yicha
 function _curUnit(){
   return LANG==='ru'?'сум':LANG==='en'?'UZS':"so'm";
@@ -5758,7 +5758,89 @@ function saveCustomProds(){
 let mqItems=[];
 try{mqItems=JSON.parse(localStorage.getItem('cqMQ2')||'[]')}catch(e){}
 
-function saveMQ(){try{localStorage.setItem('cqMQ2',JSON.stringify(mqItems))}catch(e){}}
+function saveMQ(){try{localStorage.setItem('cqMQ2',JSON.stringify(mqItems))}catch(e){}if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
+
+// ── SAVAT AVTO-SINXRONIZATSIYA (qurilmalararo, cloud draft) ─────────────────
+// Joriy savat (mahsulotlar + qo'shimcha tovarlar + xizmatlar + forma) har
+// o'zgarishda cloud'ga saqlanadi ('__AUTOSAVE__' yozuvi) va boshqa qurilmada
+// ochilganda avtomatik yuklanadi. Yangiroq (ts katta) tomon g'olib.
+let _draftTimer=null, _draftApplying=false, _draftRowId=null;
+function _scheduleDraftPush(){
+  if(_draftApplying) return;
+  try{ localStorage.setItem('cqDraftTs', String(Date.now())); }catch(e){}
+  clearTimeout(_draftTimer);
+  _draftTimer=setTimeout(_pushDraft, 3000);  // 3s tinchlikdan keyin yuboriladi
+}
+async function _pushDraft(){
+  try{
+    if(typeof currentUser==='undefined'||!currentUser) return;
+    const sb=(typeof getSB==='function')?getSB():null; if(!sb) return;
+    const g=id=>document.getElementById(id)?.value?.trim()||'';
+    const payload={
+      v:1, ts: parseInt(localStorage.getItem('cqDraftTs')||String(Date.now()),10),
+      q: quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0})),
+      mq: mqItems||[], svc: services||[],
+      f:{oCo:g('oCo'),oAd:g('oAd'),oPh:g('oPh'),oEm:g('oEm'),clN:g('clN'),clA:g('clA'),clP:g('clP'),qDt:g('qDt')}
+    };
+    const note=JSON.stringify(payload);
+    if(note.length>900000) return; // juda katta payload yuborilmaydi
+    if(!_draftRowId){
+      const {data}=await sb.from('quotes').select('id').eq('user_id',currentUser.id).eq('title','__AUTOSAVE__').limit(1);
+      if(data&&data[0]) _draftRowId=data[0].id;
+    }
+    if(_draftRowId){
+      const {error}=await sb.from('quotes').update({note, client_name:payload.f.clN||''}).eq('id',_draftRowId).eq('user_id',currentUser.id);
+      if(error) console.warn('draft update:', error.message);
+    } else {
+      const {data,error}=await sb.from('quotes').insert({user_id:currentUser.id,title:'__AUTOSAVE__',client_name:payload.f.clN||'',total_usd:0,note,status:'draft'}).select().single();
+      if(!error&&data) _draftRowId=data.id;
+      else if(error) console.warn('draft insert:', error.message);
+    }
+  }catch(e){ console.warn('draft push:', e.message); }
+}
+async function _pullDraft(){
+  try{
+    if(typeof currentUser==='undefined'||!currentUser) return;
+    const sb=(typeof getSB==='function')?getSB():null; if(!sb) return;
+    const {data}=await sb.from('quotes').select('id,note').eq('user_id',currentUser.id).eq('title','__AUTOSAVE__').limit(1);
+    if(!data||!data[0]||!data[0].note) return;
+    _draftRowId=data[0].id;
+    let d=null; try{ d=JSON.parse(data[0].note); }catch(e){ return; }
+    if(!d||!d.ts||d.v!==1) return;
+    const localTs=parseInt(localStorage.getItem('cqDraftTs')||'0',10);
+    if(d.ts<=localTs) return;  // lokal yangiroq yoki teng — hech narsa qilmaymiz
+    _applyDraft(d);
+    const _L=LANG||'uz';
+    showToast(_L==='ru'?'☁️ Корзина с другого устройства загружена':_L==='en'?'☁️ Cart from another device loaded':'☁️ Boshqa qurilmadagi savat yuklandi', 3500);
+  }catch(e){ console.warn('draft pull:', e.message); }
+}
+function _applyDraft(d){
+  _draftApplying=true;
+  try{
+    quote.length=0;
+    (d.q||[]).forEach(({id,name,qty,disc})=>{
+      let pr=PRODS.find(x=>x.id===id);
+      if(!pr&&name) pr=PRODS.find(x=>x.name===name);
+      if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0});
+    });
+    mqItems.length=0; (d.mq||[]).forEach(m=>mqItems.push(m));
+    services.length=0; (d.svc||[]).forEach(s=>services.push(s));
+    if(d.f){ Object.entries(d.f).forEach(([k,v])=>{const e=document.getElementById(k); if(e&&v!=null&&v!=='') e.value=v;}); }
+    // Lokalga ham saqlash (offline uchun)
+    try{ localStorage.setItem('cqQ2',JSON.stringify(d.q||[])); }catch(e){}
+    try{ localStorage.setItem('cqMQ2',JSON.stringify(mqItems)); }catch(e){}
+    try{ localStorage.setItem('cqSvc2',JSON.stringify(services)); }catch(e){}
+    try{ if(d.f) localStorage.setItem('cqF2',JSON.stringify(d.f)); }catch(e){}
+    try{ localStorage.setItem('cqDraftTs', String(d.ts)); }catch(e){}
+    // Qayta chizish
+    if(typeof renderQ==='function') renderQ();
+    if(typeof updBdg==='function') updBdg();
+    if(typeof updateMobBadge==='function') updateMobBadge();
+    if(typeof renderMqRows==='function') renderMqRows();
+    if(typeof renderSvcRows==='function') renderSvcRows();
+    if(typeof updTotal==='function') updTotal();
+  } finally { _draftApplying=false; }
+}
 function renderMqRows(){
   const cont=document.getElementById('mqRows');
   const emp=document.getElementById('mqEmpty');
@@ -9425,6 +9507,7 @@ async function openQuoteHistory(){
   const { data, error } = await sb.from('quotes')
     .select('*')
     .eq('user_id', currentUser.id)
+    .neq('title','__AUTOSAVE__')
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -12313,6 +12396,9 @@ async function loadFromCloud(){
     renderCats(); renderList(); filterP();
     console.log(`☁️ ${allData.length} cloud → ${PRODS.length} PRODS (${localImportedNotInCloud.length} local-only)`);
     showToast(`✅ ${allData.length} ta mahsulot yuklandi`, 2000);
+
+    // Boshqa qurilmadagi savatni tekshirish (PRODS tayyor — mahsulotlar topiladi)
+    setTimeout(()=>{ if(typeof _pullDraft==='function') _pullDraft(); }, 1200);
 
     // Mavjud lokal rasmlarni (cloud'da hali yo'q) fon rejimda cloud bazaga yuklash —
     // boshqa qurilmalarda (usta telefonida) ham ko'rinishi uchun. Bir martalik, o'zini cheklaydi.
