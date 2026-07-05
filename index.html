@@ -9295,14 +9295,24 @@ async function saveQuoteToCloud(customName){
   if(isEditing){
     // TAHRIRLASH — mavjud taklifni yangilash
     delete quotePayload.status; // statusni o'zgartirmaymiz
+    try{ quotePayload.updated_at=new Date().toISOString(); }catch(e){}
     const res = await sb.from('quotes')
       .update(quotePayload)
       .eq('id', window._editingQuoteId)
       .eq('user_id', currentUser.id)
       .select().single();
     quoteData = res.data; qErr = res.error;
-    // Eski quote_items larni o'chirish (qaytadan yoziladi)
-    if(!qErr){
+    // Eskirgan ID (taklif o'chirilgan/topilmadi) — yangi sifatida saqlaymiz
+    if(qErr && (qErr.code==='PGRST116'||qErr.message?.includes('0 rows')||qErr.message?.includes('multiple (or no) rows'))){
+      console.warn('Tahrirlanayotgan taklif topilmadi — yangi sifatida saqlanadi');
+      window._editingQuoteId=null; window._editingQuoteTitle=''; window._editingQuoteNo=null;
+      try{ localStorage.removeItem('editingQuote'); }catch(e){}
+      if(typeof updateEditingBanner==='function') try{updateEditingBanner();}catch(e){}
+      delete quotePayload.updated_at;
+      quotePayload.status='draft';
+      const res2 = await sb.from('quotes').insert(quotePayload).select().single();
+      quoteData = res2.data; qErr = res2.error;
+    } else if(!qErr){
       await sb.from('quote_items').delete().eq('quote_id', window._editingQuoteId);
     }
   } else {
@@ -9504,12 +9514,16 @@ async function openQuoteHistory(){
   }
   listEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text3)">⏳ '+(_Lh==='ru'?'Загрузка...':_Lh==='en'?'Loading...':'Yuklanmoqda...')+'</div>';
 
-  const { data, error } = await sb.from('quotes')
+  let { data, error } = await sb.from('quotes')
     .select('*')
     .eq('user_id', currentUser.id)
-    .neq('title','__AUTOSAVE__')
     .order('created_at', { ascending: false })
     .limit(50);
+  // Avto-saqlash (savat sinxron) yozuvini yashirish + oxirgi yangilangan tepada
+  if(data){
+    data = data.filter(q => q.title !== '__AUTOSAVE__');
+    data.sort((a,b)=> new Date(b.updated_at||b.created_at||0) - new Date(a.updated_at||a.created_at||0));
+  }
 
   if(error){
     console.error('Quote history error:', error.message, error.code);
@@ -10881,7 +10895,12 @@ async function quickSaveQuote(){
     ]);
     if(saved){
       if(lbl) lbl.textContent = _L==='ru'?'✅ Сохранено!':_L==='en'?'✅ Saved!':"✅ Saqlandi!";
-      showToast(_L==='ru'?`✅ "${quoteName}" сохранено`:_L==='en'?`✅ "${quoteName}" saved`:`✅ "${quoteName}" saqlandi`);
+      const wasEditing = !!window._editingQuoteId;
+      if(wasEditing){
+        showToast(_L==='ru'?`✅ Обновлено: "${window._editingQuoteTitle||quoteName}" (существующее КП)`:_L==='en'?`✅ Updated: "${window._editingQuoteTitle||quoteName}" (existing quote)`:`✅ Yangilandi: "${window._editingQuoteTitle||quoteName}" (mavjud taklif)`, 3500);
+      } else {
+        showToast(_L==='ru'?`✅ "${quoteName}" сохранено`:_L==='en'?`✅ "${quoteName}" saved`:`✅ "${quoteName}" saqlandi`);
+      }
       setTimeout(()=>{
         if(lbl) lbl.textContent = _L==='ru'?'💾 Сохранить':_L==='en'?'💾 Save':'💾 Taklifni saqlash';
         if(btn){ btn.disabled=false; btn.style.opacity='1'; }
