@@ -12403,12 +12403,16 @@ async function loadFromCloud(){
         _supplier:cleanedSup, _parentSupplier:cleanedParent,
         _sheet:row.sheet_name, _imported:true,
         _sourceFile:row.source_file||'',
-        _imgUrl:(row.image_url&&row.image_url.startsWith('http'))?row.image_url:''
+        // Lokal (shu qurilmada Excel'dan chiqarilgan) rasm USTUVOR — cloud rasm
+        // faqat lokal bo'lmaganda ishlatiladi. Bu rasm "sakrashi"ni to'xtatadi.
+        _imgUrl:(row.image_url&&row.image_url.startsWith('http')&&!images[row.id])?row.image_url:''
       };
       if(row.image_url){
         _cloudImgIds.add(row.id);
-        if(row.image_url.startsWith('http')){ images[row.id] = row.image_url; }
-        else if(row.image_url.startsWith('data:')){ prod._imgData = row.image_url; images[row.id] = row.image_url; }
+        if(!images[row.id]){
+          if(row.image_url.startsWith('http')){ images[row.id] = row.image_url; }
+          else if(row.image_url.startsWith('data:')){ prod._imgData = row.image_url; images[row.id] = row.image_url; }
+        }
       }
       PRODS.push(prod);
       loaded++;
