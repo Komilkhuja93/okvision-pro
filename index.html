@@ -3771,6 +3771,15 @@ function importSimple(wb, supplierHint, sheetImages={}){
   }
   const _simpIsSom = decideSomGlobal(_simpMax);
 
+  // Mahsulot qatorlari indekslari — qo'shni-rasm zaxirasi boshqa mahsulotning
+  // rasmini "o'g'irlamasligi" uchun (rasm o'z qatoridagi mahsulotga tegishli)
+  const _prodRowIdxSet = new Set();
+  rows.slice(headerIdx+1).forEach((row, relIdx)=>{
+    const ai = headerIdx + 1 + relIdx;
+    const nm = row[namCol]!=null ? String(row[namCol]).trim() : '';
+    if(nm && nm.length>=3) _prodRowIdxSet.add(ai);
+  });
+
   rows.slice(headerIdx+1).forEach((row, relIdx)=>{
     const absIdx = headerIdx + 1 + relIdx;
     if(!row[namCol]) return;
@@ -3795,7 +3804,10 @@ function importSimple(wb, supplierHint, sheetImages={}){
     // Image — qator bo'yicha, ustundan qat'i nazar (0/1-based)
     let img = null;
     if(hasImages){
-      img = sImgs[absIdx] || sImgs[absIdx-1] || sImgs[absIdx+1] || null;
+      img = sImgs[absIdx]
+         || ((sImgs[absIdx-1] && !_prodRowIdxSet.has(absIdx-1)) ? sImgs[absIdx-1] : null)
+         || ((sImgs[absIdx+1] && !_prodRowIdxSet.has(absIdx+1)) ? sImgs[absIdx+1] : null)
+         || null;
     }
     // Category
     const cat = smartCatGlobal(name, desc);
@@ -4330,9 +4342,9 @@ function showProd(id, noSwitch){
         ${img?`<button class="ibtn" style="width:100%;margin-top:2px" onclick="removeImg('${p.id}')">${_lDel}</button>`:''}
       </div>
       <div>
-        <div class="dcat">${p.brand} · ${typeof transCat==='function'?transCat(p.cat):p.cat}</div>
+        <div class="dcat">${[(p.brand&&p.brand!=='Noma\'lum')?p.brand:'', (typeof transCat==='function'?transCat(p.cat):p.cat)||''].filter(Boolean).join(' · ')}</div>
         <div class="dtit">${p.name}</div>
-        <div class="ddsc">${p.desc}</div>
+        <div class="ddsc">${p.desc||''}</div>
         ${pr
           ?`<div class="dpr">
               <span class="pm">${fmtP(pr)}</span>
@@ -4460,7 +4472,7 @@ function showMobProdSheet(p){
           :`<span style="font-size:32px">${p.em}</span>`}
       </div>
       <div style="flex:1;min-width:0">
-        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${p.brand} · ${catLabel}</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">${[(p.brand&&p.brand!=='Noma\'lum')?p.brand:'', catLabel||''].filter(Boolean).join(' · ')}</div>
         <div style="font-size:15px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:8px">${p.name}</div>
         ${priceHtml}
       </div>
@@ -6475,7 +6487,7 @@ function appendAiMsg(type, html, prods){
       const d=document.createElement('div');
       d.className='ai-msg-prod';
       d.onclick=()=>{showProd(p.id);if(window.innerWidth<769)toggleAiChat()};
-      d.innerHTML=`<div><div class="ai-msg-prod-name">${p.name}</div><div class="ai-msg-prod-meta">${p.brand} · ${p.cat}</div></div><div class="ai-msg-prod-price">${pr?fmtP(pr):'—'}</div>`;
+      d.innerHTML=`<div><div class="ai-msg-prod-name">${p.name}</div><div class="ai-msg-prod-meta">${[p.brand||'',p.cat||''].filter(Boolean).join(' · ')}</div></div><div class="ai-msg-prod-price">${pr?fmtP(pr):'—'}</div>`;
       prodsDiv.appendChild(d);
     });
     div.appendChild(prodsDiv);
@@ -12675,8 +12687,13 @@ async function initAuth(){
   // Auth holat o'zgarishini kuzatish
   sb.auth.onAuthStateChange(async (event, session) => {
     if(event === 'SIGNED_IN' && session?.user){
+      // Takroriy SIGNED_IN (tab fokusi / token yangilanishi) — qayta yuklamaymiz.
+      // Aks holda ish o'rtasida katalog qayta qurilib, sahifa "o'zidan-o'zi yangilanadi".
+      if(window._lastAuthUid === session.user.id) return;
+      window._lastAuthUid = session.user.id;
       await onUserLogin(session.user);
     } else if(event === 'SIGNED_OUT'){
+      window._lastAuthUid = null;
       showAuthOverlay();
     }
   });
