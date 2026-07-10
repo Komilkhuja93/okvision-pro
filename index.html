@@ -3858,6 +3858,42 @@ function transCat(cat){
   return (LANG==='ru'?ru:en)[cat]||cat;
 }
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=Math.imul(31,h)+s.charCodeAt(i)|0}return h>>>0}
+// Mahsulotning o'lchov birligini kategoriya/nomiga qarab avtomatik aniqlash.
+// Kabel, optik tola, gofra shlang va h.k. — metrlab; qolganlari — donalab.
+// Qaytaradi: 'metr' | 'dona' (agar mahsulotda aniq _unit bo'lsa — o'sha ustuvor).
+function _prodUnit(p){
+  if(!p) return 'dona';
+  if(p._unit) return p._unit;                       // qo'lda belgilangan bo'lsa — o'sha
+  const cat=(p.cat||'').toLowerCase();
+  const nm=(p.name||'').toLowerCase();
+  // Metrlab sotiladigan tovarlar (kabel, provod, shnur, tola, gofra, truba)
+  const meterRx=/кабел|kabel|cable|провод|provod|shnur|шнур|гофр|gofr|оптическ|optik.*tola|optik kabel|витая пара|vitaya|utp|ftp|коакс|koaks|труба|truba|шланг|shlang|трос|tros|лента|lenta|жгут/i;
+  // Kabel toifasi ichida ham konnektor/mufta/ROLL kabi DONA tovarlar bor — ularni chiqarib tashlaymiz
+  const pieceRx=/коннектор|konnektor|connector|разъем|razem|муфт|mufta|наконечник|nakonech|штекер|shteker|rj45|rj-45|bnc|переходник|perehodnik|адаптер|adapter|бухт|катушк|katushk|стяжк|styajk|хомут|homut|клипс|klips|бирк|маркер/i;
+  if(pieceRx.test(nm)) return 'dona';
+  if(meterRx.test(nm) || (/оптика|optika|кабел|kabel|cable/.test(cat) && !pieceRx.test(nm))) return 'metr';
+  return 'dona';
+}
+
+// O'lchov birligini joriy tilga o'girish
+function _unitLabel(u){
+  u=(u||'dona');
+  const M={
+    dona:{uz:'dona',ru:'шт',en:'pcs'},
+    metr:{uz:'metr',ru:'м',en:'m'},
+    kg:{uz:'kg',ru:'кг',en:'kg'},
+    litr:{uz:'litr',ru:'л',en:'L'},
+    "to'plam":{uz:"to'plam",ru:'компл',en:'set'},
+    "m²":{uz:'m²',ru:'м²',en:'m²'},
+    "m³":{uz:'m³',ru:'м³',en:'m³'},
+    juft:{uz:'juft',ru:'пара',en:'pair'},
+    roll:{uz:'roll',ru:'рулон',en:'roll'},
+    xizmat:{uz:'xizmat',ru:'услуга',en:'service'}
+  };
+  const L=(typeof LANG!=='undefined'?LANG:'uz');
+  return (M[u]&&M[u][L]) ? M[u][L] : u;
+}
+
 function catEmoji(c){
   if(c==='Kategoriyasiz')return'📂';
   if(c==='IP Kamera')return'📷';
@@ -4611,7 +4647,7 @@ function renderQ(){
       </td>
       <td><div style="font-weight:500;font-size:13px">${item.product.name||''}</div><div style="font-size:11px;color:var(--text3)">${item.product.brand||''}</div></td>
       <td><span style="font-size:11px;background:var(--surface3);border-radius:5px;padding:2px 7px;color:var(--text2)">${item.product.cat}</span></td>
-      <td><input class="qi" type="number" min="0" step="any" value="${item.qty}" oninput="updQty('${item.product.id}',this.value)" onchange="updQty('${item.product.id}',this.value)"></td>
+      <td><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end"><input class="qi" type="number" min="0" step="any" value="${item.qty}" oninput="updQty('${item.product.id}',this.value)" onchange="updQty('${item.product.id}',this.value)"><span style="font-size:11px;color:var(--text3);min-width:30px">${_unitLabel(item.unit||_prodUnit(item.product))}</span></div></td>
       <td style="text-align:right;color:${pr?'var(--text)':'var(--text3)'}">
         <input class="qi qpr-inp" type="number" min="0" step="any"
           value="${pr?(cur==='UZS'?Math.round(pr*RATE):pr):''}"
@@ -5163,7 +5199,7 @@ function buildPreview(){
       <td>${i+1}</td>
       <td style="width:72px;padding:8px 10px"><div class="pimgbox" style="width:64px;height:58px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:26px">${item.product?.em||'📦'}</span>`}</div></td>
       <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
-      <td>${item.qty} ${LANG==='ru'?(item.unit==='dona'?'шт':item.unit||'шт'):LANG==='en'?(item.unit==='dona'?'pcs':item.unit||'pcs'):item.unit||'dona'}</td>
+      <td>${item.qty} ${_unitLabel(item.unit||_prodUnit(item.product))}</td>
       <td class="nr">${priceCell}</td>
       ${hasDisc?`<td class="nr" style="color:#d97706">${disc>0?'−'+disc+'%':'—'}</td>`:''}
       <td class="nr" style="font-weight:700">${lt?fmtP(lt):'—'}</td>
