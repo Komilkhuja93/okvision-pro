@@ -6253,6 +6253,10 @@ function doAiSearch(val){
   if(thinking) thinking.classList.add('show');
 
   setTimeout(()=>{
+    // Kechikkan natija himoyasi: agar qidiruv qutisidagi so'z o'zgargan bo'lsa (yoki bo'shatilgan),
+    // bu eski so'rov natijasi — ro'yxatni buzmaymiz.
+    const curVal=((document.getElementById('srch')||{}).value||'').trim();
+    if(curVal!==val.trim()){ if(thinking) thinking.classList.remove('show'); return; }
     const {scored, answer, intent}=localAiSearch(val);
     if(thinking) thinking.classList.remove('show');
 
@@ -6271,13 +6275,20 @@ function doAiSearch(val){
     // Show supplier comparison
     if(cmpEl) cmpEl.innerHTML=buildComparison(scored);
 
-    // Render: AI natijalari + to'g'ridan-to'g'ri (filterP) mosliklar BIRLASHTIRILADI —
-    // AI qidiruv foydalanuvchi topgan mahsulotni hech qachon yo'qotmasligi uchun
+    // Render: to'g'ridan-to'g'ri (filterP) mosliklar ASOSIY —
+    // AI faqat KUCHLI mos (yuqori ball) mahsulotlarni QO'SHIMCHA sifatida qo'shadi.
+    // Bu aloqasiz mahsulotlar (masalan tasodifan chiqib qolgan) ro'yxatga tushmasligini ta'minlaydi.
     const direct=(typeof _filterMatches==='function')?_filterMatches():[];
     const seen=new Set();
     const merged=[];
-    scored.forEach(s=>{ if(s.p&&!seen.has(s.p.id)){ seen.add(s.p.id); merged.push(s.p); } });
+    // Avval aniq (filterP) natijalar — ular doim ko'rinadi
     direct.forEach(p=>{ if(!seen.has(p.id)){ seen.add(p.id); merged.push(p); } });
+    // So'ng AI ning FAQAT kuchli ball olgan (haqiqatan mos) mahsulotlari
+    const STRONG=25; // shu balldan pastlari qo'shilmaydi (kuchsiz "so'z ichida bor" mosliklari kesiladi)
+    const isModelQ = (typeof isExactModelQuery==='function') && isExactModelQuery(val);
+    if(!isModelQ){
+      scored.forEach(s=>{ if(s.p && (s.score>=STRONG) && !seen.has(s.p.id)){ seen.add(s.p.id); merged.push(s.p); } });
+    }
     renderList(merged);
   }, 300);
 }
@@ -6395,10 +6406,12 @@ function _filterMatches(){
     const full  = nm+' '+desc+' '+sv+' '+brand+' '+sup+' '+cat;
     const fullN = full.replace(/\s+/g,'');
 
-    // Model kodi bo'yicha to'g'ridan moslik (DS-2CD, IPC-HDW va h.k.)
-    const isModelQuery = /^[a-z]{1,4}[-_]?\d/i.test(ql);
+    // Model kodi bo'yicha to'g'ridan moslik (DS-2CD, IPC-HDW, yoki sof raqam "1043", "1047")
+    // — bunday so'rovlar faqat NOM bo'yicha qidiriladi (tavsif/spec dagi tasodifiy raqam chiqmasligi uchun)
+    const isModelQuery = /^[a-z]{1,4}[-_]?\d/i.test(ql) || /^\d[a-z0-9\-_]*\d/i.test(ql) || /^[a-z0-9]{2,}[-_\/][a-z0-9\-_\/]+$/i.test(ql);
     if(isModelQuery){
-      return nm.includes(ql) || nmN.includes(qlNorm.replace(/[-_]/g,''));
+      const qNum = qlNorm.replace(/[-_]/g,'');
+      return nm.includes(ql) || nmN.includes(qNum);
     }
 
     // MP qidiruv: "4mp", "8 mp"
