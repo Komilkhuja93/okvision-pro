@@ -1710,7 +1710,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <div id="mqEmpty" style="text-align:center;padding:10px;color:var(--text3);font-size:12px" data-i18n="mq_empty_hint">Katalogda bo'lmagan mahsulotlarni bu yerga qo'shing</div>
       </div>
       <div class="mq-total" id="mqTotalBar" style="display:none">
-        Qo'lda qo'shilgan jami: <span class="mq-tot-v" id="mqTotalVal">$0</span>
+        <span data-i18n="q_mq_total">Qo'lda qo'shilgan jami</span>: <span class="mq-tot-v" id="mqTotalVal">$0</span>
         <span id="mqTotalAlt" style="font-size:11px;color:var(--text3);margin-left:6px"></span>
       </div>
     </div>
@@ -1737,14 +1737,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px" data-i18n="svc_empty_hint">Xizmat qo'shing yoki yuqoridan tanlang</div>
       </div>
       <div class="svc-total" id="svcTotalBar" style="display:none">
-        Xizmatlar jami: <span class="svc-tot-v" id="svcTotalVal">$0</span>
+        <span data-i18n="q_svc_total">Xizmatlar jami</span>: <span class="svc-tot-v" id="svcTotalVal">$0</span>
         <span id="svcTotalAlt" style="font-size:11px;color:var(--text3);margin-left:6px"></span>
       </div>
     </div>
 
     <!-- UMUMIY JAMI -->
     <div id="grandTotal" style="display:none;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rl);padding:14px 18px;margin-top:10px;text-align:right">
-      <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Mahsulotlar + Xizmatlar</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:4px"><span data-i18n="q_prod_plus_svc">Mahsulotlar + Xizmatlar</span></div>
       <div style="font-family:var(--fh);font-size:26px;font-weight:800;color:var(--accent)" id="grandTotalVal">$0</div>
       <div style="font-size:12px;color:var(--text3);margin-top:2px" id="grandTotalAlt"></div>
       </div>
@@ -5073,7 +5073,7 @@ function renderSvcRows(){
   cont.innerHTML=services.map((s,i)=>`
     <div class="svc-item" id="svcRow_${i}">
       <div class="svc-row">
-        <input class="svc-inp" placeholder="Xizmat nomi..." value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
+        <input class="svc-inp" placeholder="${LANG==='ru'?'Название услуги...':LANG==='en'?'Service name...':'Xizmat nomi...'}" value="${s.name.replace(/"/g,'&quot;')}" oninput="updSvcField(${i},'name',this.value)">
         <input class="svc-inp" type="number" min="0" placeholder="${LANG==='ru'?'Цена ($)':LANG==='en'?'Price ($)':'Narx ($)'}" value="${s.price||''}" oninput="updSvcField(${i},'price',this.value)" style="text-align:right">
         <input class="svc-inp" type="number" min="1" placeholder="${typeof t==='function'?t('ph_qty'):'Soni'}" value="${s.qty||1}" oninput="updSvcField(${i},'qty',this.value)" style="text-align:center">
         <input class="svc-inp" type="number" min="0" max="100" step="0.5" placeholder="0%" title="${LANG==='ru'?'Скидка %':LANG==='en'?'Discount %':'Chegirma %'}" value="${s.disc||''}" oninput="updSvcField(${i},'disc',this.value)" style="text-align:center;color:${(s.disc||0)>0?'var(--amber)':'var(--text3)'}">
@@ -5438,7 +5438,7 @@ function buildPreview(){
     </div>
     <table class="ptbl ptbl-mq">
       <thead><tr><th>#</th><th>${LANG==='ru'?'Наименование':LANG==='en'?'Product name':'Mahsulot nomi'}</th><th style="text-align:center">${LANG==='ru'?'Кол-во':LANG==='en'?'QTY':'MIQDOR'}</th><th class="nr">${LANG==='ru'?'Цена':LANG==='en'?'Price':'Narx'}</th><th class="nr">${LANG==='ru'?'Сумма':LANG==='en'?'Total':'Jami'}</th></tr></thead>
-      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';return`<tr><td>${i+1}</td><td><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${LANG==='ru'?(m.unit==='dona'||!m.unit?'шт':m.unit):LANG==='en'?(m.unit==='dona'||!m.unit?'pcs':m.unit):m.unit||'dona'}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
+      <tbody>${mqValid.map((m,i)=>{const p=parseFloat(m.price)||0;const q=parseFloat(m.qty)||1;const usd=m.cur==='uzs'?p/RATE:p;const lt=usd*q;mqTotal2+=lt;const priceDisp=m.cur==='uzs'?(p.toLocaleString('ru')+' '+_curUnit()):fmtP(p);const dsc=(m.desc||'').trim();const qqsB=m.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:'';return`<tr><td>${i+1}</td><td><strong>${m.name}</strong>${qqsB}${dsc?`<div style="font-size:10px;color:#888;font-weight:400;margin-top:2px;line-height:1.4;white-space:pre-wrap">${dsc.replace(/</g,'&lt;')}</div>`:''}</td><td>${q} ${typeof _unitLabel==='function'?_unitLabel(m.unit||'dona'):(m.unit||'dona')}</td><td class="nr">${priceDisp}</td><td class="nr" style="font-weight:700">${fmtP(lt)}</td></tr>`;}).join('')}</tbody>
       <tfoot><tr style="background:#fff8e1"><td colspan="4" style="padding:10px 12px;font-weight:700;color:#b45309">${LANG==='ru'?'ДОПОЛНИТЕЛЬНО':LANG==='en'?'ADDITIONAL':'QO\'SHIMCHA JAMI'}</td><td class="nr" style="padding:10px 12px;font-weight:800;color:#b45309">${fmtP(mqTotal2)}</td></tr></tfoot>
     </table>
   </div>`:'';
@@ -6152,7 +6152,7 @@ function renderMqRows(){
       </select>
       <input class="mq-inp" type="number" min="0" step="any" placeholder="${typeof t==='function'?t('ph_qty'):'Miqdor'}" value="${m.qty===undefined?1:m.qty}" oninput="updMqField(${i},'qty',this.value)" style="text-align:center">
       <select class="mq-inp" onchange="updMqField(${i},'unit',this.value)" style="padding:5px 4px;text-align:center;cursor:pointer">
-        ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${u}</option>`).join('')}
+        ${units.map(u=>`<option value="${u}"${(m.unit||'dona')===u?' selected':''}>${typeof _unitLabel==='function'?_unitLabel(u):u}</option>`).join('')}
       </select>
       <label style="display:flex;align-items:center;justify-content:center;gap:3px;cursor:pointer" title="${qqsLbl()} 12%">
         <input type="checkbox" ${m.qqs?'checked':''} onchange="updMqField(${i},'qqs',this.checked)" style="width:14px;height:14px;accent-color:var(--amber);cursor:pointer">
@@ -7366,6 +7366,7 @@ const I18N = {
     q_total: 'Mahsulotlar jami',
     q_grand: 'Umumiy jami',
     q_svc_total: 'Xizmatlar jami',
+    q_mq_total: "Qo'lda qo'shilgan jami", q_prod_plus_svc: 'Mahsulotlar + Xizmatlar',
     q_install: "O'rnatish va xizmatlar",
     q_manual: "Qo'lda qo'shilgan",
     q_empty: "Taklif bo'sh",
@@ -7560,6 +7561,7 @@ const I18N = {
     hdd_fps: 'FPS', hdd_result: 'Необходимый объём HDD',
     q_title: 'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ', q_to: 'Кому',
     q_total: 'Итого товары', q_grand: 'Итого', q_svc_total: 'Итого услуги',
+    q_mq_total: 'Итого добавлено вручную', q_prod_plus_svc: 'Товары + Услуги',
     q_install: 'Монтаж и услуги', q_manual: 'Добавлено вручную',
     q_empty: 'Предложение пусто', q_empty_hint: 'Добавьте товары из каталога',
     q_pieces: 'шт',
@@ -7743,6 +7745,7 @@ const I18N = {
     hdd_fps: 'FPS', hdd_result: 'Required HDD capacity',
     q_title: 'COMMERCIAL PROPOSAL', q_to: 'To',
     q_total: 'Products total', q_grand: 'Grand total', q_svc_total: 'Services total',
+    q_mq_total: 'Manually added total', q_prod_plus_svc: 'Products + Services',
     q_install: 'Installation & services', q_manual: 'Added manually',
     q_empty: 'Proposal is empty', q_empty_hint: 'Add products from the catalog',
     q_pieces: 'pcs',
@@ -9003,7 +9006,58 @@ function deleteCmCat(cat){
       </button>
       <div class="auth-note">
         <a onclick="switchAuthTab('register')">Hisobingiz yo'qmi? Ro'yxatdan o'ting →</a><br>
-        <a onclick="doForgotPassword()" style="margin-top:6px;display:inline-block">Parolni unutdim</a>
+        <a onclick="openOtpReset()" style="margin-top:6px;display:inline-block" id="lnkForgot">Parolni unutdim</a>
+      </div>
+    </div>
+
+    <!-- PAROLNI TIKLASH — EMAILGA KOD (OTP) -->
+    <div id="authOtp" style="display:none">
+      <div class="auth-title" id="otpTitle">Parolni tiklash</div>
+      <div class="auth-sub" id="otpSub">Email manzilingizga 6 xonali kod yuboramiz</div>
+
+      <!-- 1-qadam: email -->
+      <div id="otpStep1">
+        <div class="auth-group">
+          <label class="auth-label">EMAIL</label>
+          <input class="auth-input" type="email" id="otpEmail" placeholder="siz@example.com" autocomplete="email"
+            onkeydown="if(event.key==='Enter')sendOtpCode()">
+        </div>
+        <button class="auth-btn" id="otpSendBtn" onclick="sendOtpCode()">Kod yuborish</button>
+      </div>
+
+      <!-- 2-qadam: kod -->
+      <div id="otpStep2" style="display:none">
+        <div class="auth-group">
+          <label class="auth-label" id="otpCodeLbl">EMAILGA KELGAN KOD</label>
+          <input class="auth-input" type="text" id="otpCode" placeholder="123456" inputmode="numeric"
+            maxlength="6" autocomplete="one-time-code"
+            style="letter-spacing:6px;text-align:center;font-size:20px;font-weight:700"
+            oninput="this.value=this.value.replace(/\D/g,'')"
+            onkeydown="if(event.key==='Enter')verifyOtpCode()">
+        </div>
+        <button class="auth-btn" id="otpVerifyBtn" onclick="verifyOtpCode()">Tasdiqlash</button>
+        <div class="auth-note" style="margin-top:8px">
+          <a onclick="sendOtpCode(true)" id="otpResend">Kod kelmadimi? Qayta yuborish</a>
+        </div>
+      </div>
+
+      <!-- 3-qadam: yangi parol -->
+      <div id="otpStep3" style="display:none">
+        <div class="auth-group">
+          <label class="auth-label" id="otpNewLbl">YANGI PAROL</label>
+          <input class="auth-input" type="password" id="otpNewPass" placeholder="Kamida 8 ta belgi"
+            autocomplete="new-password" onkeydown="if(event.key==='Enter')saveNewPassword()">
+        </div>
+        <div class="auth-group">
+          <label class="auth-label" id="otpNew2Lbl">PAROLNI TAKRORLANG</label>
+          <input class="auth-input" type="password" id="otpNewPass2" placeholder="••••••••"
+            autocomplete="new-password" onkeydown="if(event.key==='Enter')saveNewPassword()">
+        </div>
+        <button class="auth-btn" id="otpSaveBtn" onclick="saveNewPassword()">Parolni saqlash</button>
+      </div>
+
+      <div class="auth-note">
+        <a onclick="switchAuthTab('login')" id="otpBack">← Kirish sahifasiga qaytish</a>
       </div>
     </div>
 
@@ -11575,9 +11629,111 @@ function hideAuthOverlay(){ document.getElementById('authOverlay').style.display
 function switchAuthTab(tab){
   document.getElementById('authLogin').style.display    = tab==='login'    ? '' : 'none';
   document.getElementById('authRegister').style.display = tab==='register' ? '' : 'none';
+  const otpEl=document.getElementById('authOtp');
+  if(otpEl) otpEl.style.display = tab==='otp' ? '' : 'none';
   document.getElementById('atLogin').classList.toggle('active', tab==='login');
   document.getElementById('atReg').classList.toggle('active', tab==='register');
   clearAuthMsg();
+}
+
+// ── PAROLNI TIKLASH: EMAILGA 6 XONALI KOD (OTP) ────────────────────────────
+function _otpT(u,r,e){ const L=(typeof LANG!=='undefined'?LANG:'uz'); return L==='ru'?r:L==='en'?e:u; }
+function _otpStep(n){
+  ['otpStep1','otpStep2','otpStep3'].forEach((id,i)=>{
+    const el=document.getElementById(id); if(el) el.style.display = (i===n-1)?'':'none';
+  });
+}
+function openOtpReset(){
+  switchAuthTab('otp');
+  _otpStep(1);
+  // Kirish formasidagi emailni ko'chirib qo'yamiz (qulaylik)
+  const le=(document.getElementById('authEmail')||{}).value||'';
+  const oe=document.getElementById('otpEmail'); if(oe && le) oe.value=le;
+  // Til bo'yicha matnlar
+  const S=(id,txt)=>{const el=document.getElementById(id); if(el) el.textContent=txt;};
+  S('otpTitle', _otpT('Parolni tiklash','Восстановление пароля','Reset password'));
+  S('otpSub', _otpT('Email manzilingizga 6 xonali kod yuboramiz','Отправим 6-значный код на вашу почту','We\'ll send a 6-digit code to your email'));
+  S('otpSendBtn', _otpT('Kod yuborish','Отправить код','Send code'));
+  S('otpCodeLbl', _otpT('EMAILGA KELGAN KOD','КОД ИЗ ПИСЬМА','CODE FROM EMAIL'));
+  S('otpVerifyBtn', _otpT('Tasdiqlash','Подтвердить','Verify'));
+  S('otpResend', _otpT('Kod kelmadimi? Qayta yuborish','Код не пришёл? Отправить снова','Didn\'t get it? Resend'));
+  S('otpNewLbl', _otpT('YANGI PAROL','НОВЫЙ ПАРОЛЬ','NEW PASSWORD'));
+  S('otpNew2Lbl', _otpT('PAROLNI TAKRORLANG','ПОВТОРИТЕ ПАРОЛЬ','REPEAT PASSWORD'));
+  S('otpSaveBtn', _otpT('Parolni saqlash','Сохранить пароль','Save password'));
+  S('otpBack', _otpT('← Kirish sahifasiga qaytish','← Вернуться ко входу','← Back to sign in'));
+  setTimeout(()=>{ const e=document.getElementById('otpEmail'); if(e) e.focus(); }, 120);
+}
+async function sendOtpCode(isResend){
+  const email=(document.getElementById('otpEmail')||{}).value.trim();
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showAuthErr(_otpT('To\'g\'ri email kiriting','Введите корректный email','Enter a valid email')); return;
+  }
+  const sb=getSB(); if(!sb) return;
+  const btn=document.getElementById(isResend?'otpResend':'otpSendBtn');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.textContent=_otpT('Yuborilmoqda...','Отправка...','Sending...'); btn.style.pointerEvents='none'; }
+  // shouldCreateUser:false — faqat mavjud foydalanuvchiga kod yuboriladi
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:false } });
+  if(btn){ btn.textContent=oldTxt; btn.style.pointerEvents=''; }
+  if(error){
+    const m=(error.message||'').toLowerCase();
+    if(m.includes('not found')||m.includes('signups not allowed')||m.includes('user not')){
+      showAuthErr(_otpT('Bu email ro\'yxatdan o\'tmagan','Этот email не зарегистрирован','This email is not registered'));
+    } else if(m.includes('rate')||m.includes('too many')||m.includes('seconds')){
+      showAuthErr(_otpT('Biroz kuting va qayta urinib ko\'ring','Подождите немного и попробуйте снова','Please wait a moment and try again'));
+    } else {
+      showAuthErr(getAuthError(error.message));
+    }
+    return;
+  }
+  showAuthOk(_otpT('✅ Kod '+email+' ga yuborildi. Pochtangizni tekshiring (spam ham).',
+                   '✅ Код отправлен на '+email+'. Проверьте почту (и папку спам).',
+                   '✅ Code sent to '+email+'. Check your inbox (and spam).'));
+  _otpStep(2);
+  setTimeout(()=>{ const c=document.getElementById('otpCode'); if(c) c.focus(); }, 120);
+}
+async function verifyOtpCode(){
+  const email=(document.getElementById('otpEmail')||{}).value.trim();
+  const code=(document.getElementById('otpCode')||{}).value.trim();
+  if(code.length!==6){ showAuthErr(_otpT('6 xonali kodni kiriting','Введите 6-значный код','Enter the 6-digit code')); return; }
+  const sb=getSB(); if(!sb) return;
+  const btn=document.getElementById('otpVerifyBtn');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.textContent=_otpT('Tekshirilmoqda...','Проверка...','Verifying...'); btn.style.pointerEvents='none'; }
+  const { data, error } = await sb.auth.verifyOtp({ email, token:code, type:'email' });
+  if(btn){ btn.textContent=oldTxt; btn.style.pointerEvents=''; }
+  if(error){
+    const m=(error.message||'').toLowerCase();
+    if(m.includes('expired')) showAuthErr(_otpT('Kod muddati tugagan — qayta yuboring','Срок кода истёк — отправьте заново','Code expired — resend it'));
+    else showAuthErr(_otpT('Kod noto\'g\'ri','Неверный код','Invalid code'));
+    return;
+  }
+  // Kirish muvaffaqiyatli — endi yangi parol o'rnatiladi
+  showAuthOk(_otpT('✅ Tasdiqlandi. Endi yangi parol o\'rnating.','✅ Подтверждено. Установите новый пароль.','✅ Verified. Now set a new password.'));
+  _otpStep(3);
+  setTimeout(()=>{ const p=document.getElementById('otpNewPass'); if(p) p.focus(); }, 120);
+}
+async function saveNewPassword(){
+  const p1=(document.getElementById('otpNewPass')||{}).value;
+  const p2=(document.getElementById('otpNewPass2')||{}).value;
+  if(!p1 || p1.length<8){ showAuthErr(_otpT('Parol kamida 8 ta belgi bo\'lsin','Пароль минимум 8 символов','Password must be at least 8 characters')); return; }
+  if(p1!==p2){ showAuthErr(_otpT('Parollar mos kelmadi','Пароли не совпадают','Passwords do not match')); return; }
+  const sb=getSB(); if(!sb) return;
+  const btn=document.getElementById('otpSaveBtn');
+  const oldTxt=btn?btn.textContent:'';
+  if(btn){ btn.textContent=_otpT('Saqlanmoqda...','Сохранение...','Saving...'); btn.style.pointerEvents='none'; }
+  const { data, error } = await sb.auth.updateUser({ password: p1 });
+  if(btn){ btn.textContent=oldTxt; btn.style.pointerEvents=''; }
+  if(error){ showAuthErr(getAuthError(error.message)); return; }
+  showAuthOk(_otpT('✅ Parol yangilandi!','✅ Пароль обновлён!','✅ Password updated!'));
+  // Foydalanuvchi allaqachon kirgan (OTP orqali) — ilovaga o'tkazamiz
+  setTimeout(async()=>{
+    try{
+      const { data:s } = await sb.auth.getUser();
+      if(s && s.user){ await onUserLogin(s.user); }
+      else { switchAuthTab('login'); }
+    }catch(e){ switchAuthTab('login'); }
+  }, 900);
 }
 
 function showAuthErr(msg){ const el=document.getElementById('authErr'); el.textContent=msg; el.classList.add('show'); document.getElementById('authOk').classList.remove('show'); }
@@ -11635,6 +11791,8 @@ async function doGoogleLogin(){
 
 // ── Parolni tiklash ───────────────────────────────────────────────────────
 async function doForgotPassword(){
+  // Yangi usul: emailga 6 xonali kod (havola emas) — foydalanuvchi uchun qulayroq
+  if(typeof openOtpReset==='function'){ openOtpReset(); return; }
   const email = document.getElementById('authEmail').value.trim();
   if(!email){ showAuthErr(t("err_enter_email")||"Email kiriting"); return; }
   const sb = getSB(); if(!sb) return;
@@ -12982,7 +13140,21 @@ async function initAuth(){
   }
   // Auth holat o'zgarishini kuzatish
   sb.auth.onAuthStateChange(async (event, session) => {
+    if(event === 'PASSWORD_RECOVERY'){
+      // Eski usul: emaildagi havola orqali kelgan — yangi parol o'rnatish oynasini ochamiz
+      // (avval bu ishlov berilmagani uchun parolni o'zgartirib bo'lmasdi)
+      showAuthOverlay();
+      switchAuthTab('otp');
+      if(typeof openOtpReset==='function') openOtpReset();
+      _otpStep(3);
+      showAuthOk(_otpT('Yangi parolni kiriting','Введите новый пароль','Enter your new password'));
+      return;
+    }
     if(event === 'SIGNED_IN' && session?.user){
+      // Parol tiklash oynasi ochiq bo'lsa — ilovaga o'tkazmaymiz (avval parol o'rnatilsin)
+      const _otpVisible=(document.getElementById('authOtp')||{}).style?.display==='';
+      const _step3=(document.getElementById('otpStep3')||{}).style?.display==='';
+      if(_otpVisible && _step3) return;
       // Takroriy SIGNED_IN (tab fokusi / token yangilanishi) — qayta yuklamaymiz.
       // Aks holda ish o'rtasida katalog qayta qurilib, sahifa "o'zidan-o'zi yangilanadi".
       if(window._lastAuthUid === session.user.id) return;
