@@ -1340,6 +1340,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
     <div class="user-menu-item" onclick="cloudDiagnostics();toggleUserMenu()">🔍 <span data-i18n="menu_cloud_status">Cloud holati</span></div>
     <div class="user-menu-item" onclick="syncImagesToStorage()">🖼 <span data-i18n="menu_sync_images">Rasmlarni bulutga</span></div>
     <div class="user-menu-item" onclick="loadFromCloud()">⬇️ <span data-i18n="menu_load">Bulutdan yuklash</span></div>
+    <div class="user-menu-item" onclick="openCleanupModal();toggleUserMenu()">🧹 <span data-i18n="menu_cleanup">Import mahsulotlarni tozalash</span></div>
     <div class="user-menu-item" id="menuAnalyticsBtn" onclick="openAnalytics();toggleUserMenu()">📊 <span data-i18n="menu_analytics">Tahlil</span></div>
     <div class="user-menu-item" id="menuChatBtn" onclick="openChat();toggleUserMenu()">💬 <span>Chat</span></div>
     <div class="user-menu-item" onclick="togglePush()">🔔 <span data-i18n="menu_push">Bildirishnoma</span> <span id="pushToggleState" style="margin-left:auto;font-size:11px;color:var(--text3)"></span></div>
@@ -2065,6 +2066,21 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           🖨 <span data-i18n="btn_print">Chop etish / PDF</span>
         </button>
       </div>
+    </div>
+    <!-- PDF sozlamalari: rasm o'lchami va ixcham rejim -->
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+      <span style="font-size:12px;color:var(--text2);font-weight:600" id="lblPdfOpts">🖨 PDF sozlamalari:</span>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)">
+        <span id="lblImgSize">🖼 Rasm o'lchami</span>
+        <input type="range" id="pdfImgSize" min="0" max="120" step="4" value="64"
+          oninput="setPdfImgSize(this.value)" style="width:130px;accent-color:var(--accent);cursor:pointer">
+        <span id="pdfImgSizeVal" style="min-width:42px;color:var(--accent);font-weight:600">64px</span>
+      </label>
+      <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2);cursor:pointer">
+        <input type="checkbox" id="pdfCompact" onchange="setPdfCompact(this.checked)"
+          style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+        <span id="lblCompact">📄 Ixcham (kam sahifa)</span>
+      </label>
     </div>
     <!-- Mijoz aloqa ma'lumotlari (agar kiritilmagan bo'lsa) -->
     <div id="shareContactBar" style="display:none;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
@@ -3797,8 +3813,22 @@ function importSimple(wb, supplierHint, sheetImages={}){
     if(_dc>1) _clean=_clean.replace(/\./g,'');
     let usd=parseFloat(_clean);
     if(!usd||usd<=0) return;
-    // Ustun bo'yicha valyuta (import oynasidagi tanlov + avtomatik)
-    if(_simpIsSom) usd=Math.round(usd/RATE*100)/100;
+    // Valyutani QATOR bo'yicha aniqlash — fayl aralash bo'lsa ($350 va 4 200 000 so'm bir faylda)
+    // xato konvertatsiya bo'lmasligi uchun. Import oynasidagi aniq tanlov ustuvor.
+    let _rowIsSom = _simpIsSom;
+    const _impMode = (typeof getImportCurrencyGlobal==='function') ? getImportCurrencyGlobal() : 'auto';
+    if(_impMode!=='usd' && _impMode!=='uzs'){
+      // Avtomatik rejim: qatordagi valyuta belgisi bor bo'lsa — o'shanga ishonamiz
+      const _rawL = priceRaw.toLowerCase();
+      if(/\$|usd|дол|доллар|dollar/.test(_rawL))            _rowIsSom = false;
+      else if(/со'?м|сум|so'?m|uzs|сўм/.test(_rawL))        _rowIsSom = true;
+      else {
+        // Belgi yo'q — miqdorga qarab: so'm narxlari amalda 5000 dan katta,
+        // dollar narxlari esa deyarli har doim 5000 dan kichik.
+        _rowIsSom = usd > 5000;
+      }
+    }
+    if(_rowIsSom) usd=Math.round(usd/RATE*100)/100;
     // Desc
     const desc = specCol>=0 ? String(row[specCol]||'').replace(/&gt;/g,'>').replace(/[\r\n]+/g,' ').trim() : '';
     // Image — qator bo'yicha, ustundan qat'i nazar (0/1-based)
@@ -4266,6 +4296,168 @@ function deleteSupplier(s){
     showToast('🗑 '+s+' o\'chirildi. '+(before-PRODS.length)+' mahsulot olib tashlandi');
   }
 }
+
+// ── IMPORT MAHSULOTLARINI TOZALASH ─────────────────────────────────────────
+// Qo'lda qo'shilgan mahsulotlar (_custom) HECH QACHON o'chirilmaydi.
+function _countProds(){
+  const custom=PRODS.filter(p=>p._custom).length;
+  const imported=PRODS.length-custom;
+  const sup={};
+  PRODS.forEach(p=>{ if(p._custom) return; const s=p._parentSupplier||p._supplier||'—'; sup[s]=(sup[s]||0)+1; });
+  return {custom, imported, sup};
+}
+function openCleanupModal(){
+  const {custom, imported, sup}=_countProds();
+  const _L=LANG||'uz';
+  const T=(u,r,e)=>_L==='ru'?r:_L==='en'?e:u;
+  const rows=Object.entries(sup).sort((a,b)=>b[1]-a[1]).map(([s,n])=>
+    `<label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;margin-bottom:6px;cursor:pointer">
+      <input type="checkbox" class="clnSup" value="${String(s).replace(/"/g,'&quot;')}" checked style="width:16px;height:16px;accent-color:var(--accent)">
+      <span style="flex:1">${s}</span><strong style="color:var(--text3)">${n}</strong>
+    </label>`).join('');
+  const old=document.getElementById('cleanupModal'); if(old) old.remove();
+  const d=document.createElement('div');
+  d.id='cleanupModal';
+  d.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
+  d.onclick=e=>{ if(e.target===d) d.remove(); };
+  d.innerHTML=`<div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:20px">
+    <h3 style="margin:0 0 6px">🧹 ${T('Import mahsulotlarni tozalash','Очистка импортированных товаров','Clean up imported products')}</h3>
+    <p style="color:var(--text3);font-size:13px;margin:0 0 14px">
+      ${T('Qo\'lda qo\'shgan mahsulotlaringiz saqlanadi.','Товары, добавленные вручную, сохранятся.','Your manually added products will be kept.')}
+      <br>✋ ${T('Qo\'lda qo\'shilgan','Вручную','Manual')}: <strong style="color:var(--green)">${custom}</strong> ·
+      📦 ${T('Import qilingan','Импортировано','Imported')}: <strong style="color:var(--amber)">${imported}</strong>
+    </p>
+    <div style="margin-bottom:12px">${rows||('<div style="color:var(--text3)">'+T('Import mahsulot yo\'q','Нет импортированных','No imported products')+'</div>')}</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);margin-bottom:14px;cursor:pointer">
+      <input type="checkbox" id="clnCloud" checked style="width:16px;height:16px;accent-color:var(--accent)">
+      ${T('Bulutdan ham o\'chirish (boshqa qurilmalarda ham)','Удалить и из облака (на всех устройствах)','Also delete from cloud (all devices)')}
+    </label>
+    <div style="display:flex;gap:8px">
+      <button class="btn bs" style="flex:1" onclick="document.getElementById('cleanupModal').remove()">${T('Bekor qilish','Отмена','Cancel')}</button>
+      <button class="btn" style="flex:1;background:#dc2626;color:#fff" onclick="runCleanup()">🗑 ${T('O\'chirish','Удалить','Delete')}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(d);
+}
+async function runCleanup(){
+  const _L=LANG||'uz';
+  const T=(u,r,e)=>_L==='ru'?r:_L==='en'?e:u;
+  const sel=[...document.querySelectorAll('.clnSup:checked')].map(x=>x.value);
+  if(!sel.length){ showToast('⚠️ '+T('Hech narsa tanlanmadi','Ничего не выбрано','Nothing selected')); return; }
+  const alsoCloud=(document.getElementById('clnCloud')||{}).checked;
+  const doomed=PRODS.filter(p=>!p._custom && sel.includes(p._parentSupplier||p._supplier||'—'));
+  if(!doomed.length){ showToast('⚠️ '+T('Mos mahsulot topilmadi','Товары не найдены','No matching products')); return; }
+  if(!confirm(T(doomed.length+' ta import mahsulot o\'chiriladi. Qo\'lda qo\'shganlaringiz saqlanadi. Davom etamizmi?',
+               'Будет удалено '+doomed.length+' импортированных товаров. Товары, добавленные вручную, сохранятся. Продолжить?',
+               doomed.length+' imported products will be deleted. Manual products are kept. Continue?'))) return;
+  const doomedIds=new Set(doomed.map(p=>p.id));
+  const modal=document.getElementById('cleanupModal'); if(modal) modal.remove();
+  showToast('⏳ '+T('O\'chirilmoqda...','Удаление...','Deleting...'), 2000);
+
+  // 1) Cloud'dan o'chirish (bo'laklab)
+  if(alsoCloud && typeof currentUser!=='undefined' && currentUser){
+    try{
+      const sb=(typeof getSB==='function')?getSB():null;
+      if(sb){
+        const ids=[...doomedIds];
+        for(let i=0;i<ids.length;i+=200){
+          await sb.from('products').delete().in('id', ids.slice(i,i+200)).eq('user_id', currentUser.id);
+        }
+      }
+    }catch(e){ console.warn('cloud cleanup:', e.message); }
+  }
+
+  // 2) Lokal PRODS dan olib tashlash (qo'lda qo'shilganlar tegilmaydi)
+  for(let i=PRODS.length-1;i>=0;i--){ if(doomedIds.has(PRODS[i].id) && !PRODS[i]._custom) PRODS.splice(i,1); }
+
+  // 3) Rasm keshini tozalash
+  doomedIds.forEach(id=>{ try{ delete images[id]; if(typeof idbDelImg==='function') idbDelImg(id); }catch(e){} });
+
+  // 4) Tanlangan supplier narxlarini olib tashlash va prices ni qayta qurish
+  sel.forEach(s=>{ if(window.supplierPrices && window.supplierPrices[s]) delete window.supplierPrices[s]; });
+  prices={};
+  Object.entries(window.supplierPrices||{}).forEach(([sup,pm])=>{
+    Object.entries(pm).forEach(([k,v])=>{ if(!prices[k]||v<prices[k]) prices[k]=v; });
+  });
+  // Qo'lda qo'shilganlarning narxi override'da — qayta qo'llaymiz
+  if(typeof applyPriceOv==='function') applyPriceOv();
+
+  // 5) Saqlash va qayta chizish
+  try{ localStorage.setItem('cqP2',JSON.stringify(prices)); }catch(e){}
+  if(typeof savePRODS==='function') savePRODS();
+  if(typeof saveCustomProds==='function') saveCustomProds();
+  if(actSupplier && sel.includes(actSupplier)) actSupplier='';
+  if(typeof updPC==='function') updPC();
+  if(typeof renderCats==='function') renderCats();
+  if(typeof filterP==='function') filterP();
+  const {custom, imported}=_countProds();
+  showToast('✅ '+T(doomed.length+' ta o\'chirildi. Qolgan: '+imported+' import, '+custom+' qo\'lda',
+                    'Удалено '+doomed.length+'. Осталось: '+imported+' импорт, '+custom+' вручную',
+                    doomed.length+' deleted. Left: '+imported+' imported, '+custom+' manual'), 5000);
+}
+
+// ── PDF SOZLAMALARI: rasm o'lchami va ixcham rejim ─────────────────────────
+function _pdfImgSize(){
+  const v=parseInt(localStorage.getItem('cqPdfImg')||'64',10);
+  return isNaN(v)?64:Math.max(0,Math.min(120,v));
+}
+function _pdfImgW(){ return _pdfImgSize(); }
+function _pdfImgH(){ return Math.round(_pdfImgSize()*0.9); }
+function _pdfCompact(){ return localStorage.getItem('cqPdfCompact')==='1'; }
+function setPdfImgSize(v){
+  try{ localStorage.setItem('cqPdfImg', String(parseInt(v,10)||0)); }catch(e){}
+  const lbl=document.getElementById('pdfImgSizeVal');
+  const n=parseInt(v,10)||0;
+  const _L=LANG||'uz';
+  if(lbl) lbl.textContent = n===0 ? (_L==='ru'?'без фото':_L==='en'?'no photo':'rasmsiz') : (n+'px');
+  _applyPdfCss();
+  if(typeof buildPreview==='function') buildPreview();
+}
+function setPdfCompact(on){
+  try{ localStorage.setItem('cqPdfCompact', on?'1':'0'); }catch(e){}
+  _applyPdfCss();
+  if(typeof buildPreview==='function') buildPreview();
+}
+function _applyPdfCss(){
+  let st=document.getElementById('pdfDynCss');
+  if(!st){ st=document.createElement('style'); st.id='pdfDynCss'; document.head.appendChild(st); }
+  const imgH=_pdfImgH();
+  const compact=_pdfCompact();
+  st.textContent = `
+    .ptbl td img{max-height:${imgH}px!important}
+    ${compact?`
+      .ptbl th{padding:5px 8px!important;font-size:10px!important}
+      .ptbl td{padding:4px 8px!important;font-size:11.5px!important;line-height:1.25!important}
+      .ptbl td strong{font-size:12px!important}
+      .ptbl td div{line-height:1.25!important}
+      .pimgbox{border-radius:4px!important}
+      .phdd{margin-top:6px!important;padding:8px!important}
+      .ptr td{padding:7px 8px!important;font-size:13px!important}
+    `:''}
+    @media print{
+      .ptbl td img{max-height:${imgH}px!important}
+      ${compact?`
+        .ptbl th{padding:4px 6px!important;font-size:9px!important}
+        .ptbl td{padding:3px 6px!important;font-size:10.5px!important;line-height:1.2!important}
+        .ptbl td strong{font-size:11px!important}
+        .ptr td{padding:6px!important;font-size:12px!important}
+        .phdd{margin-top:5px!important;padding:7px!important}
+      `:''}
+    }`;
+}
+// Sahifa ochilganda saqlangan sozlamalarni tiklash
+document.addEventListener('DOMContentLoaded',()=>{
+  try{
+    const sl=document.getElementById('pdfImgSize');
+    if(sl){ sl.value=_pdfImgSize();
+      const lbl=document.getElementById('pdfImgSizeVal');
+      const _L=LANG||'uz';
+      if(lbl) lbl.textContent=_pdfImgSize()===0?(_L==='ru'?'без фото':_L==='en'?'no photo':'rasmsiz'):(_pdfImgSize()+'px');
+    }
+    const cb=document.getElementById('pdfCompact'); if(cb) cb.checked=_pdfCompact();
+    _applyPdfCss();
+  }catch(e){}
+});
 
 function setSupplier(s){
   actSupplier=s;selP=null;
@@ -5197,7 +5389,7 @@ function buildPreview(){
       : '—';
     return`<tr>
       <td>${i+1}</td>
-      <td style="width:72px;padding:8px 10px"><div class="pimgbox" style="width:64px;height:58px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:26px">${item.product?.em||'📦'}</span>`}</div></td>
+      <td style="width:${_pdfImgW()+8}px;padding:8px 10px">${_pdfImgSize()>0?`<div class="pimgbox" style="width:${_pdfImgW()}px;height:${_pdfImgH()}px;background:#f0f2f5;border-radius:6px;overflow:hidden;display:flex;align-items:center;justify-content:center">${img?`<img src="${img}" style="width:100%;height:100%;object-fit:contain;padding:2px" alt="">`:`<span style="font-size:${Math.round(_pdfImgH()*0.45)}px">${item.product?.em||'📦'}</span>`}</div>`:''}</td>
       <td><strong>${item.product?.name||''}</strong>${item.qqs?`<span style="font-size:9px;border:1px solid #d9b65c;color:#9a6b00;border-radius:4px;padding:0 5px;margin-left:6px;vertical-align:middle">${qqsLbl()}</span>`:''}${(item.desc||'').trim()?`<div style="font-size:10px;color:#666;font-weight:400;margin-top:3px;line-height:1.45;white-space:pre-wrap">${(item.desc||'').trim().replace(/</g,'&lt;')}</div>`:''}<br><span style="font-size:11px;color:#777">${typeof transCat==='function'?transCat(item.product?.cat||''):(item.product?.cat||'')}</span></td>
       <td>${item.qty} ${_unitLabel(item.unit||_prodUnit(item.product))}</td>
       <td class="nr">${priceCell}</td>
