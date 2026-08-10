@@ -272,6 +272,7 @@ table.ptbl.ptbl-mq td:nth-child(5),table.ptbl.ptbl-mq th:nth-child(5){width:13%!
   /* Hamma narsani yashir */
   .app{display:block!important;height:auto!important;width:100%!important;overflow:visible!important;
     grid-template-columns:1fr!important;grid-template-rows:none!important}
+  #pdfOptsBar,.no-print,
   .topbar,.sidebar,.tabs,.btn,.qh .btn,.cs,.mob-filter-btn,
   .mob-topbar,.mob-bottom-nav,.mob-rate-modal,.mob-rate-sheet,
   .main-cat-bar,.ai-search-wrap,.ai-answer,.ai-result-chips,
@@ -2068,7 +2069,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       </div>
     </div>
     <!-- PDF sozlamalari: rasm o'lchami va ixcham rejim -->
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+    <div id="pdfOptsBar" class="no-print" style="background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:10px 14px;margin-bottom:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">
       <span style="font-size:12px;color:var(--text2);font-weight:600" id="lblPdfOpts">🖨 PDF sozlamalari:</span>
       <label style="display:flex;align-items:center;gap:7px;font-size:12px;color:var(--text2)">
         <span id="lblImgSize">🖼 Rasm o'lchami</span>
