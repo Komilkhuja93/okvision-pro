@@ -2125,7 +2125,7 @@ function getQuoteSummary(){
 
   // 1. Mahsulotlar
   const prodLines = quote.map((item,i)=>{
-    const pr=getPrice(item.product); const lt=pr?pr*item.qty:null;
+    const pr=qPrice(item); const lt=pr?pr*item.qty:null;
     if(lt) prodTotal+=lt;
     return `${i+1}. ${item.product.name} × ${item.qty} — ${lt?fmtP(lt):'—'}`;
   });
@@ -2227,7 +2227,7 @@ function shareViaTelegram(){
   let total=0;
   const lines=[];
   quote.forEach((item,i)=>{
-    const pr=getPrice(item.product)||0;
+    const pr=qPrice(item)||0;
     const lt=pr*item.qty; total+=lt;
     lines.push(`${i+1}. ${item.product?.name||''} × ${item.qty} — ${fmtP(lt)}`);
   });
@@ -2526,10 +2526,10 @@ document.addEventListener('DOMContentLoaded',()=>{
     }catch(e){}
     const q=localStorage.getItem('cqQ2');
     if(q){
-      JSON.parse(q).forEach(({id,qty,name,disc})=>{
+      JSON.parse(q).forEach(({id,qty,name,disc,price})=>{
         let pr=PRODS.find(x=>x.id===id);
         if(!pr&&name) pr=PRODS.find(x=>x.name===name);
-        if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0});
+        if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0,price:price});
       });
       renderQ();updBdg();
       if(typeof updateMobBadge==='function') updateMobBadge();
@@ -3899,7 +3899,7 @@ function _prodUnit(p){
   // Metrlab sotiladigan tovarlar (kabel, provod, shnur, tola, gofra, truba)
   const meterRx=/кабел|kabel|cable|провод|provod|shnur|шнур|гофр|gofr|оптическ|optik.*tola|optik kabel|витая пара|vitaya|utp|ftp|коакс|koaks|труба|truba|шланг|shlang|трос|tros|лента|lenta|жгут/i;
   // Kabel toifasi ichida ham konnektor/mufta/ROLL kabi DONA tovarlar bor — ularni chiqarib tashlaymiz
-  const pieceRx=/коннектор|konnektor|connector|разъем|razem|муфт|mufta|наконечник|nakonech|штекер|shteker|rj45|rj-45|bnc|переходник|perehodnik|адаптер|adapter|бухт|катушк|katushk|стяжк|styajk|хомут|homut|клипс|klips|бирк|маркер/i;
+  const pieceRx=/коннектор|konnektor|connector|разъем|razem|муфт|mufta|наконечник|nakonech|штекер|shteker|rj45|rj-45|bnc|переходник|perehodnik|адаптер|adapter|бухт|катушк|katushk|стяжк|styajk|хомут|homut|клипс|klips|бирк|маркер|патч|patch|кросс|kross|cross|панел|panel|шкаф|shkaf|розетк|rozetk|модул|modul|трансивер|transiver|органайзер|organayzer|бокс|box|коробк|korobk|лоток|lotok|полк|polk|щит|сплиттер|splitter|делител|тестер|инструмент|клещ|нож|стриппер/i;
   if(pieceRx.test(nm)) return 'dona';
   if(meterRx.test(nm) || (/оптика|optika|кабел|kabel|cable/.test(cat) && !pieceRx.test(nm))) return 'metr';
   return 'dona';
@@ -4147,6 +4147,17 @@ async function idbGetAllImgs(){
   }catch(e){ return {}; }
 }
 
+
+
+// Taklif elementining narxi: element o'z narxini saqlagan bo'lsa (saqlangan taklifdan
+// tiklangan yoki qo'lda tahrirlangan) — O'SHA ustuvor. Aks holda katalog narxi.
+// Shu tufayli saqlangan tijorat taklifi qayta ochilganda narxlar O'ZGARMAYDI.
+function qPrice(it){
+  if(!it) return null;
+  const v = it.price;
+  if(v!=null && v!=='' && !isNaN(v) && parseFloat(v)>0) return parseFloat(v);
+  return qPrice(it);
+}
 
 function getImg(p){
   if(!p) return null;
@@ -4811,7 +4822,7 @@ function clearQ(){
   showToast('🗑 Tozalandi');
   if(selP)showProd(selP.id);
 }
-function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
+function saveQ(){try{localStorage.setItem('cqQ2',JSON.stringify(quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0,price:x.price}))))}catch(e){}if(typeof updateMobBadge==='function')updateMobBadge();if(typeof _scheduleDraftPush==='function')_scheduleDraftPush();}
 function renderQ(){
   const em=document.getElementById('emQ'),wr=document.getElementById('qtW');
   if(!quote.length){
@@ -4825,7 +4836,7 @@ function renderQ(){
   const gdb=document.getElementById('globalDiscBar'); if(gdb) gdb.style.display='flex';
 
   document.getElementById('qBody').innerHTML=quote.map((item,i)=>{
-    const pr=getPrice(item.product);
+    const pr=qPrice(item);
     const disc=item.disc||0; // chegirma %
     const discPr=pr?pr*(1-disc/100):null; // chegirmali narx
     const lt=discPr?discPr*item.qty:null;
@@ -4889,7 +4900,7 @@ function updDisc(id, val){
     const tds=row.querySelectorAll('td');
     const totalTd=tds[tds.length-2]; // oxirgidan oldingi = Jami
     if(totalTd){
-      const p=getPrice(item.product)||0;
+      const p=qPrice(item)||0;
       const net=p*(1-d/100)*(item.qty||1);
       totalTd.innerHTML=`<strong>${fmtP(net)}</strong>${d>0?`<div style="font-size:9px;color:var(--amber)">-${d}%</div>`:''}`;
     }
@@ -4906,19 +4917,22 @@ function updQPrice(id, val){
   const p=PRODS.find(x=>x.id===id)||item.product;
   const _k=(p.name||'').toLowerCase();
   if(isNaN(v)||v<=0){
-    // Bo'sh yoki 0 — override olib tashlaymiz (asl narxga qaytadi)
+    // Bo'sh yoki 0 — override olib tashlaymiz (asl katalog narxiga qaytadi)
     delete priceOv[_k];
+    delete item.price;
   } else {
     // Kiritilgan valyutadan USD ga (baza narx doim USD)
     let usd = (cur==='UZS') ? (v/RATE) : v;
     usd = Math.round(usd*100)/100;
+    item.price = usd;              // TAKLIF uchun muzlatilgan narx (keyin o'zgarmaydi)
     prices[_k]=usd;
-    priceOv[_k]=usd;               // override — hamma joyda ustuvor
+    priceOv[_k]=usd;               // katalog bilan sinxron (avvalgidek)
   }
+  if(typeof saveQ==='function') saveQ();
   try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
   try{localStorage.setItem('cqPriceOv',JSON.stringify(priceOv))}catch(e){}
   // Faqat shu qatorning jamisini yangilaymiz (kiritish paytida qayta chizmaymiz — fokus yo'qolmasin)
-  const npr=getPrice(item.product);
+  const npr=qPrice(item);
   const net=npr?npr*(1-(item.disc||0)/100)*(item.qty||1):null;
   const tEl=document.getElementById('qtot_'+id);
   if(tEl) tEl.textContent = net?fmtP(net):'—';
@@ -4959,7 +4973,7 @@ function updQty(id,val){
     // Faqat jami va shu qator JAMIsini yangilaymiz (renderQ chaqirmay — fokus saqlanadi)
     updTotal();
     updGrandTotal();
-    const pr=getPrice(item.product);
+    const pr=qPrice(item);
     const lt=pr?pr*n:null;
     const cell=document.getElementById('qtot_'+id);
     if(cell){
@@ -5005,7 +5019,7 @@ function _syncQqsSwitch(){
 function calcAllTotals(){
   let net=0, qqs=0;
   quote.forEach(it=>{
-    const pr=getPrice(it.product); if(!pr) return;
+    const pr=qPrice(it); if(!pr) return;
     const n=pr*(1-(it.disc||0)/100)*(it.qty||1);
     net+=n; if(it.qqs) qqs+=n*QQS_RATE/100;
   });
@@ -5026,7 +5040,7 @@ function calcAllTotals(){
 function updTotal(){
   let t=0, saved=0;
   quote.forEach(item=>{
-    const pr=getPrice(item.product);
+    const pr=qPrice(item);
     if(pr){
       const disc=item.disc||0;
       const discPr=pr*(1-disc/100);
@@ -5038,7 +5052,7 @@ function updTotal(){
   let qqsP=0;
   quote.forEach(item=>{
     if(!item.qqs) return;
-    const pr=getPrice(item.product); if(!pr) return;
+    const pr=qPrice(item); if(!pr) return;
     qqsP+=pr*(1-(item.disc||0)/100)*(item.qty||1)*QQS_RATE/100;
   });
   const _tFinal=t+qqsP;
@@ -5376,7 +5390,7 @@ function buildPreview(){
   const clN=g('clN')||(LANG==='ru'?'Клиент':LANG==='en'?'Client':'Mijoz'),clA=g('clA'),clP=g('clP'),dt=g('qDt')||new Date().toISOString().slice(0,10);
   let total=0, hasDisc=quote.some(it=>(it.disc||0)>0);
   const rows=quote.map((item,i)=>{
-    const pr=getPrice(item.product);
+    const pr=qPrice(item);
     const disc=item.disc||0;
     const discPr=pr?pr*(1-disc/100):null;
     const lt=discPr?discPr*item.qty:null;
@@ -5484,7 +5498,7 @@ function buildPreview(){
     const _hasExtra=grandPreview>total&&(svcTotal2>0||mqTotal2>0);
     // Belgilangan pozitsiyalar QQS si
     let _qqs=0;
-    quote.forEach(it=>{const pr=getPrice(it.product);if(pr&&it.qqs)_qqs+=pr*(1-(it.disc||0)/100)*(it.qty||1)*QQS_RATE/100;});
+    quote.forEach(it=>{const pr=qPrice(it);if(pr&&it.qqs)_qqs+=pr*(1-(it.disc||0)/100)*(it.qty||1)*QQS_RATE/100;});
     svcRows.forEach(s=>{const p=parseFloat(s.price)||0;if(p>0&&s.qqs)_qqs+=p*(1-(s.disc||0)/100)*(parseInt(s.qty)||1)*QQS_RATE/100;});
     mqValid.forEach(m=>{const p=parseFloat(m.price)||0;if(p>0&&m.qqs){const usd=m.cur==='uzs'?p/RATE:p;_qqs+=usd*(parseFloat(m.qty)||1)*QQS_RATE/100;}});
     if(_qqs<=0&&!_hasExtra) return '';
@@ -5581,7 +5595,7 @@ function sendTelegramOrder(){
   if(!quote.length){showToast(_L==='ru'?'⚠️ Заказ пуст!':_L==='en'?'⚠️ Order is empty!':"⚠️ Buyurtma bo'sh!");return}
   let total=0;
   let lines=quote.map((item,i)=>{
-    const pr=getPrice(item.product);
+    const pr=qPrice(item);
     const disc=item.disc||0;
     const discPr=pr?pr*(1-disc/100):null;
     const lt=discPr?discPr*item.qty:null;
@@ -6069,7 +6083,7 @@ async function _pushDraft(){
     const g=id=>document.getElementById(id)?.value?.trim()||'';
     const payload={
       v:1, ts: parseInt(localStorage.getItem('cqDraftTs')||String(Date.now()),10),
-      q: quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0})),
+      q: quote.map(x=>({id:x.product.id,name:x.product.name,qty:x.qty,disc:x.disc||0,price:x.price})),
       mq: mqItems||[], svc: services||[],
       f:{oCo:g('oCo'),oAd:g('oAd'),oPh:g('oPh'),oEm:g('oEm'),clN:g('clN'),clA:g('clA'),clP:g('clP'),qDt:g('qDt')}
     };
@@ -6109,10 +6123,10 @@ function _applyDraft(d){
   _draftApplying=true;
   try{
     quote.length=0;
-    (d.q||[]).forEach(({id,name,qty,disc})=>{
+    (d.q||[]).forEach(({id,name,qty,disc,price})=>{
       let pr=PRODS.find(x=>x.id===id);
       if(!pr&&name) pr=PRODS.find(x=>x.name===name);
-      if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0});
+      if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0,price:price});
     });
     mqItems.length=0; (d.mq||[]).forEach(m=>mqItems.push(m));
     services.length=0; (d.svc||[]).forEach(s=>services.push(s));
@@ -6207,7 +6221,7 @@ function updMqTotal(){
   updGrandTotal();
 }
 function updGrandTotal(){
-  let pt=0;quote.forEach(item=>{const pr=getPrice(item.product);if(pr)pt+=pr*item.qty});
+  let pt=0;quote.forEach(item=>{const pr=qPrice(item);if(pr)pt+=pr*item.qty});
   const st=svcTotal();
   const mt=mqTotal();
   const grand=pt+st+mt;
@@ -9621,7 +9635,7 @@ async function saveQuoteToCloud(customName){
   // Jami hisoblash (chegirma bilan)
   let totalUsd = 0;
   quote.forEach(q => {
-    const pr = getPrice(q.product) || q.product?._usd || 0;
+    const pr = qPrice(q) || q.product?._usd || 0;
     const disc = q.disc||0;
     totalUsd += pr*(1-disc/100)*(q.qty||1);
   });
@@ -9716,7 +9730,7 @@ async function saveQuoteToCloud(customName){
   // Mahsulotlar — rasm URL ni ta'minlash (base64 bo'lsa cloud ga yuklab URL olamiz)
   for(let i=0;i<quote.length;i++){
     const q=quote[i];
-    const pr = getPrice(q.product) || q.product?._usd || 0;  // BAZA narx (chegirmasiz)
+    const pr = qPrice(q) || q.product?._usd || 0;  // BAZA narx (chegirmasiz)
     const disc = q.disc||0;
     // Rasm URL — http bo'lsa to'g'ridan, base64 bo'lsa Storage ga yuklaymiz
     let imgUrl = q.product?._imgUrl || null;
@@ -11158,7 +11172,7 @@ function exportQuoteToExcel(){
   let totalUsd=0, n=1;
   // Mahsulotlar
   quote.forEach(item=>{
-    const pr=getPrice(item.product)||0;
+    const pr=qPrice(item)||0;
     const lt=pr*item.qty;
     totalUsd+=lt;
     rows.push([
@@ -11521,7 +11535,7 @@ async function loadQuoteFromCloud(quoteId){
           prod._imgUrl = item.image_url;
           images[prod.id] = item.image_url;
         }
-        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs, desc: item.description||'' });
+        quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs, desc: item.description||'', price: (item.price_usd!=null&&item.price_usd>0)?item.price_usd:undefined });
       }
     });
 
