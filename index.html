@@ -233,7 +233,12 @@ table.ptbl.ptbl-mq td:nth-child(5),table.ptbl.ptbl-mq th:nth-child(5){width:13%!
 .mq-body{padding:12px 14px;display:flex;flex-direction:column;gap:7px}
 .curseg.active{background:var(--accent)!important;color:#0a0c10!important}
 .mq-row{display:grid;grid-template-columns:1fr 100px 52px 78px 64px 46px 34px;gap:6px;align-items:center}
-@media(max-width:768px){.mq-row{grid-template-columns:1fr 78px 46px 58px 52px 38px 30px;gap:4px}}
+.mq-lbls{display:grid;grid-template-columns:1fr 100px 52px 78px 64px 46px 34px;gap:6px;margin-top:2px}
+.svc-lbls{display:grid;grid-template-columns:1fr 105px 64px 64px 46px 34px;gap:6px;margin-top:2px}
+.mq-lbls>div,.svc-lbls>div{font-size:10px;color:var(--text3);padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media(max-width:768px){.mq-row{grid-template-columns:1fr 78px 46px 58px 52px 38px 30px;gap:4px}
+  .mq-lbls{grid-template-columns:1fr 78px 46px 58px 52px 38px 30px;gap:4px}
+  .svc-lbls{grid-template-columns:1fr 80px 52px 54px 38px 30px;gap:4px}}
 .mq-item{display:flex;flex-direction:column;gap:5px;margin-bottom:8px}
 .mq-inp{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:6px 10px;color:var(--text);font-family:var(--fb);font-size:12px;outline:none;width:100%;transition:.15s}
 .mq-inp:focus{border-color:var(--amber);box-shadow:0 0 0 3px rgba(255,193,7,.1)}
@@ -1711,10 +1716,13 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
         <div style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
           <span>💡</span> <span data-i18n="mq_save_hint">Bazaga saqlamoqchimisiz?</span> — <span style="color:var(--accent);cursor:pointer;text-decoration:underline" onclick="openAddProdModal()" data-i18n="btn_go_catalog">Katalogga qo'shish</span>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 100px 80px 34px;gap:6px;margin-top:2px">
-          <div style="font-size:10px;color:var(--text3);padding:0 4px" data-i18n="ph_prod_name">Mahsulot nomi</div>
-          <div style="font-size:10px;color:var(--text3);text-align:right;padding:0 4px">Narx ($)</div>
-          <div style="font-size:10px;color:var(--text3);text-align:center;padding:0 4px" data-i18n="ph_qty">Soni</div>
+        <div class="mq-lbls">
+          <div data-i18n="ph_prod_name">Mahsulot nomi</div>
+          <div style="text-align:right" data-i18n="lbl_price">Narx</div>
+          <div style="text-align:center" data-i18n="lbl_cur">Valyuta</div>
+          <div style="text-align:center" data-i18n="ph_qty">Soni</div>
+          <div style="text-align:center" data-i18n="lbl_unit">Birlik</div>
+          <div style="text-align:center" data-i18n="lbl_qqs">QQS</div>
           <div></div>
         </div>
         <div id="mqRows" style="display:flex;flex-direction:column;gap:6px"></div>
@@ -1743,6 +1751,14 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           <span class="svc-preset" onclick="addSvcPreset('svc_server')">🖧 <span data-i18n="svc_server">Server ko'tarish</span></span>
           <span class="svc-preset" onclick="addSvcPreset('svc_videowall')">📺 <span data-i18n="svc_videowall">VideoWall</span></span>
           <span class="svc-preset" onclick="addSvcPreset('svc_parking')">🅿️ <span data-i18n="svc_parking">Avtoturargoh</span></span>
+        </div>
+        <div class="svc-lbls">
+          <div data-i18n="lbl_svc_name">Xizmat nomi</div>
+          <div style="text-align:right" data-i18n="lbl_price_usd">Narx ($)</div>
+          <div style="text-align:center" data-i18n="ph_qty">Soni</div>
+          <div style="text-align:center" data-i18n="lbl_disc">Chegirma</div>
+          <div style="text-align:center" data-i18n="lbl_qqs">QQS</div>
+          <div></div>
         </div>
         <div id="svcRows" style="display:flex;flex-direction:column;gap:6px"></div>
         <div id="svcEmpty" style="text-align:center;padding:14px;color:var(--text3);font-size:12px" data-i18n="svc_empty_hint">Xizmat qo'shing yoki yuqoridan tanlang</div>
@@ -2542,6 +2558,7 @@ document.addEventListener('DOMContentLoaded',()=>{
         if(!pr&&name) pr=PRODS.find(x=>x.name===name);
         if(pr) quote.push({product:pr,qty:qty||1,disc:disc||0,price:price});
       });
+      if(typeof _dedupeQuoteItems==='function' && _dedupeQuoteItems()>0 && typeof saveQ==='function') saveQ();
       renderQ();updBdg();
       if(typeof updateMobBadge==='function') updateMobBadge();
     }
@@ -6175,6 +6192,7 @@ function _applyDraft(d){
     try{ if(d.f) localStorage.setItem('cqF2',JSON.stringify(d.f)); }catch(e){}
     try{ localStorage.setItem('cqDraftTs', String(d.ts)); }catch(e){}
     // Qayta chizish
+    if(typeof _dedupeQuoteItems==='function') _dedupeQuoteItems();
     if(typeof renderQ==='function') renderQ();
     if(typeof updBdg==='function') updBdg();
     if(typeof updateMobBadge==='function') updateMobBadge();
@@ -7418,6 +7436,8 @@ const I18N = {
     q_grand: 'Umumiy jami',
     q_svc_total: 'Xizmatlar jami',
     q_mq_total: "Qo'lda qo'shilgan jami", q_prod_plus_svc: 'Mahsulotlar + Xizmatlar',
+    lbl_price:'Narx', lbl_price_usd:'Narx ($)', lbl_cur:'Valyuta', lbl_unit:'Birlik',
+    lbl_qqs:'QQS', lbl_disc:'Chegirma', lbl_svc_name:'Xizmat nomi',
     q_install: "O'rnatish va xizmatlar",
     q_manual: "Qo'lda qo'shilgan",
     q_empty: "Taklif bo'sh",
@@ -7613,6 +7633,8 @@ const I18N = {
     q_title: 'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ', q_to: 'Кому',
     q_total: 'Итого товары', q_grand: 'Итого', q_svc_total: 'Итого услуги',
     q_mq_total: 'Итого добавлено вручную', q_prod_plus_svc: 'Товары + Услуги',
+    lbl_price:'Цена', lbl_price_usd:'Цена ($)', lbl_cur:'Валюта', lbl_unit:'Ед.изм.',
+    lbl_qqs:'НДС', lbl_disc:'Скидка', lbl_svc_name:'Название услуги',
     q_install: 'Монтаж и услуги', q_manual: 'Добавлено вручную',
     q_empty: 'Предложение пусто', q_empty_hint: 'Добавьте товары из каталога',
     q_pieces: 'шт',
@@ -7797,6 +7819,8 @@ const I18N = {
     q_title: 'COMMERCIAL PROPOSAL', q_to: 'To',
     q_total: 'Products total', q_grand: 'Grand total', q_svc_total: 'Services total',
     q_mq_total: 'Manually added total', q_prod_plus_svc: 'Products + Services',
+    lbl_price:'Price', lbl_price_usd:'Price ($)', lbl_cur:'Currency', lbl_unit:'Unit',
+    lbl_qqs:'VAT', lbl_disc:'Discount', lbl_svc_name:'Service name',
     q_install: 'Installation & services', q_manual: 'Added manually',
     q_empty: 'Proposal is empty', q_empty_hint: 'Add products from the catalog',
     q_pieces: 'pcs',
@@ -9879,6 +9903,50 @@ async function saveQuoteToCloud(customName){
 }
 
 // PDF ni Storage ga yuklash
+
+// ── TAKRORLANISHDAN HIMOYA ────────────────────────────────────────────────
+// 1) Bir vaqtda ikkita saqlash ishlamasin (chop etishdagi avto-saqlash + qo'lda
+//    "Saqlash"/"Yangilash" bir-biriga to'g'ri kelsa, bazaga ikki marta yozilardi).
+(function(){
+  const _orig = saveQuoteToCloud;
+  let _busy = false;
+  window.saveQuoteToCloud = async function(){
+    if(_busy){ console.warn('Saqlash allaqachon ketmoqda — takror chaqiruv o\'tkazib yuborildi'); return null; }
+    _busy = true;
+    try { return await _orig.apply(this, arguments); }
+    finally { _busy = false; }
+  };
+})();
+
+// 2) Taklifda takrorlangan qatorlarni tozalash (o'z-o'zini davolash).
+//    addToQ bir mahsulotni ikki marta qo'shishga ruxsat bermaydi — demak dubl = xato.
+function _dedupeQuoteItems(){
+  let removed = 0;
+  // Mahsulotlar — product.id bo'yicha
+  const seen = new Set(), keep = [];
+  quote.forEach(it => {
+    const k = it && it.product && it.product.id;
+    if(k){ if(seen.has(k)){ removed++; return; } seen.add(k); }
+    keep.push(it);
+  });
+  if(removed){ quote.length = 0; keep.forEach(x => quote.push(x)); }
+  // Qo'lda qo'shilganlar — to'liq mos kelsa
+  const sigM = m => [m.name, m.price, m.qty, m.unit, m.cur, m.desc].join('|');
+  if(typeof mqItems !== 'undefined' && mqItems && mqItems.length){
+    const s = new Set(), k2 = [];
+    mqItems.forEach(m => { const g = sigM(m); if(s.has(g)){ removed++; return; } s.add(g); k2.push(m); });
+    if(k2.length !== mqItems.length){ mqItems.length = 0; k2.forEach(x => mqItems.push(x)); }
+  }
+  // Xizmatlar — to'liq mos kelsa
+  const sigS = s2 => [s2.name, s2.price, s2.qty, s2.disc, s2.desc].join('|');
+  if(typeof services !== 'undefined' && services && services.length){
+    const s = new Set(), k3 = [];
+    services.forEach(v => { const g = sigS(v); if(s.has(g)){ removed++; return; } s.add(g); k3.push(v); });
+    if(k3.length !== services.length){ services.length = 0; k3.forEach(x => services.push(x)); }
+  }
+  return removed;
+}
+
 async function savePdfToStorage(quoteId, pdfBlob){
   const sb = getSB();
   if(!sb || !currentUser || !pdfBlob) return null;
@@ -11577,6 +11645,16 @@ async function loadQuoteFromCloud(quoteId){
         quote.push({ product: prod, qty: item.qty||1, disc: item.discount||0, qqs: !!item.qqs, desc: item.description||'', price: (item.price_usd!=null&&item.price_usd>0)?item.price_usd:undefined });
       }
     });
+
+    // Takrorlangan qatorlarni tozalash (bazada dubl bo'lsa — o'z-o'zini davolaydi)
+    if(typeof _dedupeQuoteItems==='function'){
+      const _rm=_dedupeQuoteItems();
+      if(_rm>0){
+        const _L=LANG||'uz';
+        showToast(_L==='ru'?`🧹 Удалено ${_rm} дубликатов`:_L==='en'?`🧹 Removed ${_rm} duplicates`:`🧹 ${_rm} ta takroriy qator olib tashlandi`, 3500);
+        if(typeof saveQ==='function') saveQ();
+      }
+    }
 
     // Mijoz ma'lumotlarini to'ldirish
     const setV = (id, val) => { const el=document.getElementById(id); if(el&&val) el.value=val; };
