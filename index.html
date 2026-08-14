@@ -2089,6 +2089,11 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
           color:var(--green);border:1px solid rgba(0,230,118,.3)">
           <span id="lblQuickSave">💾 Taklifni saqlash</span>
         </button>
+        <button class="btn" onclick="saveQuoteAs()" id="btnSaveAs"
+          style="display:flex;align-items:center;gap:6px;background:rgba(96,165,250,.12);
+          color:#60a5fa;border:1px solid rgba(96,165,250,.35)">
+          <span id="lblSaveAs">📄 Nom bilan saqlash</span>
+        </button>
         <button class="btn bp" onclick="printAndSaveQuote()" style="display:flex;align-items:center;gap:6px">
           🖨 <span data-i18n="btn_print">Chop etish / PDF</span>
         </button>
@@ -5328,13 +5333,23 @@ function updSvcField(i,field,val){
   else services[i].name=val;
   saveSvc();updSvcTotal();updGrandTotal();
 }
-function svcTotal(){
+// Xizmatlar jami. QQS belgilangan xizmatlar uchun QQS ham qo'shiladi.
+function svcTotalNet(){
   return services.reduce((s,sv)=>{
     const p=parseFloat(sv.price)||0;
     const q=parseInt(sv.qty)||1;
     return s+p*(1-(sv.disc||0)/100)*q;
   },0);
 }
+function svcTotalQqs(){
+  return services.reduce((s,sv)=>{
+    if(!sv.qqs) return s;
+    const p=parseFloat(sv.price)||0;
+    const q=parseInt(sv.qty)||1;
+    return s+p*(1-(sv.disc||0)/100)*q*QQS_RATE/100;
+  },0);
+}
+function svcTotal(){ return svcTotalNet()+svcTotalQqs(); }
 function updSvcTotal(){
   const st=svcTotal();
   const bar=document.getElementById('svcTotalBar');
@@ -5343,7 +5358,12 @@ function updSvcTotal(){
   if(bar){
     bar.style.display=services.length?'block':'none';
     if(valEl)valEl.textContent=fmtP(st);
-    if(altEl)altEl.textContent=cur==='USD'&&st?'≈ '+fmtUZS(st*RATE):'';
+    if(altEl){
+      const _q=svcTotalQqs(), _L=LANG||'uz';
+      const _qtxt=_q>0?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(svcTotalNet())+' + '+qqsLbl()+' '+QQS_RATE+'%: '+fmtP(_q)):'';
+      const _alt=(cur==='USD'&&st)?('≈ '+fmtUZS(st*RATE)):'';
+      altEl.textContent=[_qtxt,_alt].filter(Boolean).join(' · ');
+    }
   }
   updGrandTotal();
 }
@@ -6254,15 +6274,26 @@ function updMqField(i,field,val){
   else mqItems[i].name=val;
   saveMQ();updMqTotal();updGrandTotal();
 }
-function mqTotal(){
+// Qo'lda qo'shilganlar jami. QQS belgilangan qatorlar uchun QQS ham qo'shiladi
+// (yakuniy "Jami" bilan bir xil mantiq — calcAllTotals).
+function mqTotalNet(){
   return mqItems.reduce((s,m)=>{
     const p=parseFloat(m.price)||0;
     const q=parseFloat(m.qty)||1;
-    // so'm bo'lsa $ ga o'tkazish
-    const usd=m.cur==='uzs'?p/RATE:p;
+    const usd=m.cur==='uzs'?p/RATE:p;   // so'm bo'lsa $ ga o'tkazish
     return s+usd*q;
   },0);
 }
+function mqTotalQqs(){
+  return mqItems.reduce((s,m)=>{
+    if(!m.qqs) return s;
+    const p=parseFloat(m.price)||0;
+    const q=parseFloat(m.qty)||1;
+    const usd=m.cur==='uzs'?p/RATE:p;
+    return s+usd*q*QQS_RATE/100;
+  },0);
+}
+function mqTotal(){ return mqTotalNet()+mqTotalQqs(); }
 function updMqTotal(){
   const mt=mqTotal();
   const bar=document.getElementById('mqTotalBar');
@@ -6271,7 +6302,12 @@ function updMqTotal(){
   if(bar){
     bar.style.display=mqItems.length?'block':'none';
     if(valEl)valEl.textContent=fmtP(mt);
-    if(altEl)altEl.textContent=cur==='USD'&&mt?'≈ '+fmtUZS(mt*RATE):'';
+    if(altEl){
+      const _q=mqTotalQqs(), _L=LANG||'uz';
+      const _qtxt=_q>0?((_L==='ru'?'без НДС: ':_L==='en'?'excl. VAT: ':'QQSsiz: ')+fmtP(mqTotalNet())+' + '+qqsLbl()+' '+QQS_RATE+'%: '+fmtP(_q)):'';
+      const _alt=(cur==='USD'&&mt)?('≈ '+fmtUZS(mt*RATE)):'';
+      altEl.textContent=[_qtxt,_alt].filter(Boolean).join(' · ');
+    }
   }
   updGrandTotal();
 }
@@ -8008,6 +8044,7 @@ function setLang(lang) {
   _setEl('globalDiscLbl', _isRu?'💸 Скидка всем:':_isEn?'💸 Discount all:':'💸 Hammaga chegirma:');
   _setEl('globalDiscReset', _isRu?'Сброс':_isEn?'Reset':'Tozalash');
   _setEl('globalDiscHint', _isRu?'Каждый товар можно изменить отдельно':_isEn?'Each product can be changed separately':"Har birini alohida o'zgartirish mumkin");
+  _setEl('lblSaveAs', _isRu?'📄 Сохранить как':_isEn?'📄 Save as':'📄 Nom bilan saqlash');
   _setEl('lblSortDesc', _isRu?'От дорогих':_isEn?'Priciest first':'Qimmatdan');
   _setEl('lblSortAsc', _isRu?'От дешёвых':_isEn?'Cheapest first':'Arzondan');
   _setEl('thDisc', _isRu?'Скидка %':_isEn?'Discount %':'Chegirma %');
@@ -11342,6 +11379,79 @@ function exportQuoteToExcel(){
 }
 
 // ── Taklifni tez saqlash (dialog chiqarmasdan) ───────────────────────────
+// "Nom bilan saqlash" (Save as) — loyiha nomini so'rab, HAR DOIM YANGI taklif yaratadi.
+// Tahrirlash rejimida ham mavjud taklif ustiga YOZMAYDI.
+async function saveQuoteAs(){
+  const _L = LANG||'uz';
+  if(!currentUser){
+    showToast(_L==='ru'?'❌ Войдите в систему':_L==='en'?'❌ Please sign in':"❌ Avval tizimga kiring");
+    return;
+  }
+  if(!quote.length && !mqItems?.length && !services?.length){
+    showToast(_L==='ru'?'❌ Предложение пустое':_L==='en'?'❌ Proposal is empty':"❌ Taklif bo'sh");
+    return;
+  }
+  const g = id => document.getElementById(id)?.value?.trim()||'';
+  const clN = g('clN'), clA = g('clA');
+  const dt = new Date().toLocaleDateString(_L==='ru'?'ru-RU':_L==='en'?'en-US':'uz-UZ');
+  const suggested = [clN, clA].filter(Boolean).join(' · ') || (_L==='ru'?'Проект':_L==='en'?'Project':'Loyiha');
+  const name = prompt(
+    _L==='ru'?'Название проекта (сохранится как НОВОЕ КП):':
+    _L==='en'?'Project name (saved as a NEW quote):':
+    "Loyiha nomi (YANGI taklif sifatida saqlanadi):",
+    suggested + ' · ' + dt
+  );
+  if(name===null) return;                       // bekor qilindi
+  const title = name.trim();
+  if(!title){ showToast(_L==='ru'?'❌ Введите название':_L==='en'?'❌ Enter a name':'❌ Nom kiriting'); return; }
+
+  // Tahrirlash rejimidan CHIQAMIZ — shunda yangi yozuv yaratiladi (ustiga yozilmaydi)
+  const _prevId    = window._editingQuoteId;
+  const _prevTitle = window._editingQuoteTitle;
+  const _prevNo    = window._editingQuoteNo;
+  window._editingQuoteId = null;
+  window._editingQuoteTitle = '';
+  window._editingQuoteNo = null;
+
+  const btn = document.getElementById('btnSaveAs');
+  const lbl = document.getElementById('lblSaveAs');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.6'; }
+  if(lbl) lbl.textContent = _L==='ru'?'Сохранение...':_L==='en'?'Saving...':'Saqlanmoqda...';
+
+  try{
+    const saved = await Promise.race([
+      saveQuoteToCloud(title),
+      new Promise((_,rej)=>setTimeout(()=>rej(new Error('TIMEOUT')), 20000))
+    ]);
+    if(saved){
+      if(lbl) lbl.textContent = _L==='ru'?'✅ Сохранено!':_L==='en'?'✅ Saved!':"✅ Saqlandi!";
+      showToast(_L==='ru'?`✅ Новое КП: "${title}"`:_L==='en'?`✅ New quote: "${title}"`:`✅ Yangi taklif: "${title}"`, 4000);
+      // Endi shu YANGI taklif tahrirlanadi
+      if(saved.id){
+        window._editingQuoteId = saved.id;
+        window._editingQuoteTitle = title;
+        window._editingQuoteNo = saved.quote_no || null;
+        try{ localStorage.setItem('editingQuote', JSON.stringify({id:saved.id,title:title,no:window._editingQuoteNo})); }catch(e){}
+        if(typeof updateEditingBanner==='function') updateEditingBanner();
+      }
+    } else {
+      // Saqlanmadi — avvalgi tahrirlash holatini qaytaramiz
+      window._editingQuoteId=_prevId; window._editingQuoteTitle=_prevTitle; window._editingQuoteNo=_prevNo;
+      showToast(_L==='ru'?'❌ Не удалось сохранить':_L==='en'?'❌ Save failed':'❌ Saqlanmadi');
+    }
+  }catch(e){
+    window._editingQuoteId=_prevId; window._editingQuoteTitle=_prevTitle; window._editingQuoteNo=_prevNo;
+    showToast(e.message==='TIMEOUT'
+      ? (_L==='ru'?'⏱ Превышено время ожидания':_L==='en'?'⏱ Timed out':'⏱ Vaqt tugadi')
+      : (_L==='ru'?'❌ Ошибка сохранения':_L==='en'?'❌ Save error':'❌ Saqlashda xato'), 4000);
+  }finally{
+    setTimeout(()=>{
+      if(lbl) lbl.textContent = _L==='ru'?'📄 Сохранить как':_L==='en'?'📄 Save as':'📄 Nom bilan saqlash';
+      if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+    }, 1800);
+  }
+}
+
 async function quickSaveQuote(){
   const _L = LANG||'uz';
   const btn = document.getElementById('btnQuickSave');
