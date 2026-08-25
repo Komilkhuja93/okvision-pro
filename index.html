@@ -3713,8 +3713,54 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
     const sheetSupplier=supplierName+' › '+brand;
     const sheetDefaultCat=catMap[sheetName.trim()]||'Aksessuar';
 
-    const header=rows[0]||[];
-    const vatRate=parseFloat(String(header[5]||'13000').replace(/[^0-9.]/g,''))||13000;
+    // ── USTUNLARNI SARLAVHADAN ANIQLASH ────────────────────────────────────
+    // Avval qat'iy raqamlar ishlatilardi (B=nom, C=xususiyat, D=USD, E=NDS).
+    // Yangi prayslarda ustunlar joyi almashgan (C=ЦенаUSD, D=Цена с НДС,
+    // E=Характеристика) — natijada so'mdagi narx dollar deb olinardi.
+    let hdrIdx=-1, cNam=-1, cUsd=-1, cVat=-1, cSpec=-1;
+    for(let i=0;i<Math.min(6,rows.length);i++){
+      const r=rows[i]||[]; let n=-1,u=-1,v=-1,s=-1;
+      r.forEach((h,ci)=>{
+        const hl=String(h||'').toLowerCase().replace(/\s+/g,' ').trim();
+        if(!hl) return;
+        if(n<0 && /наимен|модель|model|name|nomi|товар|product/.test(hl)) n=ci;
+        if(v<0 && /ндс|с нд|vat|qqs/.test(hl)) v=ci;
+        if(u<0 && /(цена\s*usd|ценаusd|usd|долл|dollar)/.test(hl) && !/ндс|с нд/.test(hl)) u=ci;
+        if(s<0 && /характер|описан|spec|tavsif|desc|примеч/.test(hl)) s=ci;
+      });
+      if(n>=0){ hdrIdx=i; cNam=n; cUsd=u; cVat=v; cSpec=s; break; }
+    }
+    // Sarlavha topilmasa — eski (qat'iy) tartibga qaytamiz
+    if(cNam<0){ hdrIdx=0; cNam=1; cUsd=3; cVat=4; cSpec=2; }
+    if(cUsd<0) cUsd = (cVat===3?2:3);
+    if(cSpec<0) cSpec = [0,1,2,3,4].find(x=>x!==cNam&&x!==cUsd&&x!==cVat&&x>=2);
+    if(cSpec==null||cSpec<0) cSpec=2;
+
+    // Kurs: sarlavha qatoridagi mantiqiy raqam (12500, 13000 ...)
+    const header=rows[hdrIdx]||rows[0]||[];
+    let vatRate=0;
+    for(const h of header){
+      const n=parseFloat(String(h||'').replace(/[^0-9.]/g,''));
+      if(!isNaN(n)&&n>=3000&&n<=100000){ vatRate=n; break; }
+    }
+    if(!vatRate) vatRate=(typeof RATE!=='undefined'&&RATE>1000)?RATE:13000;
+
+    // XAVFSIZLIK: USD ustuni so'mdagi ustundan katta bo'lsa — ular almashgan.
+    // (Dollar narxi hech qachon so'm narxidan katta bo'lmaydi.)
+    if(cUsd>=0&&cVat>=0){
+      const med=ci=>{
+        const a=[];
+        for(let r=hdrIdx+1;r<Math.min(hdrIdx+40,rows.length);r++){
+          const n=parseFloat(String((rows[r]||[])[ci]||'').replace(/\s/g,'').replace(',','.').replace(/[^0-9.]/g,''));
+          if(!isNaN(n)&&n>0) a.push(n);
+        }
+        if(!a.length) return 0;
+        a.sort((x,y)=>x-y); return a[Math.floor(a.length/2)];
+      };
+      const mu=med(cUsd), mv=med(cVat);
+      if(mu>0&&mv>0&&mu>mv){ const t=cUsd; cUsd=cVat; cVat=t; console.warn('KSS import: USD/НДС ustunlari almashtirildi ('+sheetName+')'); }
+    }
+    console.log(`📄 ${sheetName}: nom=${cNam} usd=${cUsd} nds=${cVat} spec=${cSpec} kurs=${vatRate}`);
 
     // Track section headers inside sheet
     let sectionCat=sheetDefaultCat;
@@ -3726,13 +3772,13 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
       'hdd':'HDD / Xotira','диски':'HDD / Xotira',
     };
 
-    rows.slice(2).forEach(row=>{
-      const name=String(row[1]||'').trim();
+    rows.slice(hdrIdx+1).forEach(row=>{
+      const name=String(row[cNam]||'').trim();
       if(!name||name.length<3) return;
 
       // Detect section header: no price, short text
-      const rawUsdStr=String(row[3]||'');
-      const isPriceEmpty=!row[3]||rawUsdStr===''||rawUsdStr==='#VALUE!'||rawUsdStr==='#N/A'||rawUsdStr==='#REF!';
+      const rawUsdStr=String(row[cUsd]||'');
+      const isPriceEmpty=!row[cUsd]||rawUsdStr===''||rawUsdStr==='#VALUE!'||rawUsdStr==='#N/A'||rawUsdStr==='#REF!';
       if(isPriceEmpty&&name.length<60&&!/DS-|iDS-|WD |TP-|ZK|KND/i.test(name)){
         const nl=name.toLowerCase();
         for(const[k,v] of Object.entries(sectionKeywords)){
@@ -3741,7 +3787,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
         return; // skip header rows
       }
 
-      const spec=String(row[2]||'').trim();
+      const spec=String(row[cSpec]||'').trim();
       const finalCat=smartCat(name, spec, sectionCat);
 
       // Parse USD price — handle #VALUE!, #N/A, strings
@@ -3758,7 +3804,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
       }
 
       // Parse VAT price
-      const rawVatStr=String(row[4]||'');
+      const rawVatStr=String(cVat>=0?(row[cVat]||''):'');
       let vatPrice=null;
       if(rawVatStr&&rawVatStr!=='#VALUE!'&&rawVatStr!=='#N/A'&&rawVatStr!=='#REF!'){
         const v=parseFloat(rawVatStr.replace(/[^0-9.]/g,''));
