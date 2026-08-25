@@ -183,6 +183,43 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .ptbl tr:last-child td{border-bottom:none}
 .nr{text-align:right}
 .ptr{background:#0a0c10;color:#fff}
+/* ── Import manager modal ─────────────────────────────────────────── */
+.imgr-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;max-width:520px;width:100%;
+  max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.imgr-head{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;
+  align-items:flex-start;gap:12px;background:linear-gradient(180deg,rgba(34,211,238,.07),transparent)}
+.imgr-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.imgr-sub{font-size:11.5px;color:var(--text3);margin-top:3px}
+.imgr-x{background:none;border:none;color:var(--text3);font-size:19px;cursor:pointer;line-height:1;padding:2px 4px;
+  border-radius:6px;transition:.15s;flex-shrink:0}
+.imgr-x:hover{background:var(--surface3);color:var(--text)}
+.imgr-body{padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:7px}
+.imgr-item{position:relative;display:flex;align-items:center;gap:10px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:12px;padding:11px 13px;overflow:hidden;transition:.15s}
+.imgr-item:hover{border-color:var(--border2);transform:translateY(-1px)}
+.imgr-bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,rgba(34,211,238,.13),rgba(34,211,238,.02));
+  pointer-events:none;border-radius:12px 0 0 12px}
+.imgr-info{position:relative;min-width:0;flex:1}
+.imgr-name{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.imgr-meta{font-size:11px;color:var(--text3);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.imgr-dot{opacity:.4}
+.imgr-acts{position:relative;display:flex;gap:6px;flex-shrink:0}
+.imgr-btn{font-size:11px;padding:7px 11px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;
+  gap:5px;font-weight:600;transition:.15s;white-space:nowrap}
+.imgr-upd{border:1px solid var(--border2);background:var(--surface3);color:var(--accent)}
+.imgr-upd:hover{background:var(--accent);color:#0a0c10;border-color:var(--accent)}
+.imgr-del{border:1px solid rgba(255,71,87,.28);background:rgba(255,71,87,.08);color:#ff6b6b}
+.imgr-del:hover{background:#ff4757;color:#fff;border-color:#ff4757}
+.imgr-empty{text-align:center;color:var(--text3);padding:32px 16px;font-size:13px}
+.imgr-foot{padding:12px 18px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.55;
+  background:var(--surface2)}
+@media(max-width:600px){
+  .imgr-item{flex-wrap:wrap;gap:8px}
+  .imgr-acts{width:100%}
+  .imgr-btn{flex:1;justify-content:center}
+  .imgr-btn span{display:none}
+  .imgr-btn{font-size:14px;padding:9px}
+}
 .ptr td{padding:12px;font-weight:700;font-size:15px;color:#fff}
 /* Qo'shimcha (qo'lda qo'shilgan) mahsulotlar jadvali — nom ustuni keng bo'lsin.
    Yuqori spetsifikatsiya (table.ptbl.ptbl-mq) asosiy jadval qoidalarini (rasm-ustun 7%) yengadi, print va ekranda. */
@@ -4314,6 +4351,12 @@ function renderCats(){
 
 // Fix 1: Delete supplier function
 function deleteSupplier(s){
+  // Bu funksiya faqat LOKAL o'chirardi — bulutda qolgani uchun sahifa yangilanganda
+  // mahsulotlar qaytib kelardi. Endi to'liq (bulut bilan) o'chirishga yo'naltiramiz.
+  if(typeof deleteImportedSupplier==='function'){
+    const base=String(s||'').split(/\s*›\s*/)[0].trim();
+    return deleteImportedSupplier(base||s);
+  }
   if(window.supplierPrices&&window.supplierPrices[s]){
     // Remove prices belonging only to this supplier
     const otherSuppliers=Object.keys(window.supplierPrices).filter(x=>x!==s);
@@ -8418,27 +8461,46 @@ function openImportManager(){
   const hint=_L==='ru'?'Удалить — убирает все товары этого поставщика. Чтобы обновить цены, просто импортируйте файл заново (тем же именем поставщика).':
     _L==='en'?'Delete removes all products of that supplier. To update prices, just re-import the file (same supplier name).':
     "O'chirish — o'sha supplierning barcha mahsulotini olib tashlaydi. Narxlarni yangilash uchun faylni qayta import qiling (xuddi shu supplier nomi bilan).";
+  const totalProds=entries.reduce((s,[,i])=>s+i.count,0);
+  const _t=(u,r,e)=>_L==='ru'?r:_L==='en'?e:u;
+  const maxCount=Math.max(1,...entries.map(([,i])=>i.count));
   m.innerHTML=`
-    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:16px;max-width:460px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden">
-      <div style="padding:16px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
-        <div style="font-size:16px;font-weight:700">${title}</div>
-        <button onclick="document.getElementById('importMgrModal').remove()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer">✕</button>
+    <div class="imgr-card">
+      <div class="imgr-head">
+        <div>
+          <div class="imgr-title">${title}</div>
+          <div class="imgr-sub">${entries.length} ${_t('ta manba','источников','sources')} · ${totalProds.toLocaleString('ru')} ${_t('mahsulot','товаров','products')}</div>
+        </div>
+        <button class="imgr-x" onclick="document.getElementById('importMgrModal').remove()">✕</button>
       </div>
-      <div style="padding:12px 16px;overflow-y:auto">
-        ${entries.length? entries.map(([name,info])=>`
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 13px;margin-bottom:8px">
-            <div style="min-width:0">
-              <div style="font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${name.replace(/</g,'&lt;')}</div>
-              <div style="font-size:11px;color:var(--text3)">📦 ${info.count} ${_L==='ru'?'товаров':_L==='en'?'products':'mahsulot'}</div>
+      <div class="imgr-body">
+        ${entries.length? entries.map(([name,info])=>{
+          const pct=Math.round(info.count/maxCount*100);
+          const priced=info.withPrice||0;
+          const pricedPct=info.count?Math.round(priced/info.count*100):0;
+          const safe=name.replace(/</g,'&lt;');
+          const esc=name.replace(/'/g,"\\'");
+          return `
+          <div class="imgr-item">
+            <div class="imgr-bar" style="width:${pct}%"></div>
+            <div class="imgr-info">
+              <div class="imgr-name" title="${safe}">${safe}</div>
+              <div class="imgr-meta">
+                <span>📦 ${info.count.toLocaleString('ru')}</span>
+                <span class="imgr-dot">·</span>
+                <span style="color:${pricedPct>80?'var(--green)':pricedPct>40?'#f0b429':'var(--text3)'}">
+                  💰 ${pricedPct}% ${_t('narxli','с ценой','priced')}
+                </span>
+              </div>
             </div>
-            <div style="display:flex;gap:6px;flex-shrink:0">
-              <button onclick="reimportHint('${name.replace(/'/g,"\\'")}')" title="${_L==='ru'?'Обновить':_L==='en'?'Update':'Yangilash'}" style="font-size:11px;padding:6px 10px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--accent);cursor:pointer">🔄 ${_L==='ru'?'Обновить':_L==='en'?'Update':'Yangilash'}</button>
-              <button onclick="deleteImportedSupplier('${name.replace(/'/g,"\\'")}')" style="font-size:11px;padding:6px 10px;border-radius:7px;border:1px solid rgba(255,71,87,.3);background:rgba(255,71,87,.08);color:#ff6b6b;cursor:pointer">🗑 ${_L==='ru'?'Удалить':_L==='en'?'Delete':"O'chirish"}</button>
+            <div class="imgr-acts">
+              <button class="imgr-btn imgr-upd" onclick="reimportHint('${esc}')">🔄<span>${_t('Yangilash','Обновить','Update')}</span></button>
+              <button class="imgr-btn imgr-del" onclick="deleteImportedSupplier('${esc}')">🗑<span>${_t("O'chirish",'Удалить','Delete')}</span></button>
             </div>
-          </div>`).join('')
-        : `<div style="text-align:center;color:var(--text3);padding:26px">${empty}</div>`}
+          </div>`;}).join('')
+        : `<div class="imgr-empty"><div style="font-size:34px;margin-bottom:8px;opacity:.5">📭</div>${empty}</div>`}
       </div>
-      <div style="padding:11px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.5">💡 ${hint}</div>
+      <div class="imgr-foot">💡 ${hint}</div>
     </div>`;
   m.onclick=e=>{ if(e.target===m) m.remove(); };
   document.body.appendChild(m);
@@ -8471,12 +8533,28 @@ async function deleteImportedSupplier(name){
   // 2. Saqlash
   savePRODS();
   try{ localStorage.setItem('cqP2',JSON.stringify(prices)); }catch(e){}
-  // 3. Bulutdan o'chirish
+  // 3. Bulutdan o'chirish — ID bo'yicha (ishonchli).
+  // Avval faqat parent_supplier bo'yicha o'chirilardi; "KSS › Kabel" kabi ichki
+  // supplierlar yoki supplier maydonida saqlanganlar bulutda qolib, sahifa
+  // yangilanganda QAYTA PAYDO BO'LARDI. Endi lokal aniqlangan ID lar o'chiriladi.
+  let cloudErr=null;
   if(currentUser){
     const sb=getSB();
     if(sb){
-      try{ await sb.from('products').delete().eq('user_id',currentUser.id).eq('parent_supplier',name); }
-      catch(e){ console.warn('cloud delete supplier:',e); }
+      try{
+        const ids=removed.map(p=>p.id).filter(Boolean);
+        for(let i=0;i<ids.length;i+=200){
+          const {error}=await sb.from('products').delete()
+            .in('id', ids.slice(i,i+200)).eq('user_id',currentUser.id);
+          if(error) throw error;
+        }
+        // Qo'shimcha tozalash: nom bo'yicha qolganlari ham (ID mos kelmasa)
+        await sb.from('products').delete().eq('user_id',currentUser.id).eq('parent_supplier',name);
+        await sb.from('products').delete().eq('user_id',currentUser.id).eq('supplier',name);
+        await sb.from('products').delete().eq('user_id',currentUser.id).like('supplier', name+' ›%');
+        await sb.from('products').delete().eq('user_id',currentUser.id).like('parent_supplier', name+' ›%');
+      }
+      catch(e){ cloudErr=e; console.warn('cloud delete supplier:',e); }
     }
   }
   // 4. Yangilash
@@ -8484,7 +8562,13 @@ async function deleteImportedSupplier(name){
   if(typeof filterP==='function') filterP();
   if(typeof updateDataStatus==='function') updateDataStatus();
   if(typeof renderCats==='function') renderCats();
-  showToast(_L==='ru'?`🗑 "${name}" удалён (${cnt})`:_L==='en'?`🗑 "${name}" deleted (${cnt})`:`🗑 "${name}" o'chirildi (${cnt} ta)`, 3000);
+  if(cloudErr){
+    showToast(_L==='ru'?`⚠️ Локально удалено, но в облаке ошибка — может вернуться`:_L==='en'?`⚠️ Deleted locally, cloud error — may reappear`:`⚠️ Lokal o'chirildi, bulutda xato — qaytishi mumkin`, 5000);
+  } else {
+    showToast(_L==='ru'?`🗑 "${name}" удалён (${cnt})`:_L==='en'?`🗑 "${name}" deleted (${cnt})`:`🗑 "${name}" o'chirildi (${cnt} ta)`, 3000);
+  }
+  if(typeof savePRODS==='function') savePRODS();
+  try{localStorage.setItem('cqP2',JSON.stringify(prices))}catch(e){}
   openImportManager(); // ro'yxatni yangilash
 }
 
