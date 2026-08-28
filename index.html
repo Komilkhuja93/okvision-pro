@@ -183,6 +183,75 @@ body{background:var(--bg);color:var(--text);font-family:var(--fb);font-size:14px
 .ptbl tr:last-child td{border-bottom:none}
 .nr{text-align:right}
 .ptr{background:#0a0c10;color:#fff}
+/* ── Mijozlar bazasi modal ────────────────────────────────────────── */
+.cl-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;max-width:540px;width:100%;
+  max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.cl-head{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;
+  align-items:flex-start;gap:12px;background:linear-gradient(180deg,rgba(34,211,238,.08),transparent)}
+.cl-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.cl-sub{font-size:11.5px;color:var(--text3);margin-top:3px}
+.cl-x{background:none;border:none;color:var(--text3);font-size:19px;cursor:pointer;line-height:1;padding:2px 5px;
+  border-radius:6px;transition:.15s;flex-shrink:0}
+.cl-x:hover{background:var(--surface3);color:var(--text)}
+.cl-search{padding:11px 14px 0}
+.cl-search input{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+  padding:9px 12px;color:var(--text);font-size:13px;outline:none;box-sizing:border-box}
+.cl-search input:focus{border-color:var(--accent)}
+.cl-body{padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;min-height:120px}
+.cl-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:10px 12px;transition:.15s}
+.cl-item:hover{border-color:var(--accent);transform:translateY(-1px)}
+.cl-main{flex:1;min-width:0;cursor:pointer}
+.cl-name{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cl-meta{font-size:11.5px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.cl-meta span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}
+.cl-meta2{font-size:11px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px}
+.cl-sum{color:var(--green);font-weight:700}
+.cl-date{opacity:.6}
+.cl-acts{display:flex;gap:4px;flex-shrink:0}
+.cl-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);
+  color:var(--text2);font-size:13px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;padding:0}
+.cl-use{color:var(--accent);border-color:rgba(34,211,238,.35)}
+.cl-use:hover{background:var(--accent);color:#0a0c10;border-color:var(--accent)}
+.cl-del:hover{background:#ff4757;color:#fff;border-color:#ff4757}
+.cl-empty{text-align:center;color:var(--text3);padding:30px 18px;font-size:13px}
+.cl-foot{padding:13px 16px;border-top:1px solid var(--border);background:var(--surface2)}
+.cl-save{width:100%;padding:11px;border-radius:11px;border:1px solid rgba(34,211,238,.35);
+  background:rgba(34,211,238,.1);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.cl-save:hover{background:var(--accent);color:#0a0c10}
+@media(max-width:600px){ .cl-btn{width:34px;height:34px} .cl-meta span{max-width:150px} }
+/* ── Shablonlar (templates) modal ─────────────────────────────────── */
+.tpl-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;max-width:540px;width:100%;
+  max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.tpl-head{padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;
+  align-items:flex-start;gap:12px;background:linear-gradient(180deg,rgba(167,139,250,.09),transparent)}
+.tpl-title{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.tpl-sub{font-size:11.5px;color:var(--text3);margin-top:3px}
+.tpl-x{background:none;border:none;color:var(--text3);font-size:19px;cursor:pointer;line-height:1;padding:2px 5px;
+  border-radius:6px;transition:.15s;flex-shrink:0}
+.tpl-x:hover{background:var(--surface3);color:var(--text)}
+.tpl-body{padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:7px;min-height:120px}
+.tpl-item{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);
+  border-radius:12px;padding:10px 12px;transition:.15s}
+.tpl-item:hover{border-color:#a78bfa;transform:translateY(-1px)}
+.tpl-main{flex:1;min-width:0;cursor:pointer}
+.tpl-name{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:3px}
+.tpl-meta{font-size:11px;color:var(--text3);display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.tpl-sum{color:var(--green);font-weight:700}
+.tpl-date{opacity:.6}
+.tpl-acts{display:flex;gap:4px;flex-shrink:0}
+.tpl-btn{width:30px;height:30px;border-radius:8px;border:1px solid var(--border2);background:var(--surface3);
+  color:var(--text2);font-size:13px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;padding:0}
+.tpl-btn:hover{background:var(--border2);color:var(--text)}
+.tpl-use{color:#a78bfa;border-color:rgba(167,139,250,.35)}
+.tpl-use:hover{background:#a78bfa;color:#0a0c10;border-color:#a78bfa}
+.tpl-del:hover{background:#ff4757;color:#fff;border-color:#ff4757}
+.tpl-empty{text-align:center;color:var(--text3);padding:30px 18px;font-size:13px}
+.tpl-foot{padding:13px 16px;border-top:1px solid var(--border);background:var(--surface2)}
+.tpl-save{width:100%;padding:11px;border-radius:11px;border:1px solid rgba(167,139,250,.35);
+  background:rgba(167,139,250,.12);color:#a78bfa;font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.tpl-save:hover{background:#a78bfa;color:#0a0c10}
+@media(max-width:600px){ .tpl-btn{width:34px;height:34px} }
 /* ── Import manager modal ─────────────────────────────────────────── */
 .imgr-card{background:var(--surface);border:1px solid var(--border2);border-radius:18px;max-width:520px;width:100%;
   max-height:84vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
@@ -1646,6 +1715,7 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       <!-- Desktop tugmalar -->
       <div class="q-desktop-btns" style="display:flex;gap:7px;flex-wrap:wrap">
         <button class="btn bd" onclick="clearQ()">🗑 <span data-i18n="btn_clear_q">Tozalash</span></button>
+        <button class="btn bs" onclick="openTemplates()" id="btnTpl" style="background:rgba(167,139,250,.12);color:#a78bfa;border:1px solid rgba(167,139,250,.3)">📦 <span id="lblTpl">Shablonlar</span></button>
         <button class="btn bv" onclick="switchTab('hdd')">💾 HDD</button>
         <button class="btn bp" onclick="switchTab('preview');setTimeout(()=>{if(typeof buildPreview==='function')buildPreview()},80)">👁 <span data-i18n="btn_view_print">Ko'rish & Chop</span></button>
         <button class="btn" onclick="sendTelegramOrder()" style="background:rgba(0,136,204,.15);color:#29b6f6;border:1px solid rgba(0,136,204,.3)">✈️ <span data-i18n="btn_order">Buyurtma berish</span></button>
@@ -1688,7 +1758,10 @@ input:-webkit-autofill{animation-name:okvAutoFill;animation-duration:1ms}
       <div class="cc">
         <div style="font-size:11px;font-weight:600;color:var(--green);margin-bottom:10px;letter-spacing:.06em;text-transform:uppercase">👤 <span data-i18n="label_client">Mijoz</span></div>
         <div class="fg">
-          <div class="ff"><div class="fl"><span data-i18n="lbl_client">Mijoz / Tashkilot</span></div><input class="fi" id="clN" placeholder="Abdullayev Jasur" oninput="sF()"></div>
+          <div class="ff"><div class="fl" style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span data-i18n="lbl_client">Mijoz / Tashkilot</span>
+            <button onclick="openClients()" id="btnClients" style="font-size:10.5px;padding:3px 9px;border-radius:6px;border:1px solid rgba(34,211,238,.3);background:rgba(34,211,238,.1);color:var(--accent);cursor:pointer;font-weight:600">👥 <span id="lblClients">Bazadan</span></button>
+          </div><input class="fi" id="clN" placeholder="Abdullayev Jasur" oninput="sF()"></div>
           <div class="ff"><div class="fl"><span data-i18n="lbl_obj">Manzil / Ob'ekt</span></div><input class="fi" id="clA" placeholder="Samarqand, Bozor ko'chasi 14" oninput="sF()"></div>
           <div><div class="fl"><span data-i18n="lbl_phone">Telefon</span></div><input class="fi" id="clP" placeholder="+998 90 000 00 00" oninput="sF()"></div>
           <div><div class="fl"><span data-i18n="lbl_date">Sana</span></div><input class="fi" id="qDt" type="date" oninput="sF()"></div>
@@ -2584,6 +2657,9 @@ document.addEventListener('DOMContentLoaded',()=>{
     if(typeof idbGetAllImgs==='function'){
       idbGetAllImgs().then(idb=>{ if(idb){ Object.assign(images, idb); if(typeof renderList==='function') renderList(); } }).catch(()=>{});
     }
+    // Shablonlar va mijozlar bazasini yuklash
+    if(typeof loadTemplates==='function') loadTemplates();
+    if(typeof loadClients==='function') loadClients();
     // Tahrirlash rejimini tiklash
     try{
       const ed=localStorage.getItem('editingQuote');
@@ -4591,6 +4667,494 @@ document.addEventListener('DOMContentLoaded',()=>{
     _applyPdfCss();
   }catch(e){}
 });
+
+// ══════════════════════════════════════════════════════════════════════════
+// 📦 SHABLONLAR (paket takliflar) — takrorlanuvchi obyektlar uchun
+// Joriy savatni (mahsulot + qo'lda qo'shilgan + xizmatlar) nom bilan saqlab,
+// keyin bir bosishda qayta yuklash. Lokal (localStorage) + bulut (agar login).
+// ══════════════════════════════════════════════════════════════════════════
+let TEMPLATES = [];
+
+function _tplT(u, r, e) { const L = (typeof LANG !== 'undefined' ? LANG : 'uz'); return L === 'ru' ? r : L === 'en' ? e : u; }
+
+function loadTemplates() {
+  try {
+    const raw = localStorage.getItem('cqTemplates');
+    TEMPLATES = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(TEMPLATES)) TEMPLATES = [];
+  } catch (e) { TEMPLATES = []; }
+  return TEMPLATES;
+}
+
+function saveTemplatesLocal() {
+  try { localStorage.setItem('cqTemplates', JSON.stringify(TEMPLATES)); } catch (e) { console.warn('tpl save:', e.message); }
+}
+
+// Joriy savatdan shablon obyektini yig'ish (narxlar MUZLATILMAYDI —
+// shablon yuklanganda joriy katalog narxi olinadi, bu to'g'ri xatti-harakat)
+function _buildTemplateFromQuote(name) {
+  return {
+    id: 'tpl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    name: name,
+    created: new Date().toISOString(),
+    q: quote.map(x => ({ id: x.product.id, name: x.product.name, qty: x.qty, disc: x.disc || 0, qqs: !!x.qqs })),
+    mq: (typeof mqItems !== 'undefined' ? mqItems : []).map(m => ({ ...m })),
+    svc: (typeof services !== 'undefined' ? services : []).map(s => ({ ...s }))
+  };
+}
+
+function _tplCounts(t) {
+  return { p: (t.q || []).length, m: (t.mq || []).length, s: (t.svc || []).length };
+}
+
+// Shablon jamisi (taxminiy — joriy katalog narxlari bo'yicha)
+function _tplTotal(t) {
+  let sum = 0;
+  (t.q || []).forEach(it => {
+    let pr = PRODS.find(x => x.id === it.id) || PRODS.find(x => x.name === it.name);
+    if (pr) { const v = getPrice(pr); if (v) sum += v * (1 - (it.disc || 0) / 100) * (it.qty || 1); }
+  });
+  (t.mq || []).forEach(m => {
+    const p = parseFloat(m.price) || 0, q = parseFloat(m.qty) || 1;
+    sum += (m.cur === 'uzs' ? p / RATE : p) * q;
+  });
+  (t.svc || []).forEach(s => {
+    const p = parseFloat(s.price) || 0, q = parseInt(s.qty) || 1;
+    sum += p * (1 - (s.disc || 0) / 100) * q;
+  });
+  return sum;
+}
+
+// ── Joriy savatni shablon sifatida saqlash ────────────────────────────────
+function saveAsTemplate() {
+  const hasAny = quote.length || (typeof mqItems !== 'undefined' && mqItems.length) || (typeof services !== 'undefined' && services.length);
+  if (!hasAny) {
+    showToast('❌ ' + _tplT("Savat bo'sh", 'Корзина пуста', 'Cart is empty'));
+    return;
+  }
+  const suggested = _tplT('Yangi shablon', 'Новый шаблон', 'New template');
+  const name = prompt(_tplT('Shablon nomi (masalan: "4 kamera + NVR — do\'kon"):',
+    'Название шаблона (например: "4 камеры + NVR — магазин"):',
+    'Template name (e.g. "4 cameras + NVR — shop"):'), suggested);
+  if (name === null) return;
+  const nm = name.trim();
+  if (!nm) { showToast('❌ ' + _tplT('Nom kiriting', 'Введите название', 'Enter a name')); return; }
+
+  const existing = TEMPLATES.find(t => t.name.toLowerCase() === nm.toLowerCase());
+  if (existing) {
+    if (!confirm(_tplT(`"${nm}" allaqachon bor. Ustiga yozilsinmi?`,
+      `"${nm}" уже существует. Перезаписать?`,
+      `"${nm}" already exists. Overwrite?`))) return;
+    const fresh = _buildTemplateFromQuote(nm);
+    fresh.id = existing.id;
+    fresh.created = existing.created;
+    TEMPLATES[TEMPLATES.indexOf(existing)] = fresh;
+  } else {
+    TEMPLATES.unshift(_buildTemplateFromQuote(nm));
+  }
+  saveTemplatesLocal();
+  _syncTemplatesToCloud();
+  const c = _tplCounts(TEMPLATES.find(t => t.name.toLowerCase() === nm.toLowerCase()) || {});
+  showToast('✅ ' + _tplT(`Shablon saqlandi: "${nm}"`, `Шаблон сохранён: "${nm}"`, `Template saved: "${nm}"`) +
+    ` (${c.p}+${c.m}+${c.s})`, 3500);
+  if (document.getElementById('tplModal')) openTemplates();
+}
+
+// ── Shablonni savatga yuklash ─────────────────────────────────────────────
+function applyTemplate(id, mode) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) { showToast('❌ ' + _tplT('Shablon topilmadi', 'Шаблон не найден', 'Template not found')); return; }
+
+  const hasAny = quote.length || (typeof mqItems !== 'undefined' && mqItems.length) || (typeof services !== 'undefined' && services.length);
+  if (!mode && hasAny) {
+    // Savat bo'sh emas — nima qilishni so'raymiz
+    const replace = confirm(_tplT(
+      'Savatda mahsulotlar bor.\n\nOK = joriy savatni ALMASHTIRISH\nBekor = shablonni USTIGA QO\'SHISH',
+      'В корзине есть товары.\n\nOK = ЗАМЕНИТЬ корзину\nОтмена = ДОБАВИТЬ к текущей',
+      'Cart is not empty.\n\nOK = REPLACE cart\nCancel = ADD to current'));
+    mode = replace ? 'replace' : 'merge';
+  }
+  if (!mode) mode = 'replace';
+
+  if (mode === 'replace') {
+    quote.length = 0;
+    if (typeof mqItems !== 'undefined') mqItems.length = 0;
+    if (typeof services !== 'undefined') services.length = 0;
+  }
+
+  let added = 0, missing = [];
+  (t.q || []).forEach(it => {
+    let pr = PRODS.find(x => x.id === it.id) || PRODS.find(x => x.name === it.name);
+    if (!pr) { missing.push(it.name || it.id); return; }
+    const ex = quote.find(x => x.product.id === pr.id);
+    if (ex) { ex.qty = (parseFloat(ex.qty) || 0) + (parseFloat(it.qty) || 1); }
+    else { quote.push({ product: pr, qty: it.qty || 1, disc: it.disc || 0, qqs: !!it.qqs }); }
+    added++;
+  });
+  (t.mq || []).forEach(m => { if (typeof mqItems !== 'undefined') { mqItems.push({ ...m }); added++; } });
+  (t.svc || []).forEach(s => { if (typeof services !== 'undefined') { services.push({ ...s }); added++; } });
+
+  // Saqlash va qayta chizish
+  if (typeof saveQ === 'function') saveQ();
+  if (typeof saveMQ === 'function') saveMQ();
+  if (typeof saveSvc === 'function') saveSvc();
+  if (typeof renderQ === 'function') renderQ();
+  if (typeof renderMqRows === 'function') renderMqRows();
+  if (typeof renderSvcRows === 'function') renderSvcRows();
+  if (typeof updBdg === 'function') updBdg();
+  if (typeof updateMobBadge === 'function') updateMobBadge();
+  if (typeof updTotal === 'function') updTotal();
+  if (typeof updMqTotal === 'function') updMqTotal();
+  if (typeof updSvcTotal === 'function') updSvcTotal();
+  if (typeof updGrandTotal === 'function') updGrandTotal();
+
+  document.getElementById('tplModal')?.remove();
+  if (typeof switchTab === 'function') switchTab('quote');
+
+  let msg = '✅ ' + _tplT(`"${t.name}" yuklandi (${added} ta)`, `"${t.name}" загружен (${added})`, `"${t.name}" loaded (${added})`);
+  if (missing.length) {
+    msg += ' · ⚠️ ' + _tplT(`${missing.length} ta mahsulot katalogda yo'q`,
+      `${missing.length} товаров нет в каталоге`, `${missing.length} products not in catalog`);
+  }
+  showToast(msg, missing.length ? 6000 : 3000);
+  if (missing.length) console.warn('Shablonda topilmagan mahsulotlar:', missing);
+}
+
+// ── Shablonni o'chirish / nomini o'zgartirish ─────────────────────────────
+function deleteTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm(_tplT(`"${t.name}" shabloni o'chirilsinmi?`, `Удалить шаблон "${t.name}"?`, `Delete template "${t.name}"?`))) return;
+  TEMPLATES = TEMPLATES.filter(x => x.id !== id);
+  saveTemplatesLocal();
+  _syncTemplatesToCloud();
+  showToast('🗑 ' + _tplT("O'chirildi", 'Удалён', 'Deleted'));
+  openTemplates();
+}
+
+function renameTemplate(id) {
+  const t = TEMPLATES.find(x => x.id === id);
+  if (!t) return;
+  const name = prompt(_tplT('Yangi nom:', 'Новое название:', 'New name:'), t.name);
+  if (name === null) return;
+  const nm = name.trim();
+  if (!nm) return;
+  t.name = nm;
+  saveTemplatesLocal();
+  _syncTemplatesToCloud();
+  openTemplates();
+}
+
+// ── Bulutga sinxronlash (profiles.templates yoki quotes ichida) ───────────
+async function _syncTemplatesToCloud() {
+  try {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    const sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    const payload = JSON.stringify({ v: 1, ts: Date.now(), items: TEMPLATES });
+    if (payload.length > 900000) { console.warn('Shablonlar juda katta — bulutga yuborilmadi'); return; }
+    // '__TEMPLATES__' nomli maxsus yozuv (tarixda ko'rinmaydi)
+    const { data } = await sb.from('quotes').select('id').eq('user_id', currentUser.id).eq('title', '__TEMPLATES__').limit(1);
+    if (data && data[0]) {
+      await sb.from('quotes').update({ note: payload }).eq('id', data[0].id).eq('user_id', currentUser.id);
+    } else {
+      await sb.from('quotes').insert({ user_id: currentUser.id, title: '__TEMPLATES__', client_name: '', total_usd: 0, note: payload, status: 'draft' });
+    }
+  } catch (e) { console.warn('tpl cloud sync:', e.message); }
+}
+
+async function _pullTemplatesFromCloud() {
+  try {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    const sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    const { data } = await sb.from('quotes').select('note').eq('user_id', currentUser.id).eq('title', '__TEMPLATES__').limit(1);
+    if (!data || !data[0] || !data[0].note) return;
+    let d = null;
+    try { d = JSON.parse(data[0].note); } catch (e) { return; }
+    if (!d || !Array.isArray(d.items)) return;
+    // Birlashtirish: lokal + bulut (id bo'yicha, bulut yangiroq bo'lsa ustun)
+    const byId = {};
+    TEMPLATES.forEach(t => byId[t.id] = t);
+    d.items.forEach(t => { if (t && t.id) byId[t.id] = t; });
+    TEMPLATES = Object.values(byId).sort((a, b) => String(b.created || '').localeCompare(String(a.created || '')));
+    saveTemplatesLocal();
+    if (document.getElementById('tplModal')) openTemplates();
+  } catch (e) { console.warn('tpl cloud pull:', e.message); }
+}
+
+// ── Shablonlar oynasi ─────────────────────────────────────────────────────
+function openTemplates() {
+  loadTemplates();
+  document.getElementById('tplModal')?.remove();
+  const m = document.createElement('div');
+  m.id = 'tplModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick = e => { if (e.target === m) m.remove(); };
+
+  const rows = TEMPLATES.map(t => {
+    const c = _tplCounts(t);
+    const tot = _tplTotal(t);
+    const safe = String(t.name).replace(/</g, '&lt;');
+    const esc = String(t.id).replace(/'/g, "\\'");
+    const dt = t.created ? new Date(t.created).toLocaleDateString(LANG === 'ru' ? 'ru-RU' : LANG === 'en' ? 'en-US' : 'uz-UZ') : '';
+    return `
+    <div class="tpl-item">
+      <div class="tpl-main" onclick="applyTemplate('${esc}')">
+        <div class="tpl-name">${safe}</div>
+        <div class="tpl-meta">
+          ${c.p ? `<span>📹 ${c.p}</span>` : ''}
+          ${c.m ? `<span>📦 ${c.m}</span>` : ''}
+          ${c.s ? `<span>🔧 ${c.s}</span>` : ''}
+          ${tot > 0 ? `<span class="tpl-sum">${fmtP(tot)}</span>` : ''}
+          ${dt ? `<span class="tpl-date">${dt}</span>` : ''}
+        </div>
+      </div>
+      <div class="tpl-acts">
+        <button class="tpl-btn tpl-use" onclick="applyTemplate('${esc}')" title="${_tplT('Yuklash', 'Загрузить', 'Load')}">▶</button>
+        <button class="tpl-btn" onclick="renameTemplate('${esc}')" title="${_tplT('Nomini o\'zgartirish', 'Переименовать', 'Rename')}">✏️</button>
+        <button class="tpl-btn tpl-del" onclick="deleteTemplate('${esc}')" title="${_tplT('O\'chirish', 'Удалить', 'Delete')}">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  m.innerHTML = `
+    <div class="tpl-card">
+      <div class="tpl-head">
+        <div>
+          <div class="tpl-title">📦 ${_tplT('Shablonlar', 'Шаблоны', 'Templates')}</div>
+          <div class="tpl-sub">${TEMPLATES.length} ${_tplT('ta shablon', 'шаблонов', 'templates')} · ${_tplT('bir bosishda tayyor taklif', 'готовое КП в один клик', 'ready quote in one click')}</div>
+        </div>
+        <button class="tpl-x" onclick="document.getElementById('tplModal').remove()">✕</button>
+      </div>
+      <div class="tpl-body">
+        ${rows || `<div class="tpl-empty">
+          <div style="font-size:36px;opacity:.5;margin-bottom:10px">📦</div>
+          <div style="font-weight:600;margin-bottom:5px">${_tplT('Hozircha shablon yo\'q', 'Пока нет шаблонов', 'No templates yet')}</div>
+          <div style="font-size:12px;line-height:1.6">${_tplT(
+            'Savatga mahsulot yig\'ing va "Joriy savatni saqlash" tugmasini bosing.<br>Keyingi safar shu to\'plamni bir bosishda yuklaysiz.',
+            'Соберите корзину и нажмите «Сохранить текущую корзину».<br>В следующий раз загрузите этот набор одним кликом.',
+            'Fill the cart and press "Save current cart".<br>Next time load this set in one click.')}</div>
+        </div>`}
+      </div>
+      <div class="tpl-foot">
+        <button class="tpl-save" onclick="saveAsTemplate()">💾 ${_tplT('Joriy savatni saqlash', 'Сохранить текущую корзину', 'Save current cart')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// 👥 MIJOZLAR BAZASI — mijoz ma'lumotlarini bir marta yozib, keyin tanlash
+// Har taklif saqlanganda mijoz avtomatik bazaga qo'shiladi/yangilanadi.
+// ══════════════════════════════════════════════════════════════════════════
+let CLIENTS = [];
+
+function _clT(u, r, e) { const L = (typeof LANG !== 'undefined' ? LANG : 'uz'); return L === 'ru' ? r : L === 'en' ? e : u; }
+
+function loadClients() {
+  try {
+    const raw = localStorage.getItem('cqClients');
+    CLIENTS = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(CLIENTS)) CLIENTS = [];
+  } catch (e) { CLIENTS = []; }
+  return CLIENTS;
+}
+
+function saveClientsLocal() {
+  try { localStorage.setItem('cqClients', JSON.stringify(CLIENTS)); } catch (e) { console.warn('clients save:', e.message); }
+}
+
+// Telefon raqamini solishtirish uchun normallashtirish
+function _phoneKey(p) { return String(p || '').replace(/\D/g, '').slice(-9); }
+function _clientKey(name, phone) {
+  const ph = _phoneKey(phone);
+  return ph ? ('p:' + ph) : ('n:' + String(name || '').toLowerCase().trim());
+}
+
+// Mijozni bazaga qo'shish/yangilash (taklif saqlanganda avtomatik chaqiriladi)
+function upsertClient(name, addr, phone, quoteTotal) {
+  name = String(name || '').trim();
+  addr = String(addr || '').trim();
+  phone = String(phone || '').trim();
+  if (!name && !phone) return null;
+  loadClients();
+  const key = _clientKey(name, phone);
+  let cl = CLIENTS.find(c => _clientKey(c.name, c.phone) === key);
+  if (cl) {
+    // Mavjud mijoz — bo'sh bo'lmagan maydonlarni yangilaymiz
+    if (name) cl.name = name;
+    if (addr) cl.addr = addr;
+    if (phone) cl.phone = phone;
+    cl.quotes = (cl.quotes || 0) + 1;
+    cl.lastAt = new Date().toISOString();
+    if (quoteTotal > 0) cl.totalSum = (cl.totalSum || 0) + quoteTotal;
+  } else {
+    cl = {
+      id: 'cl_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+      name: name || phone, addr: addr, phone: phone,
+      quotes: 1, totalSum: quoteTotal > 0 ? quoteTotal : 0,
+      created: new Date().toISOString(), lastAt: new Date().toISOString()
+    };
+    CLIENTS.unshift(cl);
+  }
+  saveClientsLocal();
+  _syncClientsToCloud();
+  return cl;
+}
+
+// Mijozni formaga qo'yish
+function applyClient(id) {
+  const cl = CLIENTS.find(c => c.id === id);
+  if (!cl) return;
+  const set = (eid, v) => { const el = document.getElementById(eid); if (el) { el.value = v || ''; } };
+  set('clN', cl.name);
+  set('clA', cl.addr);
+  set('clP', cl.phone);
+  if (typeof sF === 'function') sF();
+  document.getElementById('clModal')?.remove();
+  showToast('✅ ' + _clT(`Mijoz tanlandi: ${cl.name}`, `Клиент выбран: ${cl.name}`, `Client selected: ${cl.name}`), 2500);
+}
+
+function deleteClient(id) {
+  const cl = CLIENTS.find(c => c.id === id);
+  if (!cl) return;
+  if (!confirm(_clT(`"${cl.name}" bazadan o'chirilsinmi?`, `Удалить "${cl.name}" из базы?`, `Delete "${cl.name}" from database?`))) return;
+  CLIENTS = CLIENTS.filter(c => c.id !== id);
+  saveClientsLocal();
+  _syncClientsToCloud();
+  openClients();
+}
+
+// Joriy formadagi mijozni qo'lda saqlash
+function saveCurrentClient() {
+  const g = id => document.getElementById(id)?.value?.trim() || '';
+  const n = g('clN'), a = g('clA'), p = g('clP');
+  if (!n && !p) {
+    showToast('❌ ' + _clT('Mijoz nomi yoki telefonini kiriting', 'Введите имя или телефон клиента', 'Enter client name or phone'));
+    return;
+  }
+  const cl = upsertClient(n, a, p, 0);
+  if (cl) {
+    cl.quotes = Math.max(0, (cl.quotes || 1) - 1); // qo'lda saqlash taklif hisoblanmaydi
+    saveClientsLocal();
+    showToast('✅ ' + _clT(`Bazaga saqlandi: ${cl.name}`, `Сохранён в базу: ${cl.name}`, `Saved: ${cl.name}`), 2500);
+    if (document.getElementById('clModal')) openClients();
+  }
+}
+
+// ── Bulut sinxronizatsiyasi ───────────────────────────────────────────────
+async function _syncClientsToCloud() {
+  try {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    const sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    const payload = JSON.stringify({ v: 1, ts: Date.now(), items: CLIENTS });
+    if (payload.length > 900000) return;
+    const { data } = await sb.from('quotes').select('id').eq('user_id', currentUser.id).eq('title', '__CLIENTS__').limit(1);
+    if (data && data[0]) {
+      await sb.from('quotes').update({ note: payload }).eq('id', data[0].id).eq('user_id', currentUser.id);
+    } else {
+      await sb.from('quotes').insert({ user_id: currentUser.id, title: '__CLIENTS__', client_name: '', total_usd: 0, note: payload, status: 'draft' });
+    }
+  } catch (e) { console.warn('clients cloud sync:', e.message); }
+}
+
+async function _pullClientsFromCloud() {
+  try {
+    if (typeof currentUser === 'undefined' || !currentUser) return;
+    const sb = (typeof getSB === 'function') ? getSB() : null;
+    if (!sb) return;
+    const { data } = await sb.from('quotes').select('note').eq('user_id', currentUser.id).eq('title', '__CLIENTS__').limit(1);
+    if (!data || !data[0] || !data[0].note) return;
+    let d = null;
+    try { d = JSON.parse(data[0].note); } catch (e) { return; }
+    if (!d || !Array.isArray(d.items)) return;
+    loadClients();
+    const byKey = {};
+    CLIENTS.forEach(c => byKey[_clientKey(c.name, c.phone)] = c);
+    d.items.forEach(c => {
+      if (!c || (!c.name && !c.phone)) return;
+      const k = _clientKey(c.name, c.phone);
+      const ex = byKey[k];
+      // Yangiroq yozuv ustun
+      if (!ex || String(c.lastAt || '') > String(ex.lastAt || '')) byKey[k] = c;
+    });
+    CLIENTS = Object.values(byKey).sort((a, b) => String(b.lastAt || '').localeCompare(String(a.lastAt || '')));
+    saveClientsLocal();
+    if (document.getElementById('clModal')) openClients();
+  } catch (e) { console.warn('clients cloud pull:', e.message); }
+}
+
+// ── Mijozlar oynasi ───────────────────────────────────────────────────────
+function openClients(filter) {
+  loadClients();
+  document.getElementById('clModal')?.remove();
+  const q = String(filter || '').toLowerCase().trim();
+  const list = q
+    ? CLIENTS.filter(c => (c.name + ' ' + (c.addr || '') + ' ' + (c.phone || '')).toLowerCase().includes(q))
+    : CLIENTS;
+
+  const m = document.createElement('div');
+  m.id = 'clModal';
+  m.style.cssText = 'position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.onclick = e => { if (e.target === m) m.remove(); };
+
+  const rows = list.map(c => {
+    const safe = s => String(s || '').replace(/</g, '&lt;');
+    const esc = String(c.id).replace(/'/g, "\\'");
+    const dt = c.lastAt ? new Date(c.lastAt).toLocaleDateString(LANG === 'ru' ? 'ru-RU' : LANG === 'en' ? 'en-US' : 'uz-UZ') : '';
+    return `
+    <div class="cl-item">
+      <div class="cl-main" onclick="applyClient('${esc}')">
+        <div class="cl-name">${safe(c.name)}</div>
+        <div class="cl-meta">
+          ${c.phone ? `<span>📞 ${safe(c.phone)}</span>` : ''}
+          ${c.addr ? `<span>📍 ${safe(c.addr)}</span>` : ''}
+        </div>
+        <div class="cl-meta2">
+          ${c.quotes ? `<span>📋 ${c.quotes} ${_clT('taklif', 'КП', 'quotes')}</span>` : ''}
+          ${c.totalSum > 0 ? `<span class="cl-sum">${fmtP(c.totalSum)}</span>` : ''}
+          ${dt ? `<span class="cl-date">${dt}</span>` : ''}
+        </div>
+      </div>
+      <div class="cl-acts">
+        <button class="cl-btn cl-use" onclick="applyClient('${esc}')" title="${_clT('Tanlash', 'Выбрать', 'Select')}">▶</button>
+        <button class="cl-btn cl-del" onclick="deleteClient('${esc}')" title="${_clT("O'chirish", 'Удалить', 'Delete')}">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  m.innerHTML = `
+    <div class="cl-card">
+      <div class="cl-head">
+        <div>
+          <div class="cl-title">👥 ${_clT('Mijozlar bazasi', 'База клиентов', 'Client database')}</div>
+          <div class="cl-sub">${CLIENTS.length} ${_clT('ta mijoz', 'клиентов', 'clients')}</div>
+        </div>
+        <button class="cl-x" onclick="document.getElementById('clModal').remove()">✕</button>
+      </div>
+      ${CLIENTS.length > 4 ? `<div class="cl-search">
+        <input id="clSearchInp" placeholder="🔍 ${_clT('Ism, telefon yoki manzil...', 'Имя, телефон или адрес...', 'Name, phone or address...')}"
+          value="${String(filter || '').replace(/"/g, '&quot;')}" oninput="openClients(this.value)">
+      </div>` : ''}
+      <div class="cl-body">
+        ${rows || `<div class="cl-empty">
+          <div style="font-size:36px;opacity:.5;margin-bottom:10px">👥</div>
+          <div style="font-weight:600;margin-bottom:5px">${q ? _clT('Topilmadi', 'Не найдено', 'Not found') : _clT("Hozircha mijoz yo'q", 'Пока нет клиентов', 'No clients yet')}</div>
+          <div style="font-size:12px;line-height:1.6">${_clT(
+            'Mijoz ma\'lumotini kiritib, taklifni saqlasangiz — avtomatik bazaga tushadi.',
+            'Заполните данные клиента и сохраните КП — он попадёт в базу автоматически.',
+            'Fill client details and save a quote — it will be added automatically.')}</div>
+        </div>`}
+      </div>
+      <div class="cl-foot">
+        <button class="cl-save" onclick="saveCurrentClient()">💾 ${_clT('Joriy mijozni bazaga saqlash', 'Сохранить текущего клиента', 'Save current client')}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(m);
+  if (q) { const el = document.getElementById('clSearchInp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+}
 
 function setSupplier(s){
   actSupplier=s;selP=null;
@@ -8133,6 +8697,8 @@ function setLang(lang) {
   _setEl('globalDiscLbl', _isRu?'💸 Скидка всем:':_isEn?'💸 Discount all:':'💸 Hammaga chegirma:');
   _setEl('globalDiscReset', _isRu?'Сброс':_isEn?'Reset':'Tozalash');
   _setEl('globalDiscHint', _isRu?'Каждый товар можно изменить отдельно':_isEn?'Each product can be changed separately':"Har birini alohida o'zgartirish mumkin");
+  _setEl('lblClients', _isRu?'Из базы':_isEn?'From base':'Bazadan');
+  _setEl('lblTpl', _isRu?'Шаблоны':_isEn?'Templates':'Shablonlar');
   _setEl('lblSaveAs', _isRu?'📄 Сохранить как':_isEn?'📄 Save as':'📄 Nom bilan saqlash');
   _setEl('lblSortDesc', _isRu?'От дорогих':_isEn?'Priciest first':'Qimmatdan');
   _setEl('lblSortAsc', _isRu?'От дешёвых':_isEn?'Cheapest first':'Arzondan');
@@ -9878,6 +10444,9 @@ async function saveQuoteToCloud(customName){
 
   const quoteTitle = customName || window._editingQuoteTitle || `${oCo} → ${clN||'Mijoz'} (${dt})`;
   // Minimal ma'lumotlar — faqat asosiy ustunlar
+  // Mijozni bazaga avtomatik qo'shish/yangilash
+  try{ if(typeof upsertClient==='function') upsertClient(clN, clA, clP, totalUsd); }catch(e){ console.warn('client upsert:', e.message); }
+
   const quotePayload = {
     user_id: currentUser.id,
     title: quoteTitle,
@@ -10167,7 +10736,7 @@ async function openQuoteHistory(){
     .limit(50);
   // Avto-saqlash (savat sinxron) yozuvini yashirish + oxirgi yangilangan tepada
   if(data){
-    data = data.filter(q => q.title !== '__AUTOSAVE__');
+    data = data.filter(q => !['__AUTOSAVE__','__TEMPLATES__','__CLIENTS__'].includes(q.title));
     data.sort((a,b)=> new Date(b.updated_at||b.created_at||0) - new Date(a.updated_at||a.created_at||0));
   }
 
@@ -10200,11 +10769,11 @@ async function openQuoteHistory(){
   listEl.innerHTML = data.map(q => {
     const date = new Date(q.created_at).toLocaleDateString(_Lr==='ru'?'ru-RU':_Lr==='en'?'en-US':'uz-UZ');
     const statusMap = {
-      draft:       _Lr==='ru'?'📝 Qoralama':_Lr==='en'?'📝 Draft':'📝 Qoralama',
-      sent:        _Lr==='ru'?'📤 Yuborilgan':_Lr==='en'?'📤 Sent':'📤 Yuborilgan',
-      in_progress: _Lr==='ru'?'🔄 Jarayonda':_Lr==='en'?'🔄 In progress':'🔄 Jarayonda',
-      sold:        _Lr==='ru'?'✅ Sotildi':_Lr==='en'?'✅ Sold':'✅ Sotildi',
-      lost:        _Lr==='ru'?'❌ Sotilmadi':_Lr==='en'?'❌ Lost':'❌ Sotilmadi',
+      draft:       _Lr==='ru'?'📝 Черновик':_Lr==='en'?'📝 Draft':'📝 Qoralama',
+      sent:        _Lr==='ru'?'📤 Отправлено':_Lr==='en'?'📤 Sent':'📤 Yuborilgan',
+      in_progress: _Lr==='ru'?'🔄 В работе':_Lr==='en'?'🔄 In progress':'🔄 Jarayonda',
+      sold:        _Lr==='ru'?'✅ Продано':_Lr==='en'?'✅ Sold':'✅ Sotildi',
+      lost:        _Lr==='ru'?'❌ Не продано':_Lr==='en'?'❌ Lost':'❌ Sotilmadi',
     };
     const statusColors = {
       draft:'var(--text3)', sent:'#60a5fa', in_progress:'var(--amber)',
@@ -10718,11 +11287,11 @@ async function updateQuoteStatus(quoteId, newStatus){
   if(error){ showToast('❌ '+error.message); return; }
   const _L=LANG||'uz';
   const labels={
-    draft:_L==='ru'?'Qoralama':_L==='en'?'Draft':'Qoralama',
-    sent:_L==='ru'?'Yuborilgan':_L==='en'?'Sent':'Yuborilgan',
-    in_progress:_L==='ru'?'Jarayonda':_L==='en'?'In progress':'Jarayonda',
-    sold:_L==='ru'?'Sotildi':_L==='en'?'Sold':'Sotildi',
-    lost:_L==='ru'?'Sotilmadi':_L==='en'?'Lost':'Sotilmadi',
+    draft:_L==='ru'?'Черновик':_L==='en'?'Draft':'Qoralama',
+    sent:_L==='ru'?'Отправлено':_L==='en'?'Sent':'Yuborilgan',
+    in_progress:_L==='ru'?'В работе':_L==='en'?'In progress':'Jarayonda',
+    sold:_L==='ru'?'Продано':_L==='en'?'Sold':'Sotildi',
+    lost:_L==='ru'?'Не продано':_L==='en'?'Lost':'Sotilmadi',
   };
   showToast(`✅ ${labels[newStatus]||newStatus}`);
 }
@@ -10734,11 +11303,13 @@ async function openAnalytics(){
 
   // So'nggi 6 oy
   const sixMonthsAgo=new Date(); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth()-6);
-  const {data,error}=await sb.from('quotes')
-    .select('status,total_usd,created_at')
+  let {data,error}=await sb.from('quotes')
+    .select('status,total_usd,created_at,title')
     .eq('user_id',currentUser.id)
     .gte('created_at',sixMonthsAgo.toISOString())
     .order('created_at',{ascending:false});
+  // Texnik yozuvlarni (savat sinxroni, shablonlar, mijozlar) hisobga olmaymiz
+  if(data) data=data.filter(q=>!['__AUTOSAVE__','__TEMPLATES__','__CLIENTS__'].includes(q.title));
 
   if(error||!data){ showToast('❌ '+( error?.message||'Xato')); return; }
 
@@ -13255,6 +13826,9 @@ async function loadFromCloud(){
 
     // Boshqa qurilmadagi savatni tekshirish (PRODS tayyor — mahsulotlar topiladi)
     setTimeout(()=>{ if(typeof _pullDraft==='function') _pullDraft(); }, 1200);
+    // Bulutdagi shablonlarni tortish
+    setTimeout(()=>{ if(typeof _pullTemplatesFromCloud==='function') _pullTemplatesFromCloud(); }, 1800);
+    setTimeout(()=>{ if(typeof _pullClientsFromCloud==='function') _pullClientsFromCloud(); }, 2100);
 
     // Mavjud lokal rasmlarni (cloud'da hali yo'q) fon rejimda cloud bazaga yuklash —
     // boshqa qurilmalarda (usta telefonida) ham ko'rinishi uchun. Bir martalik, o'zini cheklaydi.
