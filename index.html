@@ -2972,6 +2972,9 @@ function finishImport(importedProds, supplierName, fileName){
     showImportResult(known, [], supplierName, fileName);
   }
 
+  // NARX TEKSHIRUVI — mantiqsiz narxlarni darhol aniqlash (mijozga yuborilmasdan oldin)
+  try{ _auditImportedPrices((known||[]).concat(unknown||[])); }catch(e){}
+
   // Fon rejimda: import qilingan BARCHA rasmlarni (_imgRef) Excel fayldan chiqarib,
   // doimiy saqlash (IndexedDB) va cloud'ga yuborish — faqat ochilgan mahsulotlarni
   // emas, hammasini. Shunda Android/boshqa qurilmalarda ham rasm chiqadi.
@@ -3494,7 +3497,7 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
   productSheets.forEach(sheetName=>{
     const ws=wb.Sheets[sheetName];
     if(!ws) return;
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
     if(rows.length<2) return;
 
     // Try to detect header in first 5 rows
@@ -3587,7 +3590,7 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
           if(!raw) continue;
           // Strip currency symbols, commas
           const cleaned=raw.replace(/[$₽€£\s]/g,'').replace(/,/g,'.');
-          const v=parseFloat(cleaned.replace(/[^0-9.]/g,''));
+          const v=_parseNum(cleaned);
           if(!isNaN(v)&&v>0&&v<1000000){
             candidates[c]=(candidates[c]||0)+1;
           }
@@ -3611,7 +3614,7 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     const headerLast=rows[headerRowIdx]||[];
     let vatRate=13000;
     headerLast.forEach(v=>{
-      const num=parseFloat(String(v||'').replace(/[^0-9.]/g,''));
+      const num=_parseNum(v);
       if(!isNaN(num)&&num>10000&&num<20000) vatRate=num;
     });
 
@@ -3619,10 +3622,31 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
     // Ustun bo'yicha valyutani aniqlash (har bir narxni alohida emas)
     let _colMax=0;
     rows.slice(headerRowIdx+1).forEach(row=>{
-      const raw=String(row[cols.price]||'').replace(/\s/g,'').replace(/[^0-9.,]/g,'').replace(/,/g,'');
-      const v=parseFloat(raw); if(!isNaN(v)&&v>_colMax) _colMax=v;
+      const v=_parseNum(row[cols.price]);   // ISHONCHLI o'qish (vergul o'nlikmi/minglikmi — aniqlanadi)
+      if(v!=null&&v>_colMax) _colMax=v;
     });
-    const _colIsSom = decideSom(_colMax);
+    let _colIsSom = decideSom(_colMax);
+
+    // XAVFSIZLIK: narx ustuni QQS (so'm) ustunidan katta bo'lsa — ular almashgan.
+    // Dollar narxi hech qachon so'mdagi narxdan katta bo'lmaydi.
+    if(cols.vat>=0 && cols.price>=0 && cols.vat!==cols.price){
+      const med=ci=>{
+        const a=[];
+        for(let r=headerRowIdx+1;r<Math.min(headerRowIdx+40,rows.length);r++){
+          const n=_parseNum((rows[r]||[])[ci]); if(n!=null&&n>0) a.push(n);
+        }
+        if(!a.length) return 0;
+        a.sort((x,y)=>x-y); return a[Math.floor(a.length/2)];
+      };
+      const mp=med(cols.price), mv=med(cols.vat);
+      if(mp>0&&mv>0&&mp>mv){
+        const t=cols.price; cols.price=cols.vat; cols.vat=t;
+        console.warn('Import: narx/QQS ustunlari almashtirildi ('+sheetName+')');
+        _colMax=0;
+        rows.slice(headerRowIdx+1).forEach(row=>{ const v=_parseNum(row[cols.price]); if(v!=null&&v>_colMax) _colMax=v; });
+        _colIsSom = decideSom(_colMax);
+      }
+    }
     rows.slice(headerRowIdx+1).forEach((row, rowRelIdx)=>{
       const rowAbsIdx = headerRowIdx + 1 + rowRelIdx;
       const name=String(row[cols.name]||'').trim();
@@ -3648,21 +3672,8 @@ function importUniversal(wb, fileName, supplierHint, sheetImages={}){
       // Parse price — so'm yoki dollar avtomatik aniqlash
       let usd=null;
       if(!isPriceEmpty){
-        // Bo'shliq va vergullarni tozalash: "2 702 000" yoki "2,702,000" → 2702000
-        let cleaned=rawPriceStr.replace(/\s/g,'').replace(/[^0-9.,]/g,'');
-        // Agar bir nechta vergul/nuqta bo'lsa — minglik ajratuvchi
-        const dotCount=(cleaned.match(/\./g)||[]).length;
-        const commaCount=(cleaned.match(/,/g)||[]).length;
-        if(commaCount>1){ cleaned=cleaned.replace(/,/g,''); } // 2,702,000 → 2702000
-        else if(commaCount===1 && dotCount===0){
-          // Bitta vergul — o'nlik bo'lishi mumkin (12,5) yoki minglik (702,000)
-          const afterComma=cleaned.split(',')[1]||'';
-          if(afterComma.length===3) cleaned=cleaned.replace(',',''); // minglik
-          else cleaned=cleaned.replace(',','.'); // o'nlik
-        }
-        if(dotCount>1){ cleaned=cleaned.replace(/\./g,''); } // 2.702.000 → 2702000
-        const v=parseFloat(cleaned);
-        if(!isNaN(v)&&v>0){
+        const v=_parseNum(row[cols.price]);
+        if(v!=null&&v>0){
           // Ustun bo'yicha aniqlangan valyuta (import oynasidagi tanlov + avtomatik)
           if(_colIsSom){
             usd=Math.round(v/RATE*100)/100; // so'm → dollar
@@ -3728,7 +3739,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
     const priceRows=XLSX.utils.sheet_to_json(wsPriceSheet,{header:1,defval:''});
     priceRows.slice(1).forEach(row=>{
       if(row[0]&&row[1]!=null&&row[1]!==''){
-        const v=parseFloat(String(row[1]).replace(/[^0-9.]/g,''));
+        const v=_parseNum(row[1]);
         if(!isNaN(v)&&v>0) kssPrice[String(row[0]).trim()]=v;
       }
     });
@@ -3782,7 +3793,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
   productSheets.forEach(sheetName=>{
     const ws=wb.Sheets[sheetName];
     if(!ws) return;
-    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:false});
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:'',raw:true});
     if(rows.length<2) return;
     const brand=sheetName.trim();
     // Har bir Excel varag'i alohida supplier
@@ -3816,7 +3827,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
     const header=rows[hdrIdx]||rows[0]||[];
     let vatRate=0;
     for(const h of header){
-      const n=parseFloat(String(h||'').replace(/[^0-9.]/g,''));
+      const n=_parseNum(h);
       if(!isNaN(n)&&n>=3000&&n<=100000){ vatRate=n; break; }
     }
     if(!vatRate) vatRate=(typeof RATE!=='undefined'&&RATE>1000)?RATE:13000;
@@ -3827,7 +3838,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
       const med=ci=>{
         const a=[];
         for(let r=hdrIdx+1;r<Math.min(hdrIdx+40,rows.length);r++){
-          const n=parseFloat(String((rows[r]||[])[ci]||'').replace(/\s/g,'').replace(',','.').replace(/[^0-9.]/g,''));
+          const n=_parseNum((rows[r]||[])[ci]);
           if(!isNaN(n)&&n>0) a.push(n);
         }
         if(!a.length) return 0;
@@ -3869,7 +3880,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
       // Parse USD price — handle #VALUE!, #N/A, strings
       let usd=null;
       if(!isPriceEmpty){
-        const v=parseFloat(rawUsdStr.replace(/[^0-9.]/g,''));
+        const v=_parseNum(rawUsdStr);
         if(!isNaN(v)&&v>0) usd=v;
       }
       if(!usd) usd=kssPrice[name];
@@ -3883,7 +3894,7 @@ function importKSS(wb, rawData, fileName, supplierHint, sheetImages={}){
       const rawVatStr=String(cVat>=0?(row[cVat]||''):'');
       let vatPrice=null;
       if(rawVatStr&&rawVatStr!=='#VALUE!'&&rawVatStr!=='#N/A'&&rawVatStr!=='#REF!'){
-        const v=parseFloat(rawVatStr.replace(/[^0-9.]/g,''));
+        const v=_parseNum(rawVatStr);
         if(!isNaN(v)&&v>0) vatPrice=Math.round(v);
       }
       if(!vatPrice&&usd) vatPrice=Math.round(usd*vatRate);
@@ -3913,7 +3924,7 @@ function importSimple(wb, supplierHint, sheetImages={}){
   const supplierName = supplierHint || wb.SheetNames[0] || 'Supplier';
   const sheetName = wb.SheetNames[0];
   const ws = wb.Sheets[sheetName];
-  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+  const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
   const importedProds = [];
 
   // ── Header detection — barcha formatlarni qo'llab-quvvatlash ──
@@ -3951,7 +3962,7 @@ function importSimple(wb, supplierHint, sheetImages={}){
       (rows[r]||[]).forEach((v,ci)=>{
         if(ci===namCol||ci===specCol) return; // imgCol ni skip qilmaymiz
         const raw = String(v||'').replace(/\s/g,'').replace(',','.');
-        const n=parseFloat(raw.replace(/[^0-9.]/g,''));
+        const n=_parseNum(raw);
         // Faqat toza raqam (matn aralashmagani) — narx bo'lishi mumkin
         if(!isNaN(n)&&n>0&&n<1000000 && raw.length<12) cands[ci]=(cands[ci]||0)+1;
       });
@@ -3995,15 +4006,7 @@ function importSimple(wb, supplierHint, sheetImages={}){
     if(name.length<3) return;
     // Narx
     const priceRaw = priceCol>=0 ? String(row[priceCol]||'') : '';
-    let _clean=priceRaw.replace(/\s/g,'').replace(/[^0-9.,]/g,'');
-    const _cc=(_clean.match(/,/g)||[]).length, _dc=(_clean.match(/\./g)||[]).length;
-    if(_cc>1) _clean=_clean.replace(/,/g,'');
-    else if(_cc===1&&_dc===0){
-      const aft=_clean.split(',')[1]||'';
-      _clean = aft.length===3 ? _clean.replace(',','') : _clean.replace(',','.');
-    }
-    if(_dc>1) _clean=_clean.replace(/\./g,'');
-    let usd=parseFloat(_clean);
+    let usd=_parseNum(priceCol>=0 ? row[priceCol] : null);
     if(!usd||usd<=0) return;
     // Valyutani QATOR bo'yicha aniqlash — fayl aralash bo'lsa ($350 va 4 200 000 so'm bir faylda)
     // xato konvertatsiya bo'lmasligi uchun. Import oynasidagi aniq tanlov ustuvor.
@@ -5154,6 +5157,79 @@ function openClients(filter) {
     </div>`;
   document.body.appendChild(m);
   if (q) { const el = document.getElementById('clSearchInp'); if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } }
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Raqamni ISHONCHLI o'qish — Excel formatlaridan qat'i nazar.
+// Avval vergul shunchaki o'chirilardi: "5,000" → 5000 (aslida 5), "22,81" → 2281.
+// Endi vergul o'nlik ajratgichmi yoki minglik ajratgichmi — aniqlanadi.
+//   5        → 5          (raqam)
+//   "22,81"  → 22.81      (vergul = o'nlik)
+//   "0,090"  → 0.09
+//   "1 234,56" → 1234.56  (probel = minglik)
+//   "1,234.56" → 1234.56  (vergul = minglik, nuqta = o'nlik)
+//   "5,000"  → 5000       (3 xona → minglik)
+//   "$5.00"  → 5
+// ══════════════════════════════════════════════════════════════════════════
+function _parseNum(v){
+  if(typeof v === 'number') return isFinite(v) ? v : null;
+  let s = String(v == null ? '' : v).trim();
+  if(!s) return null;
+  // Bo'shliqlar (oddiy, uzilmas, tor) va apostrof — minglik ajratgich
+  s = s.replace(/[\s\u00A0\u202F\u2009']/g, '');
+  // Valyuta belgilari va harflarni olib tashlash
+  s = s.replace(/[^0-9.,\-]/g, '');
+  if(!s || !/\d/.test(s)) return null;
+  const hasC = s.includes(','), hasD = s.includes('.');
+  if(hasC && hasD){
+    // Oxirgi kelgani — o'nlik ajratgich
+    if(s.lastIndexOf(',') > s.lastIndexOf('.')) s = s.replace(/\./g,'').replace(',', '.');
+    else s = s.replace(/,/g, '');
+  } else if(hasC){
+    const parts = s.split(',');
+    if(parts.length > 2) s = parts.join('');              // 1,234,567 → minglik
+    // "0,090" yoki "0,5" — minglik bo'la olmaydi (butun qism 0), demak o'nlik
+    else if(parts[0] === '0' || parts[0] === '') s = '0.' + parts[1];
+    else if(parts[1].length === 3) s = parts.join('');     // 5,000 → minglik
+    else s = parts[0] + '.' + parts[1];                    // 22,81 → o'nlik
+  }
+  const n = parseFloat(s);
+  return isFinite(n) ? n : null;
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// Import qilingan narxlarni tekshirish. CCTV bozorida dollar narxi odatda
+// $0.05 — $5000 oralig'ida. Undan yuqorisi — valyuta xatosi belgisi
+// (so'mdagi narx dollar deb olingan). Foydalanuvchi DARHOL ogohlantiriladi.
+// ══════════════════════════════════════════════════════════════════════════
+function _auditImportedPrices(prods){
+  try{
+    if(!prods || !prods.length) return;
+    const vals = prods.map(p => (p && (p._usd || (typeof getPrice==='function' ? getPrice(p) : null)))).filter(v => v > 0);
+    if(vals.length < 3) return;
+    const suspicious = vals.filter(v => v > 5000);
+    if(suspicious.length / vals.length < 0.35) return;   // ozchilik — ehtimol haqiqiy qimmat tovar
+    if(suspicious.length < 3) return;                    // 1-2 ta qimmat tovar normal
+
+    vals.sort((a,b)=>a-b);
+    const median = vals[Math.floor(vals.length/2)];
+    if(median <= 5000) return;   // MEDIANA ham katta bo'lsagina xato deb hisoblaymiz
+    const _L = (typeof LANG!=='undefined' ? LANG : 'uz');
+    const T = (u,r,e) => _L==='ru' ? r : _L==='en' ? e : u;
+    const guess = (typeof RATE!=='undefined' && RATE>1000) ? Math.round(median/RATE*100)/100 : null;
+    console.warn('⚠️ Narx tekshiruvi: '+suspicious.length+'/'+vals.length+' mahsulot $5000 dan qimmat. Mediana: $'+median);
+    showToast('⚠️ ' + T(
+      `Narxlar shubhali! ${suspicious.length} ta mahsulot $5000 dan qimmat.` +
+        (guess ? ` Ehtimol so'mdagi ustun olingan — to'g'risi ~$${guess}.` : '') +
+        ` Import oynasida valyutani "Dollar" qilib qayta yuklang.`,
+      `Цены подозрительные! ${suspicious.length} товаров дороже $5000.` +
+        (guess ? ` Возможно взята колонка в сумах — правильно ~$${guess}.` : '') +
+        ` Переимпортируйте, выбрав валюту «Доллар».`,
+      `Prices look wrong! ${suspicious.length} products over $5000.` +
+        (guess ? ` The UZS column was likely used — correct is ~$${guess}.` : '') +
+        ` Re-import selecting "Dollar" currency.`
+    ), 12000);
+  }catch(e){ console.warn('price audit:', e.message); }
 }
 
 function setSupplier(s){
